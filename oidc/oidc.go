@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
@@ -200,9 +199,9 @@ func (h *handler) loadJwks() error {
 	return nil
 }
 
-func (h *handler) parseToken(auth string, c echo.Context) (interface{}, error) {
-	ctx := c.Request().Context()
+type parseTokenFunc func(ctx context.Context, tokenString string) (jwt.Token, error)
 
+func (h *handler) parseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
 	if h.keyHandler == nil {
 		err := h.loadJwks()
 		if err != nil {
@@ -210,7 +209,7 @@ func (h *handler) parseToken(auth string, c echo.Context) (interface{}, error) {
 		}
 	}
 
-	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, auth)
+	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, tokenString)
 	if !tokenTypeValid {
 		return nil, fmt.Errorf("token type %q required", h.requiredTokenType)
 	}
@@ -218,7 +217,7 @@ func (h *handler) parseToken(auth string, c echo.Context) (interface{}, error) {
 	keyID := ""
 	if !h.disableKeyID {
 		var err error
-		keyID, err = getKeyIDFromTokenString(auth)
+		keyID, err = getKeyIDFromTokenString(tokenString)
 		if err != nil {
 			return nil, err
 		}
@@ -234,7 +233,7 @@ func (h *handler) parseToken(auth string, c echo.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	token, err := getAndValidateTokenFromString(auth, key, alg)
+	token, err := getAndValidateTokenFromString(tokenString, key, alg)
 	if err != nil {
 		if h.disableKeyID && errors.Is(err, errSignatureVerification) {
 			updatedKey, err := h.keyHandler.waitForUpdateKeySetAndGetKey(ctx)
@@ -247,7 +246,7 @@ func (h *handler) parseToken(auth string, c echo.Context) (interface{}, error) {
 				return nil, err
 			}
 
-			token, err = getAndValidateTokenFromString(auth, updatedKey, alg)
+			token, err = getAndValidateTokenFromString(tokenString, updatedKey, alg)
 			if err != nil {
 				return nil, err
 			}

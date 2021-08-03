@@ -15,5 +15,17 @@ func NewEchoJWTParseTokenFunc(opts Options) func(auth string, c echo.Context) (i
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	return h.parseToken
+	return toEchoJWTParseTokenFunc(h.parseToken)
+}
+
+type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
+
+func toEchoJWTParseTokenFunc(parseToken parseTokenFunc) echoJWTParseTokenFunc {
+	echoJWTParseTokenFunc := func(auth string, c echo.Context) (interface{}, error) {
+		ctx := c.Request().Context()
+
+		return parseToken(ctx, auth)
+	}
+
+	return echoJWTParseTokenFunc
 }

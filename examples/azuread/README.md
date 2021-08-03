@@ -31,11 +31,13 @@ az rest --method PATCH --uri "https://graph.microsoft.com/beta/applications/${AZ
 
 ## Run web server
 
+### Echo
+
 ```shell
 TENANT_ID=$(az account show -o json | jq -r .tenantId)
 TOKEN_ISSUER="https://login.microsoftonline.com/${TENANT_ID}/v2.0"
 TOKEN_AUDIENCE=$(az ad app list --identifier-uri ${AZ_APP_URI} | jq -r ".[0].appId")
-go run ./oidcdiscovery/examples/azuread/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --token-tenant-id ${TENANT_ID} --port 8081
+go run ./azuread/echo/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --token-tenant-id ${TENANT_ID} --port 8081
 ```
 
 ## Test with curl
@@ -51,7 +53,7 @@ curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" http://localhost:8081 | jq
 ### Using PKCE-CLI
 
 ```shell
-ACCESS_TOKEN=$(go run ./oidcdiscovery/examples/pkce-cli/main.go --issuer ${TOKEN_ISSUER} --client-id ${AZ_APP_PKCECLI_ID} --scopes "openid profile ${AZ_APP_URI}/user_impersonation" | jq -r ".access_token")
+ACCESS_TOKEN=$(go run ./pkce-cli/main.go --issuer ${TOKEN_ISSUER} --client-id ${AZ_APP_PKCECLI_ID} --scopes "openid profile ${AZ_APP_URI}/user_impersonation" | jq -r ".access_token")
 curl -s http://localhost:8081 | jq
 curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" http://localhost:8081 | jq
 ```

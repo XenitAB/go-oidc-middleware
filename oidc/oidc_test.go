@@ -8,15 +8,18 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
+	"golang.org/x/oauth2"
 )
 
 func TestGetHeadersFromTokenString(t *testing.T) {
@@ -690,7 +693,9 @@ func TestParseToken(t *testing.T) {
 
 		token := testNewCustomTokenString(t, keySets.privateKeySet, issuer, expirationMinutes, customClaims)
 
-		_, err = parseTokenFunc(token, testNewEchoContext(t))
+		ctx := context.Background()
+
+		_, err = parseTokenFunc(ctx, token)
 
 		if c.expectedErrorContains == "" {
 			require.NoError(t, err)
@@ -724,7 +729,9 @@ func TestParseTokenWithKeyID(t *testing.T) {
 	// first token should succeed
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token1, testNewEchoContext(t))
+	ctx := context.Background()
+
+	_, err = parseTokenFunc(ctx, token1)
 	require.NoError(t, err)
 
 	// second token should succeed, rotation successful
@@ -732,11 +739,11 @@ func TestParseTokenWithKeyID(t *testing.T) {
 
 	token2 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token2, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token2)
 	require.NoError(t, err)
 
 	// after rotation, first token should fail
-	_, err = parseTokenFunc(token1, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token1)
 	require.Error(t, err)
 
 	// third token should succeed with two keys
@@ -744,7 +751,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 
 	token3 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token3, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token3)
 	require.NoError(t, err)
 
 	// fourth token should fail since they token doesn't contain keyID
@@ -752,7 +759,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 
 	token4 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token4, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token4)
 	require.Error(t, err)
 
 	// fifth token should fail since it's the wrong key but correct keyID
@@ -769,7 +776,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 
 	token5 := testNewTokenString(t, invalidKeySet)
 
-	_, err = parseTokenFunc(token5, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token5)
 	require.ErrorIs(t, err, errSignatureVerification)
 
 	// sixth token should fail since the jwks can't be refreshed
@@ -779,7 +786,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 
 	testServer.Close()
 
-	_, err = parseTokenFunc(token6, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token6)
 	require.Error(t, err)
 }
 
@@ -807,7 +814,9 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 	// first token should succeed
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token1, testNewEchoContext(t))
+	ctx := context.Background()
+
+	_, err = parseTokenFunc(ctx, token1)
 	require.NoError(t, err)
 
 	// second token should succeed, with key rotation
@@ -815,11 +824,11 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 
 	token2 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token2, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token2)
 	require.NoError(t, err)
 
 	// after rotation, first token should fail
-	_, err = parseTokenFunc(token1, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token1)
 	require.Error(t, err)
 
 	// third token should fail since there are two keys present
@@ -827,7 +836,7 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 
 	token3 := testNewTokenString(t, keySets.privateKeySet)
 
-	_, err = parseTokenFunc(token3, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token3)
 	require.Error(t, err)
 
 	// fourth token should fail since the jwks can't be refreshed
@@ -837,7 +846,7 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 
 	testServer.Close()
 
-	_, err = parseTokenFunc(token4, testNewEchoContext(t))
+	_, err = parseTokenFunc(ctx, token4)
 	require.Error(t, err)
 }
 
@@ -1334,27 +1343,27 @@ func TestGetSignatureAlgorithm(t *testing.T) {
 	}
 }
 
-func testNewKey(t testing.TB) (jwk.Key, jwk.Key) {
+func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
 	ecdsaKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	key, err := jwk.New(ecdsaKey)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	_, ok := key.(jwk.ECDSAPrivateKey)
-	require.True(t, ok)
+	require.True(tb, ok)
 
 	thumbprint, err := key.Thumbprint(crypto.SHA256)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	keyID := fmt.Sprintf("%x", thumbprint)
 	key.Set(jwk.KeyIDKey, keyID)
 
 	pubKey, err := jwk.New(ecdsaKey.PublicKey)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	_, ok = pubKey.(jwk.ECDSAPublicKey)
-	require.True(t, ok)
+	require.True(tb, ok)
 
 	pubKey.Set(jwk.KeyIDKey, keyID)
 	pubKey.Set(jwk.AlgorithmKey, jwa.ES384)
@@ -1403,4 +1412,64 @@ func testNewCustomTokenString(t *testing.T, privKeySet jwk.Set, issuer string, e
 	require.NoError(t, err)
 
 	return string(tokenBytes)
+}
+
+func testHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
+	req, err := http.NewRequest(http.MethodGet, urlString, nil)
+	require.NoError(tb, err)
+	token.SetAuthHeader(req)
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(tb, err)
+
+	defer require.NoError(tb, res.Body.Close())
+
+	require.Equal(tb, http.StatusOK, res.StatusCode)
+}
+
+func testHandlerWithAuthentication(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	token.Valid()
+	token.SetAuthHeader(req)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := restrictedHandler(c)
+	require.NoError(t, err)
+
+	res := rec.Result()
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+func testHandlerWithAuthenticationFailure(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	token.Valid()
+	token.SetAuthHeader(req)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := restrictedHandler(c)
+	require.Error(t, err)
+}
+
+func testHandlerWithIDTokenFailure(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	idToken, ok := token.Extra("id_token").(string)
+	require.True(t, ok)
+
+	token.AccessToken = idToken
+
+	token.SetAuthHeader(req)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := restrictedHandler(c)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type \"JWT+AT\" required")
 }

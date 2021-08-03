@@ -99,7 +99,7 @@ func TestNewEchoJWTParseTokenFunc(t *testing.T) {
 	}
 }
 
-func TestHandler(t *testing.T) {
+func TestEchoJWT(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
@@ -133,7 +133,7 @@ func TestHandler(t *testing.T) {
 	testHandlerWithAuthentication(t, tokenWithRotatedKey, h, e)
 }
 
-func BenchmarkHandler(b *testing.B) {
+func BenchmarkEchoJWT(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
@@ -173,7 +173,7 @@ func BenchmarkHandler(b *testing.B) {
 	}
 }
 
-func BenchmarkHandlerRequirements(b *testing.B) {
+func BenchmarkEchoJWTRequirements(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
@@ -218,7 +218,7 @@ func BenchmarkHandlerRequirements(b *testing.B) {
 	}
 }
 
-func BenchmarkHandlerHttp(b *testing.B) {
+func BenchmarkEchoJWTHttp(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
@@ -280,25 +280,13 @@ func BenchmarkHandlerHttp(b *testing.B) {
 	}
 }
 
-func testHttpRequest(t testing.TB, urlString string, token *oauth2.Token) {
-	req, err := http.NewRequest(http.MethodGet, urlString, nil)
-	require.NoError(t, err)
-	token.SetAuthHeader(req)
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-
-	defer require.NoError(t, res.Body.Close())
-
-	require.Equal(t, http.StatusOK, res.StatusCode)
-}
-
-func TestHandlerLazyLoad(t *testing.T) {
+func TestEchoJWTLazyLoad(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
 	handler := testGetEchoHandler(t)
 
-	oidcDiscoveryHandler, err := newHandler(Options{
+	oidcHandler, err := newHandler(Options{
 		Issuer:            "http://foo.bar/baz",
 		RequiredAudience:  "test-client",
 		RequiredTokenType: "JWT+AT",
@@ -308,7 +296,7 @@ func TestHandlerLazyLoad(t *testing.T) {
 
 	e := echo.New()
 	h := middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: oidcDiscoveryHandler.parseToken,
+		ParseTokenFunc: toEchoJWTParseTokenFunc(oidcHandler.parseToken),
 	})(handler)
 
 	// Test without authentication
@@ -323,13 +311,13 @@ func TestHandlerLazyLoad(t *testing.T) {
 	token := op.GetToken(t)
 	testHandlerWithAuthenticationFailure(t, token, h, e)
 
-	oidcDiscoveryHandler.issuer = op.GetURL(t)
-	oidcDiscoveryHandler.discoveryUri = getDiscoveryUriFromIssuer(op.GetURL(t))
+	oidcHandler.issuer = op.GetURL(t)
+	oidcHandler.discoveryUri = getDiscoveryUriFromIssuer(op.GetURL(t))
 
 	testHandlerWithAuthentication(t, token, h, e)
 }
 
-func TestHandlerRequirements(t *testing.T) {
+func TestEchoJWTRequirements(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
@@ -435,54 +423,6 @@ func testGetEchoHandler(t testing.TB) func(c echo.Context) error {
 
 		return c.JSON(http.StatusOK, claims)
 	}
-}
-
-func testHandlerWithAuthentication(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
-	token.Valid()
-	token.SetAuthHeader(req)
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := restrictedHandler(c)
-	require.NoError(t, err)
-
-	res := rec.Result()
-
-	require.Equal(t, http.StatusOK, res.StatusCode)
-}
-
-func testHandlerWithAuthenticationFailure(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
-	token.Valid()
-	token.SetAuthHeader(req)
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := restrictedHandler(c)
-	require.Error(t, err)
-}
-
-func testHandlerWithIDTokenFailure(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
-	idToken, ok := token.Extra("id_token").(string)
-	require.True(t, ok)
-
-	token.AccessToken = idToken
-
-	token.SetAuthHeader(req)
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := restrictedHandler(c)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type \"JWT+AT\" required")
 }
 
 func testNewEchoContext(t *testing.T) echo.Context {
