@@ -1,0 +1,24 @@
+name: GoReleaser
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.2"
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: latest
+          args: release --rm-dist
