@@ -24,6 +24,10 @@ e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 }))
 ```
 
+## Examples
+
+See [Examples readme](examples/README.md) for more information.
+
 ## Roadmap
 
 [GitHub Project](https://github.com/XenitAB/go-oidc-middleware/projects/1)
