@@ -6,9 +6,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc` to be used
-// with the `JWT` middleware.
-// See: https://openid.net/connect/
+// NewEchoJWTParseTokenFunc returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
+// to be used with the the echo `JWT` middleware.
 func NewEchoJWTParseTokenFunc(opts *Options) func(auth string, c echo.Context) (interface{}, error) {
 	h, err := newHandler(opts)
 	if err != nil {
