@@ -8,7 +8,21 @@ This is a middleware for http to make it easy to use OpenID Connect.
 
 ## Currently Supported frameworks
 
-- Echo
+### Echo (JWT ParseTokenFunc)
+
+```go
+e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+    ParseTokenFunc: oidc.NewEchoJWTParseTokenFunc(&oidc.Options{
+        Issuer:                     cfg.Issuer,
+        RequiredTokenType:          "JWT",
+        RequiredAudience:           cfg.Audience,
+        FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
+        RequiredClaims: map[string]interface{}{
+            "tid": cfg.TenantID,
+        },
+    }),
+}))
+```
 
 ## Roadmap
 
