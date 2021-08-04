@@ -1,0 +1,25 @@
+name: Coverage main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.2"
+      - name: coverage
+        run: |
+          mkdir -p tmp
+          make cover
+      - name: Send coverage to coverall
+        uses: shogo82148/actions-goveralls@v1.4.5
+        with:
+          path-to-profile: tmp/coverage.out

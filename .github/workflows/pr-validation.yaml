@@ -1,0 +1,101 @@
+name: PR Validation
+
+on: pull_request
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2.5.2
+        with:
+          version: v1.41.1
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+      - name: Run fmt
+        run: |
+          make fmt
+      - name: Check if working tree is dirty
+        run: |
+          if [[ $(git status --porcelain) ]]; then
+            git diff
+            echo 'run make fmt and commit changes'
+            exit 1
+          fi
+
+  build-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+      - name: Run build-examples
+        run: |
+          make build-examples
+      - name: Check if working tree is dirty
+        run: |
+          if [[ $(git status --porcelain) ]]; then
+            git diff
+            echo 'run make fmt and commit changes'
+            exit 1
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+      - name: Run test
+        run: |
+          make test
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+      - uses: returntocorp/semgrep-action@v1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishDeployment: 1143
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+      - name: coverage
+        run: |
+          make cover
+      - name: Send coverage to coverall
+        uses: shogo82148/actions-goveralls@v1.4.5
+        with:
+          path-to-profile: tmp/coverage.out

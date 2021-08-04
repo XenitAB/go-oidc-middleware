@@ -1,0 +1,31 @@
+project_name: go-oidc-middleware
+builds:
+- main: ./auth0/echo/main.go
+  dir: examples
+  binary: auth0-echo
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  goarch:
+  - amd64
+- main: ./azuread/echo/main.go
+  dir: examples
+  binary: azuread-echo
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  goarch:
+  - amd64
+- main: ./okta/echo/main.go
+  dir: examples
+  binary: okta-echo
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  goarch:
+  - amd64
+changelog:
+  sort: asc
