@@ -8,11 +8,10 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
@@ -27,10 +26,12 @@ func TestGetHeadersFromTokenString(t *testing.T) {
 
 	// Test with KeyID and Type
 	token1 := jwt.New()
-	token1.Set("foo", "bar")
+	err := token1.Set("foo", "bar")
+	require.NoError(t, err)
 
 	headers1 := jws.NewHeaders()
-	headers1.Set(jws.TypeKey, "JWT")
+	err = headers1.Set(jws.TypeKey, "JWT")
+	require.NoError(t, err)
 
 	signedTokenBytes1, err := jwt.Sign(token1, jwa.ES384, key, jwt.WithHeaders(headers1))
 	require.NoError(t, err)
@@ -84,7 +85,8 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 
 	// Test with KeyID
 	token1 := jwt.New()
-	token1.Set("foo", "bar")
+	err := token1.Set("foo", "bar")
+	require.NoError(t, err)
 
 	headers1 := jws.NewHeaders()
 
@@ -103,7 +105,8 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	token2 := jwt.New()
-	token2.Set("foo", "bar")
+	err = token2.Set("foo", "bar")
+	require.NoError(t, err)
 
 	headers2 := jws.NewHeaders()
 
@@ -126,10 +129,12 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 
 	// Test with Type
 	token1 := jwt.New()
-	token1.Set("foo", "bar")
+	err := token1.Set("foo", "bar")
+	require.NoError(t, err)
 
 	headers1 := jws.NewHeaders()
-	headers1.Set(jws.TypeKey, "foo")
+	err = headers1.Set(jws.TypeKey, "foo")
+	require.NoError(t, err)
 
 	signedTokenBytes1, err := jwt.Sign(token1, jwa.ES384, key, jwt.WithHeaders(headers1))
 	require.NoError(t, err)
@@ -412,7 +417,8 @@ func TestIsTokenTypeValid(t *testing.T) {
 			require.NoError(t, err)
 		} else {
 			headers := jws.NewHeaders()
-			headers.Set(jws.TypeKey, c.tokenType)
+			err = headers.Set(jws.TypeKey, c.tokenType)
+			require.NoError(t, err)
 
 			signedTokenBytes, err = jws.SignMulti([]byte(payload), jws.WithSigner(signer, key, nil, headers))
 			require.NoError(t, err)
@@ -450,10 +456,12 @@ func TestGetAndValidateTokenFromString(t *testing.T) {
 	invalidKey, invalidPubKey := testNewKey(t)
 
 	invalidToken := jwt.New()
-	invalidToken.Set("foo", "bar")
+	err = invalidToken.Set("foo", "bar")
+	require.NoError(t, err)
 
 	invalidHeaders := jws.NewHeaders()
-	invalidHeaders.Set(jws.TypeKey, "JWT")
+	err = invalidHeaders.Set(jws.TypeKey, "JWT")
+	require.NoError(t, err)
 
 	invalidTokenBytes, err := jwt.Sign(invalidToken, jwa.ES384, invalidKey, jwt.WithHeaders(invalidHeaders))
 	require.NoError(t, err)
@@ -670,7 +678,7 @@ func TestParseToken(t *testing.T) {
 
 		keySets.setKeys(testNewKeySet(t, c.numKeys, c.options.DisableKeyID))
 
-		h, err := newHandler(c.options)
+		h, err := newHandler(&c.options)
 		require.NoError(t, err)
 
 		parseTokenFunc := h.parseToken
@@ -721,7 +729,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 		JwksRateLimit: 100,
 	}
 
-	h, err := newHandler(opts)
+	h, err := newHandler(&opts)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.parseToken
@@ -770,7 +778,9 @@ func TestParseTokenWithKeyID(t *testing.T) {
 	currentKeyID := currentPrivateKey.KeyID()
 	invalidPrivKey, _ := testNewKey(t)
 
-	invalidPrivKey.Set(jwk.KeyIDKey, currentKeyID)
+	err = invalidPrivKey.Set(jwk.KeyIDKey, currentKeyID)
+	require.NoError(t, err)
+
 	invalidKeySet := jwk.NewSet()
 	invalidKeySet.Add(invalidPrivKey)
 
@@ -806,7 +816,7 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 		JwksRateLimit: 100,
 	}
 
-	h, err := newHandler(opts)
+	h, err := newHandler(&opts)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.parseToken
@@ -1256,7 +1266,6 @@ func TestIsRequiredClaimsValid(t *testing.T) {
 
 		if c.expectedResult {
 			require.NoError(t, err)
-
 		} else {
 			require.Error(t, err)
 		}
@@ -1344,6 +1353,8 @@ func TestGetSignatureAlgorithm(t *testing.T) {
 }
 
 func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
+	tb.Helper()
+
 	ecdsaKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	require.NoError(tb, err)
 
@@ -1357,7 +1368,8 @@ func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
 	require.NoError(tb, err)
 
 	keyID := fmt.Sprintf("%x", thumbprint)
-	key.Set(jwk.KeyIDKey, keyID)
+	err = key.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
 
 	pubKey, err := jwk.New(ecdsaKey.PublicKey)
 	require.NoError(tb, err)
@@ -1365,8 +1377,11 @@ func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
 	_, ok = pubKey.(jwk.ECDSAPublicKey)
 	require.True(tb, ok)
 
-	pubKey.Set(jwk.KeyIDKey, keyID)
-	pubKey.Set(jwk.AlgorithmKey, jwa.ES384)
+	err = pubKey.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	err = pubKey.Set(jwk.AlgorithmKey, jwa.ES384)
+	require.NoError(tb, err)
 
 	return key, pubKey
 }
@@ -1375,12 +1390,18 @@ func testNewTokenString(t *testing.T, privKeySet jwk.Set) string {
 	t.Helper()
 
 	jwtToken := jwt.New()
-	jwtToken.Set(jwt.IssuerKey, "http://foo.bar")
-	jwtToken.Set(jwt.ExpirationKey, time.Now().Add(1*time.Minute).Unix())
-	jwtToken.Set("foo", "bar")
+	err := jwtToken.Set(jwt.IssuerKey, "http://foo.bar")
+	require.NoError(t, err)
+
+	err = jwtToken.Set(jwt.ExpirationKey, time.Now().Add(1*time.Minute).Unix())
+	require.NoError(t, err)
+
+	err = jwtToken.Set("foo", "bar")
+	require.NoError(t, err)
 
 	headers := jws.NewHeaders()
-	headers.Set(jws.TypeKey, "JWT")
+	err = headers.Set(jws.TypeKey, "JWT")
+	require.NoError(t, err)
 
 	privKey, found := privKeySet.Get(0)
 	require.True(t, found)
@@ -1395,15 +1416,21 @@ func testNewCustomTokenString(t *testing.T, privKeySet jwk.Set, issuer string, e
 	t.Helper()
 
 	jwtToken := jwt.New()
-	jwtToken.Set(jwt.IssuerKey, issuer)
-	jwtToken.Set(jwt.ExpirationKey, time.Now().Add(time.Duration(expirationMinutes)*time.Minute).Unix())
+	err := jwtToken.Set(jwt.IssuerKey, issuer)
+	require.NoError(t, err)
+
+	err = jwtToken.Set(jwt.ExpirationKey, time.Now().Add(time.Duration(expirationMinutes)*time.Minute).Unix())
+	require.NoError(t, err)
 
 	for k, v := range customClaims {
-		jwtToken.Set(k, v)
+		err := jwtToken.Set(k, v)
+		require.NoError(t, err)
 	}
 
 	headers := jws.NewHeaders()
-	headers.Set(jws.TypeKey, "JWT")
+
+	err = headers.Set(jws.TypeKey, "JWT")
+	require.NoError(t, err)
 
 	privKey, found := privKeySet.Get(0)
 	require.True(t, found)
@@ -1415,6 +1442,8 @@ func testNewCustomTokenString(t *testing.T, privKeySet jwk.Set, issuer string, e
 }
 
 func testHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
+	tb.Helper()
+
 	req, err := http.NewRequest(http.MethodGet, urlString, nil)
 	require.NoError(tb, err)
 	token.SetAuthHeader(req)
@@ -1426,50 +1455,32 @@ func testHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
 	require.Equal(tb, http.StatusOK, res.StatusCode)
 }
 
-func testHandlerWithAuthentication(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+func benchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token, fn func(token *oauth2.Token)) {
+	b.Helper()
 
-	token.Valid()
-	token.SetAuthHeader(req)
+	concurrencyLevels := []int{5, 10, 20, 50}
+	for _, clients := range concurrencyLevels {
+		b.Run(fmt.Sprintf("%d_clients", clients), func(b *testing.B) {
+			var tokens []*oauth2.Token
+			for i := 0; i < b.N; i++ {
+				tokens = append(tokens, getToken(b))
+			}
 
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+			b.ResetTimer()
 
-	err := restrictedHandler(c)
-	require.NoError(t, err)
-
-	res := rec.Result()
-
-	require.Equal(t, http.StatusOK, res.StatusCode)
-}
-
-func testHandlerWithAuthenticationFailure(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
-	token.Valid()
-	token.SetAuthHeader(req)
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := restrictedHandler(c)
-	require.Error(t, err)
-}
-
-func testHandlerWithIDTokenFailure(t testing.TB, token *oauth2.Token, restrictedHandler echo.HandlerFunc, e *echo.Echo) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
-	idToken, ok := token.Extra("id_token").(string)
-	require.True(t, ok)
-
-	token.AccessToken = idToken
-
-	token.SetAuthHeader(req)
-
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := restrictedHandler(c)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type \"JWT+AT\" required")
+			var wg sync.WaitGroup
+			ch := make(chan int, clients)
+			for i := 0; i < b.N; i++ {
+				token := tokens[i]
+				wg.Add(1)
+				ch <- 1
+				go func() {
+					defer wg.Done()
+					fn(token)
+					<-ch
+				}()
+			}
+			wg.Wait()
+		})
+	}
 }

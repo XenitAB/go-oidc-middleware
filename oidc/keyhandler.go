@@ -56,7 +56,7 @@ func (h *keyHandler) updateKeySet(ctx context.Context) (jwk.Set, error) {
 	defer cancel()
 	keySet, err := jwk.Fetch(ctx, h.jwksURI, jwk.WithHTTPClient(h.httpClient))
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch keys from %q: %v", h.jwksURI, err)
+		return nil, fmt.Errorf("unable to fetch keys from %q: %w", h.jwksURI, err)
 	}
 
 	if h.disableKeyID && keySet.Len() != 1 {
@@ -65,15 +65,15 @@ func (h *keyHandler) updateKeySet(ctx context.Context) (jwk.Set, error) {
 
 	h.Lock()
 	h.keySet = keySet
-	h.keyUpdateCount = h.keyUpdateCount + 1
+	h.keyUpdateCount++
 	h.Unlock()
 
 	return keySet, nil
 }
 
-// waitForUpdateKeySetSet handles concurrent requests to update the jwks as well as rate limiting
+// waitForUpdateKeySetSet handles concurrent requests to update the jwks as well as rate limiting.
 func (h *keyHandler) waitForUpdateKeySetAndGetKeySet(ctx context.Context) (jwk.Set, error) {
-	// ok will be false if there's already an update in progress
+	// ok will be false if there's already an update in progress.
 	ok := h.keyUpdateSemaphore.TryAcquire(1)
 	if ok {
 		defer h.keyUpdateSemaphore.Release(1)
@@ -85,9 +85,9 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKeySet(ctx context.Context) (jwk.S
 			err,
 		}
 
-		// start go routine to handle all requests waiting for result
+		// start go routine to handle all requests waiting for result.
 		go func(res keyUpdate) {
-			// for each request waiting for update, send result to them
+			// for each request waiting for update, send result to them.
 			for {
 				select {
 				case h.keyUpdateChannel <- res:
@@ -141,7 +141,7 @@ func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string) (jwk.Key, e
 	if !found {
 		updatedKeySet, err := h.waitForUpdateKeySetAndGetKeySet(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("unable to update key set for key %q: %v", keyID, err)
+			return nil, fmt.Errorf("unable to update key set for key %q: %w", keyID, err)
 		}
 
 		updatedKey, found := updatedKeySet.LookupKeyID(keyID)

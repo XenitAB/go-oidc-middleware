@@ -71,23 +71,23 @@ linters-settings:
     max-blank-identifiers: 2
 
   cyclop:
-    max-complexity: 15
+    max-complexity: 20
     package-average: 0.0
     skip-tests: true
 
   exhaustive:
     check-generated: false
-    default-signifies-exhaustive: false
+    default-signifies-exhaustive: true
 
   funlen:
     lines: 95
     statements: 50
 
   gocognit:
-    min-complexity: 15
+    min-complexity: 35
 
   nestif:
-    min-complexity: 5
+    min-complexity: 10
 
   goconst:
     min-len: 3
@@ -139,7 +139,7 @@ linters-settings:
     severity: warning
 
   lll:
-    line-length: 140
+    line-length: 150
     tab-width: 1
 
   makezero:
@@ -191,6 +191,8 @@ issues:
         - gocognit
         - unparam
         - lll
+        - goconst
+        - dupl
     - path: examples/
       linters:
         - lll

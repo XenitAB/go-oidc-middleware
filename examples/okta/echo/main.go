@@ -36,7 +36,7 @@ func run(cfg config) error {
 	e.Use(middleware.Secure())
 
 	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: oidc.NewEchoJWTParseTokenFunc(oidc.Options{
+		ParseTokenFunc: oidc.NewEchoJWTParseTokenFunc(&oidc.Options{
 			Issuer:                     cfg.Issuer,
 			FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
 			RequiredClaims: map[string]interface{}{

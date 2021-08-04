@@ -64,8 +64,8 @@ func isCtyListValid(a cty.Value, b cty.Value) bool {
 	listA := a.AsValueSlice()
 	listB := b.AsValueSlice()
 
-	for _, v := range listA {
-		if !ctyListContains(listB, v) {
+	for i := range listA {
+		if !ctyListContains(listB, listA[i]) {
 			return false
 		}
 	}
@@ -85,25 +85,24 @@ func isCtyMapValid(a cty.Value, b cty.Value) bool {
 	mapA := a.AsValueMap()
 	mapB := b.AsValueMap()
 
-	for k, v := range mapA {
+	for k := range mapA {
 		mapBValue, ok := mapB[k]
 		if !ok {
 			return false
 		}
 
-		err := isCtyValueValid(v, mapBValue)
+		err := isCtyValueValid(mapA[k], mapBValue)
 		if err != nil {
 			return false
 		}
-
 	}
 
 	return true
 }
 
 func ctyListContains(a []cty.Value, b cty.Value) bool {
-	for _, v := range a {
-		err := isCtyValueValid(v, b)
+	for i := range a {
+		err := isCtyValueValid(a[i], b)
 		if err == nil {
 			return true
 		}

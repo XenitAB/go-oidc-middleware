@@ -291,7 +291,8 @@ func testNewJwksServer(t *testing.T, keySets *testKeySets) *httptest.Server {
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(keySets.publicKeySet)
+		err := json.NewEncoder(w).Encode(keySets.publicKeySet)
+		require.NoError(t, err)
 	}))
 
 	return testServer
@@ -322,8 +323,11 @@ func testNewKeySet(t *testing.T, numKeys int, disableKeyID bool) (jwk.Set, jwk.S
 		privKey, pubKey := testNewKey(t)
 
 		if disableKeyID {
-			privKey.Remove(jwk.KeyIDKey)
-			pubKey.Remove(jwk.KeyIDKey)
+			err := privKey.Remove(jwk.KeyIDKey)
+			require.NoError(t, err)
+
+			err = pubKey.Remove(jwk.KeyIDKey)
+			require.NoError(t, err)
 		}
 
 		privKeySet.Add(privKey)

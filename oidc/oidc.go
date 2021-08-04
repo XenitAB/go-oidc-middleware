@@ -16,7 +16,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
-// Options defines the options for OIDC Discovery for the `ParseTokenFunc` for the `JWT` middleware
+// Options defines the options for OIDC Middleware.
 type Options struct {
 	// Issuer is the authority that issues the tokens
 	Issuer string
@@ -64,7 +64,7 @@ type Options struct {
 	// RequiredTokenType is used if only specific tokens should be allowed.
 	// Default is empty string `""` and means all token types are allowed.
 	// Use case could be to configure this if the TokenType (set in the header of the JWT)
-	// should be `JWT` or maybe even `JWT+AT` to diffirentiate between access tokens and
+	// should be `JWT` or maybe even `JWT+AT` to differentiate between access tokens and
 	// id tokens. Not all providers support or use this.
 	RequiredTokenType string
 
@@ -128,7 +128,7 @@ type handler struct {
 	keyHandler *keyHandler
 }
 
-func newHandler(opts Options) (*handler, error) {
+func newHandler(opts *Options) (*handler, error) {
 	h := &handler{
 		issuer:            opts.Issuer,
 		discoveryUri:      opts.DiscoveryUri,
@@ -468,9 +468,9 @@ func getSignatureAlgorithm(kty jwa.KeyType, keyAlg string, fallbackAlg jwa.Signa
 		return jwa.RS256, nil
 	case jwa.EC:
 		return jwa.ES256, nil
+	default:
+		return "", fmt.Errorf("unable to get signature algorithm with kty=%s, alg=%s, fallbackAlg=%s", kty, keyAlg, fallbackAlg)
 	}
-
-	return "", fmt.Errorf("unable to get signature algorithm with kty=%s, alg=%s, fallbackAlg=%s", kty, keyAlg, fallbackAlg)
 }
 
 func getSignatureAlgorithmFromString(s string) (jwa.SignatureAlgorithm, error) {
