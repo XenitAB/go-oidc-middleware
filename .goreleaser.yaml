@@ -1,5 +1,5 @@
 project_name: go-oidc-middleware
 builds:
-  skip: true
+  - skip: true
 changelog:
   sort: asc
