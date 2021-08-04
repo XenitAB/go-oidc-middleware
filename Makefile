@@ -10,7 +10,7 @@ endif
 
 .PHONY: all
 .SILENT: all
-all: tidy lint fmt vet test build-examples
+all: tidy lint fmt vet staticcheck test build-examples
 
 .PHONY: lint
 .SILENT: lint
@@ -32,20 +32,32 @@ tidy:
 vet:
 	go vet ./...
 
+.PHONY: staticcheck
+.SILENT: staticcheck
+staticcheck:
+	go get -u honnef.co/go/tools/cmd/staticcheck@latest
+	staticcheck ./...
+
 .SILENT: test
 .PHONY: test
 test: fmt vet
-	go test -timeout 1m ./... -cover
+	go test -timeout 30s ./... -cover
+
+.SILENT: test-race
+.PHONY: test-race
+test-race: fmt vet staticcheck
+	mkdir -p tmp/
+	go test -race --coverprofile=tmp/coverage.out --covermode=atomic ./...
 
 .SILENT: bench
 .PHONY: bench
 bench: fmt vet test
-	go test -timeout 4m -benchmem -bench ^Benchmark ./...
+	go test -timeout 4m -run="-" -bench=".*" ./...
 
 .PHONY: cover
 .SILENT: cover
 cover:
-	mkdir tmp/
+	mkdir -p tmp/
 	go test -timeout 1m -coverpkg=./... -coverprofile=tmp/coverage.out ./...
 	go tool cover -html=tmp/coverage.out	
 
@@ -54,6 +66,9 @@ cover:
 build-examples:
 	set -e
 	cd examples/
+	go mod tidy
+	go fmt ./...
+	go vet ./...
 	echo build-examples: Start	
 	EXAMPLES=$$(find -name main.go -type f)
 	for EXAMPLE in $${EXAMPLES}; do

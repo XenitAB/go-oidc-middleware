@@ -1,0 +1,58 @@
+name: PR Validation
+
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Run Tests
+        run: |
+          make test-race
+
+  benchmark:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+
+      - name: Checkout Code (Previous)
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.base_ref }}
+          path: previous
+
+      - name: Checkout Code (New)
+        uses: actions/checkout@v2
+        with:
+          path: new
+
+      - name: Install Dependencies
+        run: go get -v golang.org/x/perf/cmd/benchstat
+
+      - name: Run Benchmark (Previous)
+        run: |
+          cd previous
+          go test -run="-" -bench=".*" ./... > benchmark.txt
+
+      - name: Run Benchmark (New)
+        run: |
+          cd new
+          go test -run="-" -bench=".*" ./... > benchmark.txt
+
+      - name: Run Benchstat
+        run: |
+          benchstat previous/benchmark.txt new/benchmark.txt
