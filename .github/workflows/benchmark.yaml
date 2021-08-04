@@ -1,4 +1,4 @@
-name: PR Validation
+name: Benchmark
 
 on: pull_request
 
