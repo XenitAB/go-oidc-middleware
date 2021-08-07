@@ -147,13 +147,14 @@ func TestUpdate(t *testing.T) {
 	require.Equal(t, 6, keyHandler.keyUpdateCount)
 
 	// test rate limit
+	time.Sleep(10 * time.Millisecond)
 	start := time.Now()
 	_, err = keyHandler.waitForUpdateKeySetAndGetKeySet(ctx)
 	require.NoError(t, err)
 	stop := time.Now()
 	expectedStop := start.Add(time.Second / time.Duration(rateLimit))
 
-	require.WithinDuration(t, expectedStop, stop, 4*time.Millisecond)
+	require.WithinDuration(t, expectedStop, stop, 6*time.Millisecond)
 
 	require.Equal(t, 7, keyHandler.keyUpdateCount)
 }
