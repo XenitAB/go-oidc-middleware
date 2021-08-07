@@ -2,6 +2,7 @@
 SHELL := /bin/bash
 
 TEST_PACKAGES = $(shell go list ./... | grep -v "internal/oidctesting")
+TEST_PACKAGES_CSV = $(shell echo -n $(TEST_PACKAGES) | sed "s/ /,/g")
 
 .PHONY: all
 .SILENT: all
@@ -53,7 +54,7 @@ bench: fmt vet test
 .SILENT: cover
 cover:
 	mkdir -p tmp/
-	go test -timeout 1m -coverpkg=./... -coverprofile=tmp/coverage.out $(TEST_PACKAGES)
+	go test -timeout 1m -coverpkg=$(TEST_PACKAGES_CSV) -coverprofile=tmp/coverage.out $(TEST_PACKAGES)
 	go tool cover -html=tmp/coverage.out	
 
 .PHONY: build-examples
