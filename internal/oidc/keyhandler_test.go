@@ -19,7 +19,7 @@ func TestNewKeyHandler(t *testing.T) {
 
 	op := server.NewTesting(t)
 	issuer := op.GetURL(t)
-	discoveryUri := getDiscoveryUriFromIssuer(issuer)
+	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestUpdate(t *testing.T) {
 
 	op := server.NewTesting(t)
 	issuer := op.GetURL(t)
-	discoveryUri := getDiscoveryUriFromIssuer(issuer)
+	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
 

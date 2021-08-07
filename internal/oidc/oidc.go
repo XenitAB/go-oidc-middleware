@@ -128,7 +128,7 @@ type handler struct {
 	keyHandler *keyHandler
 }
 
-func newHandler(opts *Options) (*handler, error) {
+func NewHandler(opts *Options) (*handler, error) {
 	h := &handler{
 		issuer:            opts.Issuer,
 		discoveryUri:      opts.DiscoveryUri,
@@ -147,7 +147,7 @@ func newHandler(opts *Options) (*handler, error) {
 		return nil, fmt.Errorf("issuer is empty")
 	}
 	if h.discoveryUri == "" {
-		h.discoveryUri = getDiscoveryUriFromIssuer(h.issuer)
+		h.discoveryUri = GetDiscoveryUriFromIssuer(h.issuer)
 	}
 	if h.jwksFetchTimeout == 0 {
 		h.jwksFetchTimeout = 5 * time.Second
@@ -199,9 +199,17 @@ func (h *handler) loadJwks() error {
 	return nil
 }
 
-type parseTokenFunc func(ctx context.Context, tokenString string) (jwt.Token, error)
+func (h *handler) SetIssuer(issuer string) {
+	h.issuer = issuer
+}
 
-func (h *handler) parseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
+func (h *handler) SetDiscoveryUri(discoveryUri string) {
+	h.discoveryUri = discoveryUri
+}
+
+type ParseTokenFunc func(ctx context.Context, tokenString string) (jwt.Token, error)
+
+func (h *handler) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
 	if h.keyHandler == nil {
 		err := h.loadJwks()
 		if err != nil {
@@ -285,7 +293,7 @@ func (h *handler) parseToken(ctx context.Context, tokenString string) (jwt.Token
 	return token, nil
 }
 
-func getDiscoveryUriFromIssuer(issuer string) string {
+func GetDiscoveryUriFromIssuer(issuer string) string {
 	return fmt.Sprintf("%s/.well-known/openid-configuration", strings.TrimSuffix(issuer, "/"))
 }
 

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/cristalhq/aconfig"
-	"github.com/xenitab/go-oidc-middleware/oidc"
+	"github.com/xenitab/go-oidc-middleware/oidchttp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -40,11 +40,13 @@ func run(cfg config) error {
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGPIPE)
 
 	h := getClaimsHandler()
-	oidcHandler := oidc.NewNetHttpHandler(h, &oidc.Options{
+	oidcHandler := oidchttp.New(h, &oidchttp.Options{
 		Issuer:                     cfg.Issuer,
+		RequiredTokenType:          "JWT",
+		RequiredAudience:           cfg.Audience,
 		FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
 		RequiredClaims: map[string]interface{}{
-			"cid": cfg.ClientID,
+			"azp": cfg.ClientID,
 		},
 	})
 
@@ -90,7 +92,7 @@ func run(cfg config) error {
 
 func getClaimsHandler() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(oidc.ClaimsContextKey).(map[string]interface{})
+		claims, ok := r.Context().Value(oidchttp.ClaimsContextKey).(map[string]interface{})
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -111,7 +113,8 @@ type config struct {
 	Address                    string `flag:"address" env:"ADDRESS" default:"127.0.0.1" usage:"address webserver will listen to"`
 	Port                       int    `flag:"port" env:"PORT" default:"8080" usage:"port webserver will listen to"`
 	Issuer                     string `flag:"token-issuer" env:"TOKEN_ISSUER" usage:"the oidc issuer url for tokens"`
-	ClientID                   string `flag:"client-id" env:"CLIENT_ID" usage:"the client id (cid) that tokens need to contain"`
+	Audience                   string `flag:"token-audience" env:"TOKEN_AUDIENCE" usage:"the audience that tokens need to contain"`
+	ClientID                   string `flag:"client-id" env:"CLIENT_ID" usage:"the client id that tokens need to contain"`
 	FallbackSignatureAlgorithm string `flag:"fallback-signature-algorithm" env:"FALLBACK_SIGNATURE_ALGORITHM" default:"RS256" usage:"if the issue jwks doesn't contain key alg, use the following signature algorithm to verify the signature of the tokens"`
 }
 

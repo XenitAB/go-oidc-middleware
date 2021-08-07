@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lestrrat-go/jwx/jwt"
-	"github.com/xenitab/go-oidc-middleware/oidc"
+	"github.com/xenitab/go-oidc-middleware/oidcechojwt"
 )
 
 func main() {
@@ -36,7 +36,7 @@ func run(cfg config) error {
 	e.Use(middleware.Secure())
 
 	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: oidc.NewEchoJWTParseTokenFunc(&oidc.Options{
+		ParseTokenFunc: oidcechojwt.New(&oidcechojwt.Options{
 			Issuer:                     cfg.Issuer,
 			RequiredTokenType:          "JWT",
 			RequiredAudience:           cfg.Audience,

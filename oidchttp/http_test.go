@@ -1,4 +1,4 @@
-package oidc
+package oidchttp
 
 import (
 	"encoding/json"
@@ -8,10 +8,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
+	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
 	"golang.org/x/oauth2"
 )
 
-func TestNewNetHttpMiddleware(t *testing.T) {
+func TestNewHttpMiddleware(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
@@ -81,25 +83,25 @@ func TestNewNetHttpMiddleware(t *testing.T) {
 		},
 	}
 
-	h := testGetNetHttpHandler(t)
+	h := testGetHttpHandler(t)
 
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 		if c.expectPanic {
-			require.Panics(t, func() { NewNetHttpHandler(h, &c.config) })
+			require.Panics(t, func() { New(h, &c.config) })
 		} else {
-			require.NotPanics(t, func() { NewNetHttpHandler(h, &c.config) })
+			require.NotPanics(t, func() { New(h, &c.config) })
 		}
 	}
 }
 
-func TestNetHttp(t *testing.T) {
+func TestHttp(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
-	h := testGetNetHttpHandler(t)
+	h := testGetHttpHandler(t)
 
-	handler := NewNetHttpHandler(h, &Options{
+	handler := New(h, &Options{
 		Issuer:            op.GetURL(t),
 		RequiredAudience:  "test-client",
 		RequiredTokenType: "JWT+AT",
@@ -114,20 +116,20 @@ func TestNetHttp(t *testing.T) {
 
 	// Test with authentication
 	token := op.GetToken(t)
-	testNetHttpWithAuthentication(t, token, handler)
-	testNetHttpWithIDTokenFailure(t, token, handler)
+	testHttpWithAuthentication(t, token, handler)
+	testHttpWithIDTokenFailure(t, token, handler)
 
 	// Test with rotated key
 	op.RotateKeys(t)
 	tokenWithRotatedKey := op.GetToken(t)
-	testNetHttpWithAuthentication(t, tokenWithRotatedKey, handler)
+	testHttpWithAuthentication(t, tokenWithRotatedKey, handler)
 }
 
-func TestNetHttpLazyLoad(t *testing.T) {
+func TestHttpLazyLoad(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
-	oidcHandler, err := newHandler(&Options{
+	oidcHandler, err := oidc.NewHandler(&oidc.Options{
 		Issuer:            "http://foo.bar/baz",
 		RequiredAudience:  "test-client",
 		RequiredTokenType: "JWT+AT",
@@ -135,9 +137,9 @@ func TestNetHttpLazyLoad(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h := testGetNetHttpHandler(t)
+	h := testGetHttpHandler(t)
 
-	handler := toNetHttpHandler(h, oidcHandler.parseToken)
+	handler := toHttpHandler(h, oidcHandler.ParseToken)
 
 	// Test without authentication
 	reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -148,15 +150,15 @@ func TestNetHttpLazyLoad(t *testing.T) {
 
 	// Test with authentication
 	token := op.GetToken(t)
-	testNetHttpWithAuthenticationFailure(t, token, handler)
+	testHttpWithAuthenticationFailure(t, token, handler)
 
-	oidcHandler.issuer = op.GetURL(t)
-	oidcHandler.discoveryUri = getDiscoveryUriFromIssuer(op.GetURL(t))
+	oidcHandler.SetIssuer(op.GetURL(t))
+	oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(op.GetURL(t)))
 
-	testNetHttpWithAuthentication(t, token, handler)
+	testHttpWithAuthentication(t, token, handler)
 }
 
-func TestNetHttpRequirements(t *testing.T) {
+func TestHttpRequirements(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
@@ -229,14 +231,14 @@ func TestNetHttpRequirements(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 
-		h := testGetNetHttpHandler(t)
-		handler := NewNetHttpHandler(h, &c.options)
+		h := testGetHttpHandler(t)
+		handler := New(h, &c.options)
 		token := op.GetToken(t)
 
 		if c.succeeds {
-			testNetHttpWithAuthentication(t, token, handler)
+			testHttpWithAuthentication(t, token, handler)
 		} else {
-			testNetHttpWithAuthenticationFailure(t, token, handler)
+			testHttpWithAuthenticationFailure(t, token, handler)
 		}
 	}
 }
@@ -333,28 +335,28 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 	}
 }
 
-func BenchmarkNetHttp(b *testing.B) {
+func BenchmarkHttp(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
-	h := testGetNetHttpHandler(b)
-	handler := NewNetHttpHandler(h, &Options{
+	h := testGetHttpHandler(b)
+	handler := New(h, &Options{
 		Issuer: op.GetURL(b),
 	})
 
 	fn := func(token *oauth2.Token) {
-		testNetHttpWithAuthentication(b, token, handler)
+		testHttpWithAuthentication(b, token, handler)
 	}
 
-	benchmarkConcurrent(b, op.GetToken, fn)
+	oidctesting.BenchmarkConcurrent(b, op.GetToken, fn)
 }
 
-func BenchmarkNetHttpRequirements(b *testing.B) {
+func BenchmarkHttpRequirements(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
-	h := testGetNetHttpHandler(b)
-	handler := NewNetHttpHandler(h, &Options{
+	h := testGetHttpHandler(b)
+	handler := New(h, &Options{
 		Issuer:            op.GetURL(b),
 		RequiredTokenType: "JWT+AT",
 		RequiredAudience:  "test-client",
@@ -364,18 +366,18 @@ func BenchmarkNetHttpRequirements(b *testing.B) {
 	})
 
 	fn := func(token *oauth2.Token) {
-		testNetHttpWithAuthentication(b, token, handler)
+		testHttpWithAuthentication(b, token, handler)
 	}
 
-	benchmarkConcurrent(b, op.GetToken, fn)
+	oidctesting.BenchmarkConcurrent(b, op.GetToken, fn)
 }
 
-func BenchmarkNetHttpHttp(b *testing.B) {
+func BenchmarkHttpHttp(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
-	h := testGetNetHttpHandler(b)
-	handler := NewNetHttpHandler(h, &Options{
+	h := testGetHttpHandler(b)
+	handler := New(h, &Options{
 		Issuer: op.GetURL(b),
 	})
 
@@ -383,13 +385,13 @@ func BenchmarkNetHttpHttp(b *testing.B) {
 	defer testServer.Close()
 
 	fn := func(token *oauth2.Token) {
-		testHttpRequest(b, testServer.URL, token)
+		oidctesting.TestHttpRequest(b, testServer.URL, token)
 	}
 
-	benchmarkConcurrent(b, op.GetToken, fn)
+	oidctesting.BenchmarkConcurrent(b, op.GetToken, fn)
 }
 
-func testGetNetHttpHandler(tb testing.TB) http.Handler {
+func testGetHttpHandler(tb testing.TB) http.Handler {
 	tb.Helper()
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
@@ -410,7 +412,7 @@ func testGetNetHttpHandler(tb testing.TB) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func testNetHttpWithAuthentication(tb testing.TB, token *oauth2.Token, handler http.Handler) {
+func testHttpWithAuthentication(tb testing.TB, token *oauth2.Token, handler http.Handler) {
 	tb.Helper()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -426,7 +428,7 @@ func testNetHttpWithAuthentication(tb testing.TB, token *oauth2.Token, handler h
 	require.Equal(tb, http.StatusOK, res.StatusCode)
 }
 
-func testNetHttpWithAuthenticationFailure(tb testing.TB, token *oauth2.Token, handler http.Handler) {
+func testHttpWithAuthenticationFailure(tb testing.TB, token *oauth2.Token, handler http.Handler) {
 	tb.Helper()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -442,7 +444,7 @@ func testNetHttpWithAuthenticationFailure(tb testing.TB, token *oauth2.Token, ha
 	require.Equal(tb, http.StatusUnauthorized, res.StatusCode)
 }
 
-func testNetHttpWithIDTokenFailure(tb testing.TB, token *oauth2.Token, handler http.Handler) {
+func testHttpWithIDTokenFailure(tb testing.TB, token *oauth2.Token, handler http.Handler) {
 	tb.Helper()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

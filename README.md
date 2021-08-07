@@ -10,11 +10,15 @@ This is a middleware for http to make it easy to use OpenID Connect.
 
 ### Echo (JWT ParseTokenFunc)
 
+**Import**
+
+`"github.com/xenitab/go-oidc-middleware/oidcechojwt"`
+
 **Middleware**
 
 ```go
 e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-    ParseTokenFunc: oidc.NewEchoJWTParseTokenFunc(&oidc.Options{
+    ParseTokenFunc: oidcechojwt.New(&oidcechojwt.Options{
         Issuer:                     cfg.Issuer,
         RequiredTokenType:          "JWT",
         RequiredAudience:           cfg.Audience,
@@ -46,10 +50,14 @@ func getClaimsHandler(c echo.Context) error {
 
 ### net/http & mux
 
+**Import**
+
+`"github.com/xenitab/go-oidc-middleware/oidchttp"`
+
 **Middleware**
 
 ```go
-oidcHandler := oidc.NewNetHttpHandler(h, &oidc.Options{
+oidcHandler := oidchttp.New(h, &oidchttp.Options{
     Issuer:                     cfg.Issuer,
     RequiredTokenType:          "JWT",
     RequiredAudience:           cfg.Audience,
@@ -65,7 +73,7 @@ oidcHandler := oidc.NewNetHttpHandler(h, &oidc.Options{
 ```go
 func getClaimsHandler() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(oidc.ClaimsContextKey).(map[string]interface{})
+		claims, ok := r.Context().Value(oidchttp.ClaimsContextKey).(map[string]interface{})
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
