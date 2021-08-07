@@ -25,3 +25,7 @@ There's a CLI utility that makes it easy to use the different OpenID Providers (
 ### Auth0
 
 [Auth0 Readme](auth0/README.md)
+
+### Cognito
+
+[Cognito Readme](cognito/README.md)
