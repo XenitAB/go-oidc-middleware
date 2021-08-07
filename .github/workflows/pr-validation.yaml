@@ -100,3 +100,4 @@ jobs:
         uses: shogo82148/actions-goveralls@v1.4.5
         with:
           path-to-profile: tmp/coverage.out
+          ignore: internal/oidctesting
