@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xenitab/go-oidc-middleware/oidcechojwt"
+	"github.com/xenitab/go-oidc-middleware/oidchttp"
 )
 
 func main() {
@@ -23,7 +23,8 @@ func main() {
 }
 
 func run(cfg shared.AzureADConfig) error {
-	parseToken := oidcechojwt.New(&oidcechojwt.Options{
+	h := shared.NewHttpClaimsHandler()
+	oidcHandler := oidchttp.New(h, &oidchttp.Options{
 		Issuer:                     cfg.Issuer,
 		RequiredTokenType:          "JWT",
 		RequiredAudience:           cfg.Audience,
@@ -33,5 +34,5 @@ func run(cfg shared.AzureADConfig) error {
 		},
 	})
 
-	return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
+	return shared.RunHttp(oidcHandler, cfg.Address, cfg.Port)
 }

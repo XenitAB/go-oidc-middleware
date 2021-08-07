@@ -3,7 +3,7 @@ module github.com/xenitab/go-oidc-middleware
 go 1.16
 
 require (
-	github.com/BurntSushi/toml v0.4.0 // indirect
+	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/lestrrat-go/jwx v1.2.4
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
@@ -13,7 +13,7 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
 	golang.org/x/tools v0.1.5 // indirect
 	honnef.co/go/tools v0.2.0 // indirect
 )

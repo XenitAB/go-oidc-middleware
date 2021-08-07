@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xenitab/go-oidc-middleware/oidcechojwt"
+	"github.com/xenitab/go-oidc-middleware/oidchttp"
 )
 
 func main() {
-	cfg, err := shared.NewAzureADConfig()
+	cfg, err := shared.NewOktaConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load config: %v\n", err)
 		os.Exit(1)
@@ -22,16 +22,15 @@ func main() {
 	}
 }
 
-func run(cfg shared.AzureADConfig) error {
-	parseToken := oidcechojwt.New(&oidcechojwt.Options{
+func run(cfg shared.OktaConfig) error {
+	h := shared.NewHttpClaimsHandler()
+	oidcHandler := oidchttp.New(h, &oidchttp.Options{
 		Issuer:                     cfg.Issuer,
-		RequiredTokenType:          "JWT",
-		RequiredAudience:           cfg.Audience,
 		FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
 		RequiredClaims: map[string]interface{}{
-			"tid": cfg.TenantID,
+			"cid": cfg.ClientID,
 		},
 	})
 
-	return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
+	return shared.RunHttp(oidcHandler, cfg.Address, cfg.Port)
 }

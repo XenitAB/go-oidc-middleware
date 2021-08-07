@@ -1,4 +1,4 @@
-package oidc
+package oidcechojwt
 
 import (
 	"context"
@@ -15,10 +15,12 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
+	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
 	"golang.org/x/oauth2"
 )
 
-func TestNewEchoJWTParseTokenFunc(t *testing.T) {
+func TestNew(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
@@ -91,9 +93,9 @@ func TestNewEchoJWTParseTokenFunc(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 		if c.expectPanic {
-			require.Panics(t, func() { NewEchoJWTParseTokenFunc(&c.config) })
+			require.Panics(t, func() { New(&c.config) })
 		} else {
-			require.NotPanics(t, func() { NewEchoJWTParseTokenFunc(&c.config) })
+			require.NotPanics(t, func() { New(&c.config) })
 		}
 	}
 }
@@ -106,7 +108,7 @@ func TestEchoJWT(t *testing.T) {
 
 	e := echo.New()
 	h := middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: NewEchoJWTParseTokenFunc(&Options{
+		ParseTokenFunc: New(&Options{
 			Issuer:            op.GetURL(t),
 			RequiredAudience:  "test-client",
 			RequiredTokenType: "JWT+AT",
@@ -138,7 +140,7 @@ func TestEchoJWTLazyLoad(t *testing.T) {
 
 	handler := testGetEchoHandler(t)
 
-	oidcHandler, err := newHandler(&Options{
+	oidcHandler, err := oidc.NewHandler(&oidc.Options{
 		Issuer:            "http://foo.bar/baz",
 		RequiredAudience:  "test-client",
 		RequiredTokenType: "JWT+AT",
@@ -148,7 +150,7 @@ func TestEchoJWTLazyLoad(t *testing.T) {
 
 	e := echo.New()
 	h := middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: toEchoJWTParseTokenFunc(oidcHandler.parseToken),
+		ParseTokenFunc: toEchoJWTParseTokenFunc(oidcHandler.ParseToken),
 	})(handler)
 
 	// Test without authentication
@@ -163,8 +165,8 @@ func TestEchoJWTLazyLoad(t *testing.T) {
 	token := op.GetToken(t)
 	testEchoJWTWithAuthenticationFailure(t, token, h, e)
 
-	oidcHandler.issuer = op.GetURL(t)
-	oidcHandler.discoveryUri = getDiscoveryUriFromIssuer(op.GetURL(t))
+	oidcHandler.SetIssuer(op.GetURL(t))
+	oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(op.GetURL(t)))
 
 	testEchoJWTWithAuthentication(t, token, h, e)
 }
@@ -246,7 +248,7 @@ func TestEchoJWTRequirements(t *testing.T) {
 
 		e := echo.New()
 		h := middleware.JWTWithConfig(middleware.JWTConfig{
-			ParseTokenFunc: NewEchoJWTParseTokenFunc(&c.options),
+			ParseTokenFunc: New(&c.options),
 		})(handler)
 
 		token := op.GetToken(t)
@@ -267,7 +269,7 @@ func BenchmarkEchoJWT(b *testing.B) {
 
 	e := echo.New()
 	h := middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: NewEchoJWTParseTokenFunc(&Options{
+		ParseTokenFunc: New(&Options{
 			Issuer: op.GetURL(b),
 		}),
 	})(handler)
@@ -276,7 +278,7 @@ func BenchmarkEchoJWT(b *testing.B) {
 		testEchoJWTWithAuthentication(b, token, h, e)
 	}
 
-	benchmarkConcurrent(b, op.GetToken, fn)
+	oidctesting.BenchmarkConcurrent(b, op.GetToken, fn)
 }
 
 func BenchmarkEchoJWTRequirements(b *testing.B) {
@@ -287,7 +289,7 @@ func BenchmarkEchoJWTRequirements(b *testing.B) {
 
 	e := echo.New()
 	h := middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: NewEchoJWTParseTokenFunc(&Options{
+		ParseTokenFunc: New(&Options{
 			Issuer:            op.GetURL(b),
 			RequiredTokenType: "JWT+AT",
 			RequiredAudience:  "test-client",
@@ -301,7 +303,7 @@ func BenchmarkEchoJWTRequirements(b *testing.B) {
 		testEchoJWTWithAuthentication(b, token, h, e)
 	}
 
-	benchmarkConcurrent(b, op.GetToken, fn)
+	oidctesting.BenchmarkConcurrent(b, op.GetToken, fn)
 }
 
 func BenchmarkEchoJWTHttp(b *testing.B) {
@@ -321,7 +323,7 @@ func BenchmarkEchoJWTHttp(b *testing.B) {
 	}()
 
 	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: NewEchoJWTParseTokenFunc(&Options{
+		ParseTokenFunc: New(&Options{
 			Issuer: op.GetURL(b),
 		}),
 	}))
@@ -340,10 +342,10 @@ func BenchmarkEchoJWTHttp(b *testing.B) {
 	}()
 
 	fn := func(token *oauth2.Token) {
-		testHttpRequest(b, urlString, token)
+		oidctesting.TestHttpRequest(b, urlString, token)
 	}
 
-	benchmarkConcurrent(b, op.GetToken, fn)
+	oidctesting.BenchmarkConcurrent(b, op.GetToken, fn)
 }
 
 func testGetEchoHandler(tb testing.TB) func(c echo.Context) error {

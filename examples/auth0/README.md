@@ -19,7 +19,7 @@ go run ./auth0/echo/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TO
 TOKEN_ISSUER="https://<domain>.auth0.com/"
 TOKEN_AUDIENCE="https://localhost:8081"
 CLIENT_ID="Auth0NativeAppClientID"
-go run ./auth0/nethttp/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --client-id ${CLIENT_ID} --port 8081
+go run ./auth0/http/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --client-id ${CLIENT_ID} --port 8081
 ```
 
 ## Test with curl

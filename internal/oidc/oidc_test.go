@@ -8,7 +8,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
-	"sync"
 	"testing"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
-	"golang.org/x/oauth2"
 )
 
 func TestGetHeadersFromTokenString(t *testing.T) {
@@ -436,7 +434,7 @@ func TestGetAndValidateTokenFromString(t *testing.T) {
 	defer op.Close(t)
 
 	issuer := op.GetURL(t)
-	discoveryUri := getDiscoveryUriFromIssuer(issuer)
+	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
 
@@ -678,10 +676,10 @@ func TestParseToken(t *testing.T) {
 
 		keySets.setKeys(testNewKeySet(t, c.numKeys, c.options.DisableKeyID))
 
-		h, err := newHandler(&c.options)
+		h, err := NewHandler(&c.options)
 		require.NoError(t, err)
 
-		parseTokenFunc := h.parseToken
+		parseTokenFunc := h.ParseToken
 
 		issuer := c.options.Issuer
 		if c.customIssuer != "" {
@@ -729,10 +727,10 @@ func TestParseTokenWithKeyID(t *testing.T) {
 		JwksRateLimit: 100,
 	}
 
-	h, err := newHandler(&opts)
+	h, err := NewHandler(&opts)
 	require.NoError(t, err)
 
-	parseTokenFunc := h.parseToken
+	parseTokenFunc := h.ParseToken
 
 	// first token should succeed
 	token1 := testNewTokenString(t, keySets.privateKeySet)
@@ -816,10 +814,10 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 		JwksRateLimit: 100,
 	}
 
-	h, err := newHandler(&opts)
+	h, err := NewHandler(&opts)
 	require.NoError(t, err)
 
-	parseTokenFunc := h.parseToken
+	parseTokenFunc := h.ParseToken
 
 	// first token should succeed
 	token1 := testNewTokenString(t, keySets.privateKeySet)
@@ -1439,48 +1437,4 @@ func testNewCustomTokenString(t *testing.T, privKeySet jwk.Set, issuer string, e
 	require.NoError(t, err)
 
 	return string(tokenBytes)
-}
-
-func testHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
-	tb.Helper()
-
-	req, err := http.NewRequest(http.MethodGet, urlString, nil)
-	require.NoError(tb, err)
-	token.SetAuthHeader(req)
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(tb, err)
-
-	defer require.NoError(tb, res.Body.Close())
-
-	require.Equal(tb, http.StatusOK, res.StatusCode)
-}
-
-func benchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token, fn func(token *oauth2.Token)) {
-	b.Helper()
-
-	concurrencyLevels := []int{5, 10, 20, 50}
-	for _, clients := range concurrencyLevels {
-		b.Run(fmt.Sprintf("%d_clients", clients), func(b *testing.B) {
-			var tokens []*oauth2.Token
-			for i := 0; i < b.N; i++ {
-				tokens = append(tokens, getToken(b))
-			}
-
-			b.ResetTimer()
-
-			var wg sync.WaitGroup
-			ch := make(chan int, clients)
-			for i := 0; i < b.N; i++ {
-				token := tokens[i]
-				wg.Add(1)
-				ch <- 1
-				go func() {
-					defer wg.Done()
-					fn(token)
-					<-ch
-				}()
-			}
-			wg.Wait()
-		})
-	}
 }

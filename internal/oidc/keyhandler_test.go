@@ -19,7 +19,7 @@ func TestNewKeyHandler(t *testing.T) {
 
 	op := server.NewTesting(t)
 	issuer := op.GetURL(t)
-	discoveryUri := getDiscoveryUriFromIssuer(issuer)
+	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
 
@@ -86,11 +86,11 @@ func TestUpdate(t *testing.T) {
 
 	op := server.NewTesting(t)
 	issuer := op.GetURL(t)
-	discoveryUri := getDiscoveryUriFromIssuer(issuer)
+	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
 
-	rateLimit := uint(100)
+	rateLimit := uint(10)
 	keyHandler, err := newKeyHandler(http.DefaultClient, jwksUri, 10*time.Millisecond, rateLimit, false)
 	require.NoError(t, err)
 
@@ -147,13 +147,14 @@ func TestUpdate(t *testing.T) {
 	require.Equal(t, 6, keyHandler.keyUpdateCount)
 
 	// test rate limit
+	time.Sleep(10 * time.Millisecond)
 	start := time.Now()
 	_, err = keyHandler.waitForUpdateKeySetAndGetKeySet(ctx)
 	require.NoError(t, err)
 	stop := time.Now()
 	expectedStop := start.Add(time.Second / time.Duration(rateLimit))
 
-	require.WithinDuration(t, expectedStop, stop, 4*time.Millisecond)
+	require.WithinDuration(t, expectedStop, stop, 20*time.Millisecond)
 
 	require.Equal(t, 7, keyHandler.keyUpdateCount)
 }

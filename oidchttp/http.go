@@ -1,11 +1,16 @@
-package oidc
+package oidchttp
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 )
+
+// Options takes an oidc.Options struct.
+type Options oidc.Options
 
 // ContextKey is the type for they key value used to pass claims using request context.
 type ContextKey string
@@ -15,18 +20,20 @@ const (
 	ClaimsContextKey ContextKey = "claims"
 )
 
-// NewNetHttpHandler returns an OpenID Connect (OIDC) discovery handler (middleware)
+// New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `net/http` and `mux`.
-func NewNetHttpHandler(h http.Handler, opts *Options) http.Handler {
-	oidcHandler, err := newHandler(opts)
+func New(h http.Handler, opts *Options) http.Handler {
+	oidcOpts := oidc.Options(*opts)
+
+	oidcHandler, err := oidc.NewHandler(&oidcOpts)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	return toNetHttpHandler(h, oidcHandler.parseToken)
+	return toHttpHandler(h, oidcHandler.ParseToken)
 }
 
-func toNetHttpHandler(h http.Handler, parseToken parseTokenFunc) http.Handler {
+func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
