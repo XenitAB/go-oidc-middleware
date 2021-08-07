@@ -90,7 +90,7 @@ func TestUpdate(t *testing.T) {
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
 
-	rateLimit := uint(100)
+	rateLimit := uint(10)
 	keyHandler, err := newKeyHandler(http.DefaultClient, jwksUri, 10*time.Millisecond, rateLimit, false)
 	require.NoError(t, err)
 
@@ -154,7 +154,7 @@ func TestUpdate(t *testing.T) {
 	stop := time.Now()
 	expectedStop := start.Add(time.Second / time.Duration(rateLimit))
 
-	require.WithinDuration(t, expectedStop, stop, 6*time.Millisecond)
+	require.WithinDuration(t, expectedStop, stop, 20*time.Millisecond)
 
 	require.Equal(t, 7, keyHandler.keyUpdateCount)
 }
