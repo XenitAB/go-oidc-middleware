@@ -6,6 +6,13 @@
 
 This is a middleware for http to make it easy to use OpenID Connect.
 
+## Currently tested providers
+
+- Azure AD
+- Auth0
+- Okta
+- Cognito
+
 ## Currently Supported frameworks
 
 ### Echo (JWT ParseTokenFunc)
