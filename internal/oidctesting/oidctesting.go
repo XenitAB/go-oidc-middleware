@@ -15,7 +15,8 @@ func BenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token
 
 	concurrencyLevels := []int{5, 10, 20, 50}
 	for _, clients := range concurrencyLevels {
-		b.Run(fmt.Sprintf("%d_clients", clients), func(b *testing.B) {
+		numClients := clients
+		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
 			var tokens []*oauth2.Token
 			for i := 0; i < b.N; i++ {
 				tokens = append(tokens, getToken(b))
@@ -24,7 +25,7 @@ func BenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token
 			b.ResetTimer()
 
 			var wg sync.WaitGroup
-			ch := make(chan int, clients)
+			ch := make(chan int, numClients)
 			for i := 0; i < b.N; i++ {
 				token := tokens[i]
 				wg.Add(1)
