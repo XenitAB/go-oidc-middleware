@@ -20,6 +20,14 @@ CLIENT_ID="OktaClientID"
 go run ./okta/http/main.go --token-issuer ${TOKEN_ISSUER} --client-id ${CLIENT_ID} --port 8081
 ```
 
+### gin
+
+```shell
+TOKEN_ISSUER="https://<domain>.okta.com/oauth2/default"
+CLIENT_ID="OktaClientID"
+go run ./okta/gin/main.go --token-issuer ${TOKEN_ISSUER} --client-id ${CLIENT_ID} --port 8081
+```
+
 ## Test with curl
 
 ```shell
