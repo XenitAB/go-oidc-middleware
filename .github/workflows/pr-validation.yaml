@@ -51,13 +51,6 @@ jobs:
       - name: Run build-examples
         run: |
           make build-examples
-      - name: Check if working tree is dirty
-        run: |
-          if [[ $(git status --porcelain) ]]; then
-            git diff
-            echo 'run make fmt and commit changes'
-            exit 1
-          fi
 
   test:
     runs-on: ubuntu-latest
