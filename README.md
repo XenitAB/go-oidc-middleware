@@ -15,6 +15,10 @@ This is a middleware for http to make it easy to use OpenID Connect.
 
 ## Currently Supported frameworks
 
+- Echo (JWT ParseTokenFunc)
+- net/http & mux
+- gin
+
 ### Echo (JWT ParseTokenFunc)
 
 **Import**
@@ -98,6 +102,47 @@ func getClaimsHandler() http.HandlerFunc {
 }
 ```
 
+### gin
+
+**Import**
+
+`"github.com/xenitab/go-oidc-middleware/oidcgin"`
+
+**Middleware**
+
+```go
+oidcHandler := oidcgin.New(&oidcgin.Options{
+	Issuer:                     cfg.Issuer,
+	RequiredTokenType:          "JWT",
+	RequiredAudience:           cfg.Audience,
+	FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
+	RequiredClaims: map[string]interface{}{
+		"tid": cfg.TenantID,
+	},
+})
+```
+
+**Handler**
+
+```go
+func newGinClaimsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claimsValue, found := c.Get("claims")
+		if !found {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		claims, ok := claimsValue.(map[string]interface{})
+		if !ok {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		c.JSON(http.StatusOK, claims)
+	}
+}
+```
 
 ## Examples
 

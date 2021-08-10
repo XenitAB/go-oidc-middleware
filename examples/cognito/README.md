@@ -20,6 +20,14 @@ CLIENT_ID="CognitoClientID"
 go run ./cognito/http/main.go --token-issuer ${TOKEN_ISSUER} --client-id ${CLIENT_ID} --port 8081
 ```
 
+### gin
+
+```shell
+TOKEN_ISSUER="https://cognito-idp.{region}.amazonaws.com/{userPoolId}"
+CLIENT_ID="CognitoClientID"
+go run ./cognito/gin/main.go --token-issuer ${TOKEN_ISSUER} --client-id ${CLIENT_ID} --port 8081
+```
+
 ## Test with curl
 
 ```shell

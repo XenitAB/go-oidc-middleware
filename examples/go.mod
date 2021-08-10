@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/cristalhq/aconfig v0.16.2
+	github.com/gin-gonic/gin v1.7.3
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/lestrrat-go/jwx v1.2.5
 	github.com/pkg/browser v0.0.0-20210706143420-7d21f8c997e2
