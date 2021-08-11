@@ -5,17 +5,13 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
-
-// Options takes an oidc.Options struct.
-type Options oidc.Options
 
 // New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
 // to be used with the the echo `JWT` middleware.
-func New(opts *Options) func(auth string, c echo.Context) (interface{}, error) {
-	oidcOpts := oidc.Options(*opts)
-
-	h, err := oidc.NewHandler(&oidcOpts)
+func New(setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
+	h, err := oidc.NewHandler(setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

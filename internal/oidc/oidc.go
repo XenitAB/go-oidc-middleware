@@ -14,98 +14,8 @@ import (
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
-
-// Options defines the options for OIDC Middleware.
-type Options struct {
-	// Issuer is the authority that issues the tokens
-	Issuer string
-
-	// DiscoveryUri is where the `jwks_uri` will be grabbed
-	// Defaults to `fmt.Sprintf("%s/.well-known/openid-configuration", strings.TrimSuffix(issuer, "/"))`
-	DiscoveryUri string
-
-	// JwksUri is used to download the public key(s)
-	// Defaults to the `jwks_uri` from the response of DiscoveryUri
-	JwksUri string
-
-	// JwksFetchTimeout sets the context timeout when downloading the jwks
-	// Defaults to 5 seconds
-	JwksFetchTimeout time.Duration
-
-	// JwksRateLimit takes an uint and makes sure that the jwks will at a maximum
-	// be requested these many times per second.
-	// Defaults to 1 (Request Per Second)
-	// Please observe: Requests that force update of jwks (like wrong keyID) will be rate limited
-	JwksRateLimit uint
-
-	// FallbackSignatureAlgorithm needs to be used when the jwks doesn't contain the alg key.
-	// If not specified and jwks doesn't contain alg key, will default to:
-	// - RS256 for key type (kty) RSA
-	// - ES256 for key type (kty) EC
-	//
-	// When specified and jwks contains alg key, alg key from jwks will be used.
-	//
-	// Example values (one of them): RS256 RS384 RS512 ES256 ES384 ES512
-	FallbackSignatureAlgorithm string
-
-	// AllowedTokenDrift adds the duration to the token expiration to allow
-	// for time drift between parties.
-	// Defaults to 10 seconds
-	AllowedTokenDrift time.Duration
-
-	// LazyLoadJwks makes it possible to use OIDC Discovery without being
-	// able to load the keys at startup.
-	// Default setting is disabled.
-	// Please observe: If enabled, it will always load even though settings
-	// may be wrong / not working.
-	LazyLoadJwks bool
-
-	// RequiredTokenType is used if only specific tokens should be allowed.
-	// Default is empty string `""` and means all token types are allowed.
-	// Use case could be to configure this if the TokenType (set in the header of the JWT)
-	// should be `JWT` or maybe even `JWT+AT` to differentiate between access tokens and
-	// id tokens. Not all providers support or use this.
-	RequiredTokenType string
-
-	// RequiredAudience is used to require a specific Audience `aud` in the claims.
-	// Defaults to empty string `""` and means all audiences are allowed.
-	RequiredAudience string
-
-	// RequiredClaims is used to require specific claims in the token
-	// Defaults to empty map (nil) and won't check for anything else
-	// Works with primitive types, slices and maps.
-	// Please observe: slices and strings checks that the token contains it, but more is allowed.
-	// Required claim []string{"bar"} matches token []string{"foo", "bar", "baz"}
-	// Required claim map[string]string{{"foo": "bar"}} matches token map[string]string{{"a": "b"},{"foo": "bar"},{"c": "d"}}
-	//
-	// Example:
-	//
-	// ```go
-	// map[string]interface{}{
-	// 	"foo": "bar",
-	// 	"bar": 1337,
-	// 	"baz": []string{"bar"},
-	// 	"oof": []map[string]string{
-	// 		{"bar": "baz"},
-	// 	},
-	// },
-	// ```
-	RequiredClaims map[string]interface{}
-
-	// DisableKeyID adjusts if a KeyID needs to be extracted from the token or not
-	// Defaults to false and means KeyID is required to be present in both the jwks and token
-	// The OIDC specification doesn't require KeyID if there's only one key in the jwks:
-	// https://openid.net/specs/openid-connect-core-1_0.html#Signing
-	//
-	// This also means that if enabled, refresh of the jwks will be done if the token can't be
-	// validated due to invalid key. The JWKS fetch will fail if there's more than one key present.
-	DisableKeyID bool
-
-	// HttpClient takes a *http.Client for external calls
-	// Defaults to http.DefaultClient
-	HttpClient *http.Client
-}
 
 var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
@@ -128,7 +38,18 @@ type handler struct {
 	keyHandler *keyHandler
 }
 
-func NewHandler(opts *Options) (*handler, error) {
+func NewHandler(setters ...options.Option) (*handler, error) {
+	opts := &options.Options{
+		JwksFetchTimeout:  5 * time.Second,
+		JwksRateLimit:     1,
+		AllowedTokenDrift: 10 * time.Second,
+		HttpClient:        http.DefaultClient,
+	}
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
 	h := &handler{
 		issuer:            opts.Issuer,
 		discoveryUri:      opts.DiscoveryUri,
@@ -149,12 +70,6 @@ func NewHandler(opts *Options) (*handler, error) {
 	if h.discoveryUri == "" {
 		h.discoveryUri = GetDiscoveryUriFromIssuer(h.issuer)
 	}
-	if h.jwksFetchTimeout == 0 {
-		h.jwksFetchTimeout = 5 * time.Second
-	}
-	if h.jwksRateLimit == 0 {
-		h.jwksRateLimit = 1
-	}
 	if opts.FallbackSignatureAlgorithm != "" {
 		alg, err := getSignatureAlgorithmFromString(opts.FallbackSignatureAlgorithm)
 		if err != nil {
@@ -163,13 +78,6 @@ func NewHandler(opts *Options) (*handler, error) {
 
 		h.fallbackSignatureAlgorithm = alg
 	}
-	if h.allowedTokenDrift == 0 {
-		h.allowedTokenDrift = 10 * time.Second
-	}
-	if h.httpClient == nil {
-		h.httpClient = http.DefaultClient
-	}
-
 	if !opts.LazyLoadJwks {
 		err := h.loadJwks()
 		if err != nil {

@@ -6,10 +6,8 @@ import (
 	"net/http"
 
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
-
-// Options takes an oidc.Options struct.
-type Options oidc.Options
 
 // ContextKey is the type for they key value used to pass claims using request context.
 type ContextKey string
@@ -21,10 +19,8 @@ const (
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `net/http` and `mux`.
-func New(h http.Handler, opts *Options) http.Handler {
-	oidcOpts := oidc.Options(*opts)
-
-	oidcHandler, err := oidc.NewHandler(&oidcOpts)
+func New(h http.Handler, setters ...options.Option) http.Handler {
+	oidcHandler, err := oidc.NewHandler(setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

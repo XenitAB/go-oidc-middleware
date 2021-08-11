@@ -17,6 +17,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 func TestGetHeadersFromTokenString(t *testing.T) {
@@ -533,7 +534,7 @@ func TestParseToken(t *testing.T) {
 
 	cases := []struct {
 		testDescription         string
-		options                 Options
+		options                 []options.Option
 		numKeys                 int
 		customIssuer            string
 		customExpirationMinutes int
@@ -542,36 +543,36 @@ func TestParseToken(t *testing.T) {
 	}{
 		{
 			testDescription: "successful parse with keyID, one key",
-			options: Options{
-				Issuer:        "http://foo.bar",
-				DiscoveryUri:  "http://foo.bar",
-				JwksUri:       testServer.URL,
-				DisableKeyID:  false,
-				JwksRateLimit: 100,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(false),
+				options.WithJwksRateLimit(100),
 			},
 			numKeys:               1,
 			expectedErrorContains: "",
 		},
 		{
 			testDescription: "successful parse without keyID, one key",
-			options: Options{
-				Issuer:        "http://foo.bar",
-				DiscoveryUri:  "http://foo.bar",
-				JwksUri:       testServer.URL,
-				DisableKeyID:  true,
-				JwksRateLimit: 100,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(true),
+				options.WithJwksRateLimit(100),
 			},
 			numKeys:               1,
 			expectedErrorContains: "",
 		},
 		{
 			testDescription: "successful parse with keyID, two keys",
-			options: Options{
-				Issuer:        "http://foo.bar",
-				DiscoveryUri:  "http://foo.bar",
-				JwksUri:       testServer.URL,
-				DisableKeyID:  false,
-				JwksRateLimit: 100,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(false),
+				options.WithJwksRateLimit(100),
 			},
 			numKeys:               2,
 			expectedErrorContains: "",
@@ -579,24 +580,24 @@ func TestParseToken(t *testing.T) {
 		{
 			// without lazyLoad, New() panics
 			testDescription: "unsuccessful parse without keyID, two keys with lazyLoad",
-			options: Options{
-				Issuer:        "http://foo.bar",
-				DiscoveryUri:  "http://foo.bar",
-				JwksUri:       testServer.URL,
-				DisableKeyID:  true,
-				JwksRateLimit: 100,
-				LazyLoadJwks:  true,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(true),
+				options.WithJwksRateLimit(100),
+				options.WithLazyLoadJwks(true),
 			},
 			numKeys:               2,
 			expectedErrorContains: "keyID is disabled, but received a keySet with more than one key",
 		},
 		{
 			testDescription: "wrong issuer, with keyID",
-			options: Options{
-				Issuer:       "http://foo.bar",
-				DiscoveryUri: "http://foo.bar",
-				JwksUri:      testServer.URL,
-				DisableKeyID: false,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(false),
 			},
 			numKeys:               1,
 			customIssuer:          "http://wrong.issuer",
@@ -604,11 +605,11 @@ func TestParseToken(t *testing.T) {
 		},
 		{
 			testDescription: "wrong issuer, without keyID",
-			options: Options{
-				Issuer:       "http://foo.bar",
-				DiscoveryUri: "http://foo.bar",
-				JwksUri:      testServer.URL,
-				DisableKeyID: true,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(true),
 			},
 			numKeys:               1,
 			customIssuer:          "http://wrong.issuer",
@@ -616,11 +617,11 @@ func TestParseToken(t *testing.T) {
 		},
 		{
 			testDescription: "expired token, with keyID",
-			options: Options{
-				Issuer:       "http://foo.bar",
-				DiscoveryUri: "http://foo.bar",
-				JwksUri:      testServer.URL,
-				DisableKeyID: false,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(false),
 			},
 			numKeys:                 1,
 			customExpirationMinutes: -1,
@@ -628,11 +629,11 @@ func TestParseToken(t *testing.T) {
 		},
 		{
 			testDescription: "expired token, without keyID",
-			options: Options{
-				Issuer:       "http://foo.bar",
-				DiscoveryUri: "http://foo.bar",
-				JwksUri:      testServer.URL,
-				DisableKeyID: true,
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(true),
 			},
 			numKeys:                 1,
 			customExpirationMinutes: -1,
@@ -640,28 +641,28 @@ func TestParseToken(t *testing.T) {
 		},
 		{
 			testDescription: "correct requiredClaim",
-			options: Options{
-				Issuer:       "http://foo.bar",
-				DiscoveryUri: "http://foo.bar",
-				JwksUri:      testServer.URL,
-				RequiredClaims: map[string]interface{}{
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithRequiredClaims(map[string]interface{}{
 					"foo": "bar",
-				},
-				DisableKeyID: false,
+				}),
+				options.WithDisableKeyID(false),
 			},
 			numKeys:               1,
 			expectedErrorContains: "",
 		},
 		{
 			testDescription: "correct requiredClaim",
-			options: Options{
-				Issuer:       "http://foo.bar",
-				DiscoveryUri: "http://foo.bar",
-				JwksUri:      testServer.URL,
-				RequiredClaims: map[string]interface{}{
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithRequiredClaims(map[string]interface{}{
 					"foo": "bar",
-				},
-				DisableKeyID: false,
+				}),
+				options.WithDisableKeyID(false),
 			},
 			numKeys: 1,
 			customClaims: map[string]string{
@@ -674,14 +675,20 @@ func TestParseToken(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 
-		keySets.setKeys(testNewKeySet(t, c.numKeys, c.options.DisableKeyID))
+		opts := &options.Options{}
 
-		h, err := NewHandler(&c.options)
+		for _, setter := range c.options {
+			setter(opts)
+		}
+
+		keySets.setKeys(testNewKeySet(t, c.numKeys, opts.DisableKeyID))
+
+		h, err := NewHandler(c.options...)
 		require.NoError(t, err)
 
 		parseTokenFunc := h.ParseToken
 
-		issuer := c.options.Issuer
+		issuer := opts.Issuer
 		if c.customIssuer != "" {
 			issuer = c.customIssuer
 		}
@@ -719,15 +726,15 @@ func TestParseTokenWithKeyID(t *testing.T) {
 
 	keySets.setKeys(testNewKeySet(t, 1, disableKeyID))
 
-	opts := Options{
-		Issuer:        "http://foo.bar",
-		DiscoveryUri:  "http://foo.bar",
-		JwksUri:       testServer.URL,
-		DisableKeyID:  disableKeyID,
-		JwksRateLimit: 100,
+	opts := []options.Option{
+		options.WithIssuer("http://foo.bar"),
+		options.WithDiscoveryUri("http://foo.bar"),
+		options.WithJwksUri(testServer.URL),
+		options.WithDisableKeyID(disableKeyID),
+		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler(&opts)
+	h, err := NewHandler(opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken
@@ -806,15 +813,15 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 
 	keySets.setKeys(testNewKeySet(t, 1, disableKeyID))
 
-	opts := Options{
-		Issuer:        "http://foo.bar",
-		DiscoveryUri:  "http://foo.bar",
-		JwksUri:       testServer.URL,
-		DisableKeyID:  disableKeyID,
-		JwksRateLimit: 100,
+	opts := []options.Option{
+		options.WithIssuer("http://foo.bar"),
+		options.WithDiscoveryUri("http://foo.bar"),
+		options.WithJwksUri(testServer.URL),
+		options.WithDisableKeyID(disableKeyID),
+		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler(&opts)
+	h, err := NewHandler(opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken

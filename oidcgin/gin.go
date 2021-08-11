@@ -6,17 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
-
-// Options takes an oidc.Options struct.
-type Options oidc.Options
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `gin`.
-func New(opts *Options) gin.HandlerFunc {
-	oidcOpts := oidc.Options(*opts)
-
-	oidcHandler, err := oidc.NewHandler(&oidcOpts)
+func New(setters ...options.Option) gin.HandlerFunc {
+	oidcHandler, err := oidc.NewHandler(setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

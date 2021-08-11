@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/xenitab/go-oidc-middleware/oidcgin"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 func main() {
@@ -23,13 +24,13 @@ func main() {
 }
 
 func run(cfg shared.CognitoConfig) error {
-	oidcHandler := oidcgin.New(&oidcgin.Options{
-		Issuer:                     cfg.Issuer,
-		FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
-		RequiredClaims: map[string]interface{}{
+	oidcHandler := oidcgin.New(
+		options.WithIssuer(cfg.Issuer),
+		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+		options.WithRequiredClaims(map[string]interface{}{
 			"client_id": cfg.ClientID,
-		},
-	})
+		}),
+	)
 
 	return shared.RunGin(oidcHandler, cfg.Address, cfg.Port)
 }

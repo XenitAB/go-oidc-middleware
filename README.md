@@ -19,6 +19,10 @@ This is a middleware for http to make it easy to use OpenID Connect.
 - net/http & mux
 - gin
 
+### Using options
+
+Import: `"github.com/xenitab/go-oidc-middleware/options"`
+
 ### Echo (JWT ParseTokenFunc)
 
 **Import**
@@ -29,15 +33,15 @@ This is a middleware for http to make it easy to use OpenID Connect.
 
 ```go
 e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-    ParseTokenFunc: oidcechojwt.New(&oidcechojwt.Options{
-        Issuer:                     cfg.Issuer,
-        RequiredTokenType:          "JWT",
-        RequiredAudience:           cfg.Audience,
-        FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
-        RequiredClaims: map[string]interface{}{
-            "tid": cfg.TenantID,
-        },
-    }),
+    ParseTokenFunc: oidcechojwt.New(
+		options.WithIssuer(cfg.Issuer),
+		options.WithRequiredTokenType("JWT"),
+		options.WithRequiredAudience(cfg.Audience),
+		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+		options.WithRequiredClaims(map[string]interface{}{
+			"tid": cfg.TenantID,
+		}),
+	),
 }))
 ```
 
@@ -68,15 +72,15 @@ func getClaimsHandler(c echo.Context) error {
 **Middleware**
 
 ```go
-oidcHandler := oidchttp.New(h, &oidchttp.Options{
-    Issuer:                     cfg.Issuer,
-    RequiredTokenType:          "JWT",
-    RequiredAudience:           cfg.Audience,
-    FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
-    RequiredClaims: map[string]interface{}{
-        "tid": cfg.TenantID,
-    },
-})
+oidcHandler := oidchttp.New(h,
+	options.WithIssuer(cfg.Issuer),
+	options.WithRequiredTokenType("JWT"),
+	options.WithRequiredAudience(cfg.Audience),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
+		"tid": cfg.TenantID,
+	}),
+)
 ```
 
 **Handler**
@@ -111,15 +115,15 @@ func getClaimsHandler() http.HandlerFunc {
 **Middleware**
 
 ```go
-oidcHandler := oidcgin.New(&oidcgin.Options{
-	Issuer:                     cfg.Issuer,
-	RequiredTokenType:          "JWT",
-	RequiredAudience:           cfg.Audience,
-	FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
-	RequiredClaims: map[string]interface{}{
+oidcHandler := oidcgin.New(
+	options.WithIssuer(cfg.Issuer),
+	options.WithRequiredTokenType("JWT"),
+	options.WithRequiredAudience(cfg.Audience),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
 		"tid": cfg.TenantID,
-	},
-})
+	}),
+)
 ```
 
 **Handler**
