@@ -6,7 +6,7 @@ TEST_PACKAGES_CSV = $(shell echo -n $(TEST_PACKAGES) | sed "s/ /,/g")
 
 .PHONY: all
 .SILENT: all
-all: tidy lint fmt vet staticcheck test build-examples
+all: tidy lint fmt vet staticcheck test test-race build-examples
 
 .PHONY: lint
 .SILENT: lint
