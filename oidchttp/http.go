@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 )
@@ -37,7 +36,7 @@ func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc) http.Handler 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tokenString, err := getTokenStringFromRequest(r)
+		tokenString, err := oidc.GetTokenStringFromRequest(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -62,22 +61,4 @@ func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc) http.Handler 
 	}
 
 	return http.HandlerFunc(fn)
-}
-
-func getTokenStringFromRequest(r *http.Request) (string, error) {
-	authz := r.Header.Get("Authorization")
-	if authz == "" {
-		return "", fmt.Errorf("authorization header empty")
-	}
-
-	comp := strings.Split(authz, " ")
-	if len(comp) != 2 {
-		return "", fmt.Errorf("authorization header components not 2 but: %d", len(comp))
-	}
-
-	if comp[0] != "Bearer" {
-		return "", fmt.Errorf("authorization headers first component not Bearer")
-	}
-
-	return comp[1], nil
 }

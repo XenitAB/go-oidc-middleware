@@ -3,7 +3,6 @@ package oidcgin
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
@@ -29,7 +28,7 @@ func toGinHandler(parseToken oidc.ParseTokenFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tokenString, err := getTokenStringFromRequest(c.Request)
+		tokenString, err := oidc.GetTokenStringFromRequest(c.Request)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
@@ -51,22 +50,4 @@ func toGinHandler(parseToken oidc.ParseTokenFunc) gin.HandlerFunc {
 
 		c.Next()
 	}
-}
-
-func getTokenStringFromRequest(r *http.Request) (string, error) {
-	authz := r.Header.Get("Authorization")
-	if authz == "" {
-		return "", fmt.Errorf("authorization header empty")
-	}
-
-	comp := strings.Split(authz, " ")
-	if len(comp) != 2 {
-		return "", fmt.Errorf("authorization header components not 2 but: %d", len(comp))
-	}
-
-	if comp[0] != "Bearer" {
-		return "", fmt.Errorf("authorization headers first component not Bearer")
-	}
-
-	return comp[1], nil
 }
