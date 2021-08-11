@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/xenitab/go-oidc-middleware/oidcgin"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 func main() {
@@ -23,15 +24,15 @@ func main() {
 }
 
 func run(cfg shared.Auth0Config) error {
-	oidcHandler := oidcgin.New(&oidcgin.Options{
-		Issuer:                     cfg.Issuer,
-		RequiredTokenType:          "JWT",
-		RequiredAudience:           cfg.Audience,
-		FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
-		RequiredClaims: map[string]interface{}{
+	oidcHandler := oidcgin.New(
+		options.WithIssuer(cfg.Issuer),
+		options.WithRequiredTokenType("JWT"),
+		options.WithRequiredAudience(cfg.Audience),
+		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+		options.WithRequiredClaims(map[string]interface{}{
 			"azp": cfg.ClientID,
-		},
-	})
+		}),
+	)
 
 	return shared.RunGin(oidcHandler, cfg.Address, cfg.Port)
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/xenitab/go-oidc-middleware/oidcechojwt"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 func main() {
@@ -23,13 +24,13 @@ func main() {
 }
 
 func run(cfg shared.OktaConfig) error {
-	parseToken := oidcechojwt.New(&oidcechojwt.Options{
-		Issuer:                     cfg.Issuer,
-		FallbackSignatureAlgorithm: cfg.FallbackSignatureAlgorithm,
-		RequiredClaims: map[string]interface{}{
+	parseToken := oidcechojwt.New(
+		options.WithIssuer(cfg.Issuer),
+		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+		options.WithRequiredClaims(map[string]interface{}{
 			"cid": cfg.ClientID,
-		},
-	})
+		}),
+	)
 
 	return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
 }

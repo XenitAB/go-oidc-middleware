@@ -11,6 +11,7 @@ import (
 	"github.com/xenitab/dispans/server"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
+	"github.com/xenitab/go-oidc-middleware/options"
 	"golang.org/x/oauth2"
 )
 
@@ -20,65 +21,65 @@ func TestNewGinMiddleware(t *testing.T) {
 
 	cases := []struct {
 		testDescription string
-		config          Options
+		config          []options.Option
 		expectPanic     bool
 	}{
 		{
 			testDescription: "valid issuer doesn't panic",
-			config: Options{
-				Issuer: op.GetURL(t),
+			config: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
 			},
 			expectPanic: false,
 		},
 		{
 			testDescription: "valid issuer, invalid DiscoveryUri panics",
-			config: Options{
-				Issuer:       op.GetURL(t),
-				DiscoveryUri: "http://foo.bar/baz",
+			config: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithDiscoveryUri("http://foo.bar/baz"),
 			},
 			expectPanic: true,
 		},
 		{
 			testDescription: "valid issuer, invalid JwksUri panics",
-			config: Options{
-				Issuer:  op.GetURL(t),
-				JwksUri: "http://foo.bar/baz",
+			config: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithJwksUri("http://foo.bar/baz"),
 			},
 			expectPanic: true,
 		},
 		{
 			testDescription: "empty config panics",
-			config:          Options{},
+			config:          []options.Option{},
 			expectPanic:     true,
 		},
 		{
 			testDescription: "fake issuer panics",
-			config: Options{
-				Issuer: "http://foo.bar/baz",
+			config: []options.Option{
+				options.WithIssuer("http://foo.bar/baz"),
 			},
 			expectPanic: true,
 		},
 		{
 			testDescription: "fake issuer with lazy load doesn't panic",
-			config: Options{
-				Issuer:       "http://foo.bar/baz",
-				LazyLoadJwks: true,
+			config: []options.Option{
+				options.WithIssuer("http://foo.bar/baz"),
+				options.WithLazyLoadJwks(true),
 			},
 			expectPanic: false,
 		},
 		{
 			testDescription: "valid signature algorithm doesn't panic",
-			config: Options{
-				Issuer:                     op.GetURL(t),
-				FallbackSignatureAlgorithm: "RS256",
+			config: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithFallbackSignatureAlgorithm("RS256"),
 			},
 			expectPanic: false,
 		},
 		{
 			testDescription: "invalid signature algorithm panics",
-			config: Options{
-				Issuer:                     op.GetURL(t),
-				FallbackSignatureAlgorithm: "foobar",
+			config: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithFallbackSignatureAlgorithm("foobar"),
 			},
 			expectPanic: true,
 		},
@@ -87,9 +88,9 @@ func TestNewGinMiddleware(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 		if c.expectPanic {
-			require.Panics(t, func() { New(&c.config) })
+			require.Panics(t, func() { New(c.config...) })
 		} else {
-			require.NotPanics(t, func() { New(&c.config) })
+			require.NotPanics(t, func() { New(c.config...) })
 		}
 	}
 }
@@ -98,11 +99,11 @@ func TestGin(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
-	middleware := New(&Options{
-		Issuer:            op.GetURL(t),
-		RequiredAudience:  "test-client",
-		RequiredTokenType: "JWT+AT",
-	})
+	middleware := New(
+		options.WithIssuer(op.GetURL(t)),
+		options.WithRequiredAudience("test-client"),
+		options.WithRequiredTokenType("JWT+AT"),
+	)
 
 	router := testGetGinRouter(t, middleware)
 
@@ -128,12 +129,12 @@ func TestGinLazyLoad(t *testing.T) {
 	op := server.NewTesting(t)
 	defer op.Close(t)
 
-	oidcHandler, err := oidc.NewHandler(&oidc.Options{
-		Issuer:            "http://foo.bar/baz",
-		RequiredAudience:  "test-client",
-		RequiredTokenType: "JWT+AT",
-		LazyLoadJwks:      true,
-	})
+	oidcHandler, err := oidc.NewHandler(
+		options.WithIssuer("http://foo.bar/baz"),
+		options.WithRequiredAudience("test-client"),
+		options.WithRequiredTokenType("JWT+AT"),
+		options.WithLazyLoadJwks(true),
+	)
 	require.NoError(t, err)
 
 	middleware := toGinHandler(oidcHandler.ParseToken)
@@ -162,65 +163,65 @@ func TestGinRequirements(t *testing.T) {
 
 	cases := []struct {
 		testDescription string
-		options         Options
+		options         []options.Option
 		succeeds        bool
 	}{
 		{
 			testDescription: "no requirements",
-			options: Options{
-				Issuer: op.GetURL(t),
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
 			},
 			succeeds: true,
 		},
 		{
 			testDescription: "required token type matches",
-			options: Options{
-				Issuer:            op.GetURL(t),
-				RequiredTokenType: "JWT+AT",
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredTokenType("JWT+AT"),
 			},
 			succeeds: true,
 		},
 		{
 			testDescription: "required token type doesn't match",
-			options: Options{
-				Issuer:            op.GetURL(t),
-				RequiredTokenType: "FOO",
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredTokenType("FOO"),
 			},
 			succeeds: false,
 		},
 		{
 			testDescription: "required audience matches",
-			options: Options{
-				Issuer:           op.GetURL(t),
-				RequiredAudience: "test-client",
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredAudience("test-client"),
 			},
 			succeeds: true,
 		},
 		{
 			testDescription: "required audience doesn't match",
-			options: Options{
-				Issuer:           op.GetURL(t),
-				RequiredAudience: "foo",
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredAudience("foo"),
 			},
 			succeeds: false,
 		},
 		{
 			testDescription: "required sub matches",
-			options: Options{
-				Issuer: op.GetURL(t),
-				RequiredClaims: map[string]interface{}{
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredClaims(map[string]interface{}{
 					"sub": "test",
-				},
+				}),
 			},
 			succeeds: true,
 		},
 		{
 			testDescription: "required sub doesn't match",
-			options: Options{
-				Issuer: op.GetURL(t),
-				RequiredClaims: map[string]interface{}{
+			options: []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredClaims(map[string]interface{}{
 					"sub": "foo",
-				},
+				}),
 			},
 			succeeds: false,
 		},
@@ -229,7 +230,7 @@ func TestGinRequirements(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 
-		middleware := New(&c.options)
+		middleware := New(c.options...)
 
 		router := testGetGinRouter(t, middleware)
 
@@ -247,9 +248,9 @@ func BenchmarkGin(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
-	middleware := New(&Options{
-		Issuer: op.GetURL(b),
-	})
+	middleware := New(
+		options.WithIssuer(op.GetURL(b)),
+	)
 
 	router := testGetGinRouter(b, middleware)
 
@@ -264,14 +265,14 @@ func BenchmarkGinRequirements(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
-	middleware := New(&Options{
-		Issuer:            op.GetURL(b),
-		RequiredTokenType: "JWT+AT",
-		RequiredAudience:  "test-client",
-		RequiredClaims: map[string]interface{}{
+	middleware := New(
+		options.WithIssuer(op.GetURL(b)),
+		options.WithRequiredTokenType("JWT+AT"),
+		options.WithRequiredAudience("test-client"),
+		options.WithRequiredClaims(map[string]interface{}{
 			"sub": "test",
-		},
-	})
+		}),
+	)
 
 	router := testGetGinRouter(b, middleware)
 
@@ -286,9 +287,9 @@ func BenchmarkGinHttp(b *testing.B) {
 	op := server.NewTesting(b)
 	defer op.Close(b)
 
-	middleware := New(&Options{
-		Issuer: op.GetURL(b),
-	})
+	middleware := New(
+		options.WithIssuer(op.GetURL(b)),
+	)
 
 	router := testGetGinRouter(b, middleware)
 
