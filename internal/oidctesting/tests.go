@@ -98,7 +98,8 @@ func runTestNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 			},
 		}
 
-		for i, c := range cases {
+		for i := range cases {
+			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 			if c.expectPanic {
 				require.Panics(t, func() { newHandlerFn(c.config...) })
@@ -249,7 +250,8 @@ func runTestRequirements(t *testing.T, testName string, newHandlerFn newHandlerF
 			},
 		}
 
-		for i, c := range cases {
+		for i := range cases {
+			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 
 			handler := newHandlerFn(c.options...)
