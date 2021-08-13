@@ -18,7 +18,7 @@ const (
 )
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
-// to be used with `net/http` and `mux`.
+// to be used with `net/http`, `mux` and `chi`.
 func New(h http.Handler, setters ...options.Option) http.Handler {
 	oidcHandler, err := oidc.NewHandler(setters...)
 	if err != nil {

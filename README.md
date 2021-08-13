@@ -20,7 +20,7 @@ This library is under active development and the api will have breaking changes 
 ## Currently Supported frameworks
 
 - Echo (JWT ParseTokenFunc)
-- net/http & mux
+- net/http, mux & chi
 - gin
 
 ### Using options
@@ -67,7 +67,7 @@ func newClaimsHandler(c echo.Context) error {
 }
 ```
 
-### net/http & mux
+### net/http, mux & chi
 
 **Import**
 
