@@ -25,14 +25,19 @@ func New(h http.Handler, setters ...options.Option) http.Handler {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	return toHttpHandler(h, oidcHandler.ParseToken)
+	opts := &options.Options{}
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return toHttpHandler(h, oidcHandler.ParseToken, opts.TokenString...)
 }
 
-func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc) http.Handler {
+func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, tokenStringOptions ...options.TokenStringOption) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tokenString, err := oidc.GetTokenStringFromRequest(r)
+		tokenString, err := oidc.GetTokenStringFromRequest(r, tokenStringOptions...)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
