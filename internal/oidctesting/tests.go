@@ -121,6 +121,11 @@ func runTestHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 			options.WithIssuer(op.GetURL(t)),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
+			options.WithTokenString(
+				options.WithTokenStringHeaderName("Authorization"),
+				options.WithTokenStringDelimiter(" "),
+				options.WithTokenStringTokenType("Bearer"),
+			),
 		)
 
 		// Test without authentication
