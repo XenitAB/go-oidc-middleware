@@ -46,12 +46,12 @@ jobs:
       - name: Run Benchmark (Previous)
         run: |
           cd previous
-          go test -run="-" -bench=".*" ./... > benchmark.txt
+          go test -run="-" -bench=".*" ./... | tee benchmark.txt
 
       - name: Run Benchmark (New)
         run: |
           cd new
-          go test -run="-" -bench=".*" ./... > benchmark.txt
+          go test -run="-" -bench=".*" ./... | tee benchmark.txt
 
       - name: Run Benchstat
         run: |
