@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,137 +16,19 @@ import (
 type newHandlerFn func(opts ...options.Option) http.Handler
 type toHandlerFn func(parseToken oidc.ParseTokenFunc) http.Handler
 
-func RunBenchmarks(b *testing.B, testName string, newHandlerFn newHandlerFn) {
-	b.Helper()
-
-	benchmarkHandler(b, testName, newHandlerFn)
-	benchmarkRequirements(b, testName, newHandlerFn)
-	benchmarkHttp(b, testName, newHandlerFn)
-}
-
-func benchmarkHandler(b *testing.B, testName string, newHandlerFn newHandlerFn) {
-	b.Helper()
-
-	b.Run(fmt.Sprintf("handler_%s", testName), func(b *testing.B) {
-		op := server.NewTesting(b)
-		defer op.Close(b)
-
-		handler := newHandlerFn(
-			options.WithIssuer(op.GetURL(b)),
-		)
-
-		fn := func(token *oauth2.Token) {
-			testHttpWithAuthentication(b, token, handler)
-		}
-
-		BenchmarkConcurrent(b, op.GetToken, fn)
-	})
-}
-
-func benchmarkRequirements(b *testing.B, testName string, newHandlerFn newHandlerFn) {
-	b.Helper()
-
-	b.Run(fmt.Sprintf("requirements_%s", testName), func(b *testing.B) {
-		op := server.NewTesting(b)
-		defer op.Close(b)
-
-		handler := newHandlerFn(
-			options.WithIssuer(op.GetURL(b)),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredClaims(map[string]interface{}{
-				"sub": "test",
-			}),
-		)
-
-		fn := func(token *oauth2.Token) {
-			testHttpWithAuthentication(b, token, handler)
-		}
-
-		BenchmarkConcurrent(b, op.GetToken, fn)
-	})
-}
-
-func benchmarkHttp(b *testing.B, testName string, newHandlerFn newHandlerFn) {
-	b.Helper()
-
-	b.Run(fmt.Sprintf("http_%s", testName), func(b *testing.B) {
-		op := server.NewTesting(b)
-		defer op.Close(b)
-
-		handler := newHandlerFn(
-			options.WithIssuer(op.GetURL(b)),
-		)
-
-		testServer := httptest.NewServer(handler)
-		defer testServer.Close()
-
-		fn := func(token *oauth2.Token) {
-			TestHttpRequest(b, testServer.URL, token)
-		}
-
-		BenchmarkConcurrent(b, op.GetToken, fn)
-	})
-}
-
-func BenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token, fn func(token *oauth2.Token)) {
-	b.Helper()
-
-	concurrencyLevels := []int{5, 10, 20, 50}
-	for _, clients := range concurrencyLevels {
-		numClients := clients
-		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
-			var tokens []*oauth2.Token
-			for i := 0; i < b.N; i++ {
-				tokens = append(tokens, getToken(b))
-			}
-
-			b.ResetTimer()
-
-			var wg sync.WaitGroup
-			ch := make(chan int, numClients)
-			for i := 0; i < b.N; i++ {
-				token := tokens[i]
-				wg.Add(1)
-				ch <- 1
-				go func() {
-					defer wg.Done()
-					fn(token)
-					<-ch
-				}()
-			}
-			wg.Wait()
-		})
-	}
-}
-
 func RunTests(t *testing.T, testName string, newHandlerFn newHandlerFn, toHandlerFn toHandlerFn) {
 	t.Helper()
 
-	testNew(t, testName, newHandlerFn)
-	testHandler(t, testName, newHandlerFn)
-	testLazyLoad(t, testName, toHandlerFn)
-	testRequirements(t, testName, newHandlerFn)
+	runTestNew(t, testName, newHandlerFn)
+	runTestHandler(t, testName, newHandlerFn)
+	runTestLazyLoad(t, testName, toHandlerFn)
+	runTestRequirements(t, testName, newHandlerFn)
 }
 
-func TestHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
-	tb.Helper()
-
-	req, err := http.NewRequest(http.MethodGet, urlString, nil)
-	require.NoError(tb, err)
-	token.SetAuthHeader(req)
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(tb, err)
-
-	defer require.NoError(tb, res.Body.Close())
-
-	require.Equal(tb, http.StatusOK, res.StatusCode)
-}
-
-func testNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
+func runTestNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	t.Helper()
 
-	t.Run(fmt.Sprintf("new_%s", testName), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s_new", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
@@ -228,10 +109,10 @@ func testNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	})
 }
 
-func testHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
+func runTestHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	t.Helper()
 
-	t.Run(fmt.Sprintf("handler_%s", testName), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s_handler", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
@@ -260,10 +141,10 @@ func testHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	})
 }
 
-func testLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
+func runTestLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
 	t.Helper()
 
-	t.Run(fmt.Sprintf("lazy_load_%s", testName), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s_lazy_load", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
@@ -295,10 +176,10 @@ func testLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
 	})
 }
 
-func testRequirements(t *testing.T, testName string, newHandlerFn newHandlerFn) {
+func runTestRequirements(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	t.Helper()
 
-	t.Run(fmt.Sprintf("requirements_%s", testName), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s_requirements", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 

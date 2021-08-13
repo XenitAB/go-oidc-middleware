@@ -10,27 +10,32 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-const testName = "oidchttp"
+const testName = "OidcHttp"
 
-func TestOidchttp(t *testing.T) {
-	handler := testGetHttpHandler(t)
-	newHandlerFn := func(opts ...options.Option) http.Handler {
-		return New(handler, opts...)
-	}
-	toHandlerFn := func(parseToken oidc.ParseTokenFunc) http.Handler {
-		return toHttpHandler(handler, parseToken)
-	}
-
-	oidctesting.RunTests(t, testName, newHandlerFn, toHandlerFn)
+func TestSuite(t *testing.T) {
+	oidctesting.RunTests(t, testName, testNewHandlerFn(t), testToHandlerFn(t))
 }
 
-func BenchmarkOidchttp(b *testing.B) {
-	handler := testGetHttpHandler(b)
-	newHandlerFn := func(opts ...options.Option) http.Handler {
+func BenchmarkSuite(b *testing.B) {
+	oidctesting.RunBenchmarks(b, testName, testNewHandlerFn(b))
+}
+
+func testNewHandlerFn(tb testing.TB) func(opts ...options.Option) http.Handler {
+	tb.Helper()
+
+	return func(opts ...options.Option) http.Handler {
+		handler := testGetHttpHandler(tb)
 		return New(handler, opts...)
 	}
+}
 
-	oidctesting.RunBenchmarks(b, testName, newHandlerFn)
+func testToHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Handler {
+	tb.Helper()
+
+	return func(parseToken oidc.ParseTokenFunc) http.Handler {
+		handler := testGetHttpHandler(tb)
+		return toHttpHandler(handler, parseToken)
+	}
 }
 
 func testGetHttpHandler(tb testing.TB) http.Handler {
