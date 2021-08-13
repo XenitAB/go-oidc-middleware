@@ -17,14 +17,19 @@ func New(setters ...options.Option) gin.HandlerFunc {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	return toGinHandler(oidcHandler.ParseToken)
+	opts := &options.Options{}
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return toGinHandler(oidcHandler.ParseToken, opts.TokenString...)
 }
 
-func toGinHandler(parseToken oidc.ParseTokenFunc) gin.HandlerFunc {
+func toGinHandler(parseToken oidc.ParseTokenFunc, tokenStringOptions ...options.TokenStringOption) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tokenString, err := oidc.GetTokenStringFromRequest(c.Request)
+		tokenString, err := oidc.GetTokenStringFromRequest(c.Request, tokenStringOptions...)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return

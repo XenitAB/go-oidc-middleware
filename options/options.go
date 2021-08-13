@@ -94,6 +94,11 @@ type Options struct {
 	// HttpClient takes a *http.Client for external calls
 	// Defaults to http.DefaultClient
 	HttpClient *http.Client
+
+	// TokenString makes it possible to configure how the JWT token should be extracted from
+	// an http header. Not supported by Echo JWT and will be ignored if used by it.
+	// Defaults to: Authorization: Bearer JWT
+	TokenString []TokenStringOption
 }
 
 // Option returns a function that modifies an Options pointer.
@@ -187,5 +192,12 @@ func WithDisableKeyID(opt bool) Option {
 func WithHttpClient(opt *http.Client) Option {
 	return func(opts *Options) {
 		opts.HttpClient = opt
+	}
+}
+
+// WithTokenString sets the TokenString parameter for an Options pointer.
+func WithTokenString(setters ...TokenStringOption) Option {
+	return func(opts *Options) {
+		opts.TokenString = append(opts.TokenString, setters...)
 	}
 }

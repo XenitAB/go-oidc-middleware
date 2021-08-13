@@ -6,6 +6,10 @@
 
 This is a middleware for http to make it easy to use OpenID Connect.
 
+## Stability notice
+
+This library is under active development and the api will have breaking changes until `v0.1.0` - after that only breaking changes will be introduced between minor versions (`v0.1.0` -> `v0.2.0`).
+
 ## Currently tested providers
 
 - Azure AD
@@ -48,7 +52,7 @@ e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 **Handler**
 
 ```go
-func getClaimsHandler(c echo.Context) error {
+func newClaimsHandler(c echo.Context) error {
 	token, ok := c.Get("user").(jwt.Token)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
@@ -86,7 +90,7 @@ oidcHandler := oidchttp.New(h,
 **Handler**
 
 ```go
-func getClaimsHandler() http.HandlerFunc {
+func newClaimsHandler() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(oidchttp.ClaimsContextKey).(map[string]interface{})
 		if !ok {
@@ -129,7 +133,7 @@ oidcHandler := oidcgin.New(
 **Handler**
 
 ```go
-func newGinClaimsHandler() gin.HandlerFunc {
+func newClaimsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		claimsValue, found := c.Get("claims")
 		if !found {
