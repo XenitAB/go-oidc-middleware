@@ -2,9 +2,12 @@ package oidchttp
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/mux"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
 	"github.com/xenitab/go-oidc-middleware/options"
@@ -14,6 +17,8 @@ const testName = "OidcHttp"
 
 func TestSuite(t *testing.T) {
 	oidctesting.RunTests(t, testName, testNewHandlerFn(t), testToHandlerFn(t))
+	oidctesting.RunTests(t, fmt.Sprintf("%sMux", testName), testNewMuxHandlerFn(t), testToMuxHandlerFn(t))
+	oidctesting.RunTests(t, fmt.Sprintf("%sChi", testName), testNewChiHandlerFn(t), testToChiHandlerFn(t))
 }
 
 func BenchmarkSuite(b *testing.B) {
@@ -29,6 +34,24 @@ func testNewHandlerFn(tb testing.TB) func(opts ...options.Option) http.Handler {
 	}
 }
 
+func testNewMuxHandlerFn(tb testing.TB) func(opts ...options.Option) http.Handler {
+	tb.Helper()
+
+	return func(opts ...options.Option) http.Handler {
+		router := testGetMuxRouter(tb)
+		return New(router, opts...)
+	}
+}
+
+func testNewChiHandlerFn(tb testing.TB) func(opts ...options.Option) http.Handler {
+	tb.Helper()
+
+	return func(opts ...options.Option) http.Handler {
+		router := testGetChiRouter(tb)
+		return New(router, opts...)
+	}
+}
+
 func testToHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Handler {
 	tb.Helper()
 
@@ -38,10 +61,48 @@ func testToHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Ha
 	}
 }
 
+func testToMuxHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Handler {
+	tb.Helper()
+
+	return func(parseToken oidc.ParseTokenFunc) http.Handler {
+		router := testGetMuxRouter(tb)
+		return toHttpHandler(router, parseToken)
+	}
+}
+
+func testToChiHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Handler {
+	tb.Helper()
+
+	return func(parseToken oidc.ParseTokenFunc) http.Handler {
+		router := testGetMuxRouter(tb)
+		return toHttpHandler(router, parseToken)
+	}
+}
+
 func testGetHttpHandler(tb testing.TB) http.Handler {
 	tb.Helper()
 
-	fn := func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(testNewClaimsHandler(tb))
+}
+
+func testGetMuxRouter(tb testing.TB) http.Handler {
+	router := mux.NewRouter()
+	router.HandleFunc("/", testNewClaimsHandler(tb)).Methods(http.MethodGet).Path("/")
+
+	return router
+}
+
+func testGetChiRouter(tb testing.TB) http.Handler {
+	router := chi.NewRouter()
+	router.Get("/", testNewClaimsHandler(tb))
+
+	return router
+}
+
+func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Request) {
+	tb.Helper()
+
+	return func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsContextKey).(map[string]interface{})
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -55,6 +116,4 @@ func testGetHttpHandler(tb testing.TB) http.Handler {
 			return
 		}
 	}
-
-	return http.HandlerFunc(fn)
 }
