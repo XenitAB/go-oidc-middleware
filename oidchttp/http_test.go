@@ -86,6 +86,8 @@ func testGetHttpHandler(tb testing.TB) http.Handler {
 }
 
 func testGetMuxRouter(tb testing.TB) http.Handler {
+	tb.Helper()
+
 	router := mux.NewRouter()
 	router.HandleFunc("/", testNewClaimsHandler(tb)).Methods(http.MethodGet).Path("/")
 
@@ -93,6 +95,8 @@ func testGetMuxRouter(tb testing.TB) http.Handler {
 }
 
 func testGetChiRouter(tb testing.TB) http.Handler {
+	tb.Helper()
+
 	router := chi.NewRouter()
 	router.Get("/", testNewClaimsHandler(tb))
 
