@@ -28,7 +28,7 @@ func RunBenchmarks(b *testing.B, testName string, newHandlerFn newHandlerFn) {
 func benchmarkHandler(b *testing.B, testName string, newHandlerFn newHandlerFn) {
 	b.Helper()
 
-	b.Run(testName, func(b *testing.B) {
+	b.Run(fmt.Sprintf("handler_%s", testName), func(b *testing.B) {
 		op := server.NewTesting(b)
 		defer op.Close(b)
 
@@ -47,7 +47,7 @@ func benchmarkHandler(b *testing.B, testName string, newHandlerFn newHandlerFn) 
 func benchmarkRequirements(b *testing.B, testName string, newHandlerFn newHandlerFn) {
 	b.Helper()
 
-	b.Run(testName, func(b *testing.B) {
+	b.Run(fmt.Sprintf("requirements_%s", testName), func(b *testing.B) {
 		op := server.NewTesting(b)
 		defer op.Close(b)
 
@@ -71,7 +71,7 @@ func benchmarkRequirements(b *testing.B, testName string, newHandlerFn newHandle
 func benchmarkHttp(b *testing.B, testName string, newHandlerFn newHandlerFn) {
 	b.Helper()
 
-	b.Run(testName, func(b *testing.B) {
+	b.Run(fmt.Sprintf("http_%s", testName), func(b *testing.B) {
 		op := server.NewTesting(b)
 		defer op.Close(b)
 
@@ -147,7 +147,7 @@ func TestHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
 func testNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	t.Helper()
 
-	t.Run(testName, func(t *testing.T) {
+	t.Run(fmt.Sprintf("new_%s", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
@@ -231,7 +231,7 @@ func testNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 func testHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	t.Helper()
 
-	t.Run(testName, func(t *testing.T) {
+	t.Run(fmt.Sprintf("handler_%s", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
@@ -263,7 +263,7 @@ func testHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 func testLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
 	t.Helper()
 
-	t.Run(testName, func(t *testing.T) {
+	t.Run(fmt.Sprintf("lazy_load_%s", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
@@ -298,7 +298,7 @@ func testLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
 func testRequirements(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	t.Helper()
 
-	t.Run(testName, func(t *testing.T) {
+	t.Run(fmt.Sprintf("requirements_%s", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
