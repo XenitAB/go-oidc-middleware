@@ -105,6 +105,7 @@ type Options struct {
 	TokenString []TokenStringOption
 
 	// ClaimsContextKey is the name of key that will be used to pass claims using request context.
+	// Not supported by Echo JWT and will be ignored if used by it.
 	// Default: claims
 	ClaimsContextKeyName ClaimsContextKeyName
 }
