@@ -28,7 +28,7 @@ func TestOptions(t *testing.T) {
 			Timeout: 1234 * time.Second,
 		},
 		TokenString:          nil,
-		ClaimsContextKeyName: ContextKeyName("foo"),
+		ClaimsContextKeyName: ClaimsContextKeyName("foo"),
 	}
 
 	expectedTokenString := &TokenStringOptions{

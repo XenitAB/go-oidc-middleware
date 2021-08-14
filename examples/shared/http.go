@@ -12,12 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/options"
 	"golang.org/x/sync/errgroup"
 )
 
 func NewHttpClaimsHandler() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value("claims").(map[string]interface{})
+		claims, ok := r.Context().Value(options.ClaimsContextKeyName("claims")).(map[string]interface{})
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return

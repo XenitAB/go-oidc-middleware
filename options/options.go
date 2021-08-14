@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// ContextKeyName is the type for they key value used to pass claims using request context.
+// ClaimsContextKeyName is the type for they key value used to pass claims using request context.
 // Using separate type because of the following: https://staticcheck.io/docs/checks#SA1029
-type ContextKeyName string
+type ClaimsContextKeyName string
 
 // Options defines the options for OIDC Middleware.
 type Options struct {
@@ -106,7 +106,7 @@ type Options struct {
 
 	// ClaimsContextKey is the name of key that will be used to pass claims using request context.
 	// Default: claims
-	ClaimsContextKeyName ContextKeyName
+	ClaimsContextKeyName ClaimsContextKeyName
 }
 
 func New(setters ...Option) *Options {
@@ -229,6 +229,6 @@ func WithTokenString(setters ...TokenStringOption) Option {
 // WithClaimsContextKeyName sets the ClaimsContextKeyName parameter for an Options pointer.
 func WithClaimsContextKeyName(opt string) Option {
 	return func(opts *Options) {
-		opts.ClaimsContextKeyName = ContextKeyName(opt)
+		opts.ClaimsContextKeyName = ClaimsContextKeyName(opt)
 	}
 }
