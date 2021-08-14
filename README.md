@@ -53,13 +53,8 @@ e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 
 ```go
 func newClaimsHandler(c echo.Context) error {
-	token, ok := c.Get("user").(jwt.Token)
+	claims, ok := c.Get("user").(map[string]interface{})
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
-	}
-
-	claims, err := token.AsMap(c.Request().Context())
-	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 	}
 

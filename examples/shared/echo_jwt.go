@@ -7,19 +7,13 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/lestrrat-go/jwx/jwt"
 )
 
 type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
 
 func newEchoJWTClaimsHandler(c echo.Context) error {
-	token, ok := c.Get("user").(jwt.Token)
+	claims, ok := c.Get("user").(map[string]interface{})
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
-	}
-
-	claims, err := token.AsMap(c.Request().Context())
-	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 	}
 
