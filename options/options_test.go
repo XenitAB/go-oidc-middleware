@@ -27,7 +27,8 @@ func TestOptions(t *testing.T) {
 		HttpClient: &http.Client{
 			Timeout: 1234 * time.Second,
 		},
-		TokenString: nil,
+		TokenString:          nil,
+		ClaimsContextKeyName: ContextKeyName("foo"),
 	}
 
 	expectedTokenString := &TokenStringOptions{
@@ -59,6 +60,7 @@ func TestOptions(t *testing.T) {
 			WithTokenStringDelimiter("_"),
 			WithTokenStringTokenType("bar"),
 		),
+		WithClaimsContextKeyName("foo"),
 	}
 
 	result := &Options{}
