@@ -9,6 +9,8 @@ import (
 // Using separate type because of the following: https://staticcheck.io/docs/checks#SA1029
 type ClaimsContextKeyName string
 
+const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
+
 // Options defines the options for OIDC Middleware.
 type Options struct {
 	// Issuer is the authority that issues the tokens
@@ -104,9 +106,18 @@ type Options struct {
 	// Defaults to: 'Authorization: Bearer JWT'
 	TokenString []TokenStringOption
 
-	// ClaimsContextKey is the name of key that will be used to pass claims using request context.
+	// ClaimsContextKeyName is the name of key that will be used to pass claims using request context.
 	// Not supported by Echo JWT and will be ignored if used by it.
-	// Default: claims
+	//
+	// Important note: If you change this using `options.WithClaimsContextKeyName("foo")`, then
+	// you also need to use it like this:
+	// `claims, ok := r.Context().Value(options.ClaimsContextKeyName("foo")).(map[string]interface{})`
+	//
+	// Default: `options.DefaultClaimsContextKeyName`
+	// Used like this: ``claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})``
+	//
+	// When used with gin, it is converted to normal string - by default:
+	// `claimsValue, found := c.Get("claims")`
 	ClaimsContextKeyName ClaimsContextKeyName
 }
 
@@ -116,7 +127,7 @@ func New(setters ...Option) *Options {
 		JwksRateLimit:        1,
 		AllowedTokenDrift:    10 * time.Second,
 		HttpClient:           http.DefaultClient,
-		ClaimsContextKeyName: "claims",
+		ClaimsContextKeyName: DefaultClaimsContextKeyName,
 	}
 
 	for _, setter := range setters {
