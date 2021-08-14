@@ -25,7 +25,17 @@ func toEchoJWTParseTokenFunc(parseToken oidc.ParseTokenFunc) echoJWTParseTokenFu
 	echoJWTParseTokenFunc := func(auth string, c echo.Context) (interface{}, error) {
 		ctx := c.Request().Context()
 
-		return parseToken(ctx, auth)
+		token, err := parseToken(ctx, auth)
+		if err != nil {
+			return nil, err
+		}
+
+		tokenClaims, err := token.AsMap(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return tokenClaims, nil
 	}
 
 	return echoJWTParseTokenFunc
