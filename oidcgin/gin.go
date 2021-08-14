@@ -17,19 +17,16 @@ func New(setters ...options.Option) gin.HandlerFunc {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	opts := &options.Options{}
-	for _, setter := range setters {
-		setter(opts)
-	}
-
-	return toGinHandler(oidcHandler.ParseToken, opts.TokenString...)
+	return toGinHandler(oidcHandler.ParseToken, setters...)
 }
 
-func toGinHandler(parseToken oidc.ParseTokenFunc, tokenStringOptions ...options.TokenStringOption) gin.HandlerFunc {
+func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin.HandlerFunc {
+	opts := options.New(setters...)
+
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tokenString, err := oidc.GetTokenStringFromRequest(c.Request, tokenStringOptions...)
+		tokenString, err := oidc.GetTokenStringFromRequest(c.Request, opts.TokenString...)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
@@ -47,7 +44,7 @@ func toGinHandler(parseToken oidc.ParseTokenFunc, tokenStringOptions ...options.
 			return
 		}
 
-		c.Set("claims", tokenClaims)
+		c.Set(string(opts.ClaimsContextKeyName), tokenClaims)
 
 		c.Next()
 	}

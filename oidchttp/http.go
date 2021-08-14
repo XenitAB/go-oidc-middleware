@@ -9,14 +9,6 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-// ContextKey is the type for they key value used to pass claims using request context.
-type ContextKey string
-
-const (
-	// ClaimsContextKey is the key (`claims`) that will be used to pass claims using request context.
-	ClaimsContextKey ContextKey = "claims"
-)
-
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `net/http`, `mux` and `chi`.
 func New(h http.Handler, setters ...options.Option) http.Handler {
@@ -25,19 +17,16 @@ func New(h http.Handler, setters ...options.Option) http.Handler {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	opts := &options.Options{}
-	for _, setter := range setters {
-		setter(opts)
-	}
-
-	return toHttpHandler(h, oidcHandler.ParseToken, opts.TokenString...)
+	return toHttpHandler(h, oidcHandler.ParseToken, setters...)
 }
 
-func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, tokenStringOptions ...options.TokenStringOption) http.Handler {
+func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, setters ...options.Option) http.Handler {
+	opts := options.New(setters...)
+
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tokenString, err := oidc.GetTokenStringFromRequest(r, tokenStringOptions...)
+		tokenString, err := oidc.GetTokenStringFromRequest(r, opts.TokenString...)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -55,7 +44,7 @@ func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, tokenStringOp
 			return
 		}
 
-		ctxWithClaims := context.WithValue(ctx, ClaimsContextKey, tokenClaims)
+		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, tokenClaims)
 		reqWithClaims := r.WithContext(ctxWithClaims)
 
 		h.ServeHTTP(w, reqWithClaims)
