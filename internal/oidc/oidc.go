@@ -39,16 +39,7 @@ type handler struct {
 }
 
 func NewHandler(setters ...options.Option) (*handler, error) {
-	opts := &options.Options{
-		JwksFetchTimeout:  5 * time.Second,
-		JwksRateLimit:     1,
-		AllowedTokenDrift: 10 * time.Second,
-		HttpClient:        http.DefaultClient,
-	}
-
-	for _, setter := range setters {
-		setter(opts)
-	}
+	opts := options.New(setters...)
 
 	h := &handler{
 		issuer:            opts.Issuer,

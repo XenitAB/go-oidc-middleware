@@ -42,6 +42,8 @@ func testToHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Ha
 func testGetGinRouter(tb testing.TB, middleware gin.HandlerFunc) *gin.Engine {
 	tb.Helper()
 
+	opts := options.New()
+
 	// remove debug output from tests
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
@@ -52,7 +54,7 @@ func testGetGinRouter(tb testing.TB, middleware gin.HandlerFunc) *gin.Engine {
 	r.Use(middleware)
 
 	r.GET("/", func(c *gin.Context) {
-		claimsValue, found := c.Get("claims")
+		claimsValue, found := c.Get(string(opts.ClaimsContextKeyName))
 		if !found {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return

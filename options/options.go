@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+// ContextKeyName is the type for they key value used to pass claims using request context.
+// Using separate type because of the following: https://staticcheck.io/docs/checks#SA1029
+type ContextKeyName string
+
 // Options defines the options for OIDC Middleware.
 type Options struct {
 	// Issuer is the authority that issues the tokens
@@ -97,8 +101,28 @@ type Options struct {
 
 	// TokenString makes it possible to configure how the JWT token should be extracted from
 	// an http header. Not supported by Echo JWT and will be ignored if used by it.
-	// Defaults to: Authorization: Bearer JWT
+	// Defaults to: 'Authorization: Bearer JWT'
 	TokenString []TokenStringOption
+
+	// ClaimsContextKey is the name of key that will be used to pass claims using request context.
+	// Default: claims
+	ClaimsContextKeyName ContextKeyName
+}
+
+func New(setters ...Option) *Options {
+	opts := &Options{
+		JwksFetchTimeout:     5 * time.Second,
+		JwksRateLimit:        1,
+		AllowedTokenDrift:    10 * time.Second,
+		HttpClient:           http.DefaultClient,
+		ClaimsContextKeyName: "claims",
+	}
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return opts
 }
 
 // Option returns a function that modifies an Options pointer.
@@ -199,5 +223,12 @@ func WithHttpClient(opt *http.Client) Option {
 func WithTokenString(setters ...TokenStringOption) Option {
 	return func(opts *Options) {
 		opts.TokenString = append(opts.TokenString, setters...)
+	}
+}
+
+// WithClaimsContextKeyName sets the ClaimsContextKeyName parameter for an Options pointer.
+func WithClaimsContextKeyName(opt string) Option {
+	return func(opts *Options) {
+		opts.ClaimsContextKeyName = ContextKeyName(opt)
 	}
 }

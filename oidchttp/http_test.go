@@ -106,8 +106,10 @@ func testGetChiRouter(tb testing.TB) http.Handler {
 func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Request) {
 	tb.Helper()
 
+	opts := options.New()
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(ClaimsContextKey).(map[string]interface{})
+		claims, ok := r.Context().Value(opts.ClaimsContextKeyName).(map[string]interface{})
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return

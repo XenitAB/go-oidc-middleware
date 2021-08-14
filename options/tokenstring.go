@@ -15,6 +15,20 @@ type TokenStringOptions struct {
 	TokenType string
 }
 
+func NewTokenString(setters ...TokenStringOption) *TokenStringOptions {
+	opts := &TokenStringOptions{
+		HeaderName: "Authorization",
+		Delimiter:  " ",
+		TokenType:  "Bearer",
+	}
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return opts
+}
+
 // TokenStringOption returns a function that modifies a TokenStringOptions pointer.
 type TokenStringOption func(*TokenStringOptions)
 

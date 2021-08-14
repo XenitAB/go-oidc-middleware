@@ -10,15 +10,7 @@ import (
 
 // GetTokenStringFromRequest extracts a token string from an http request.
 func GetTokenStringFromRequest(r *http.Request, setters ...options.TokenStringOption) (string, error) {
-	opts := &options.TokenStringOptions{
-		HeaderName: "Authorization",
-		Delimiter:  " ",
-		TokenType:  "Bearer",
-	}
-
-	for _, setter := range setters {
-		setter(opts)
-	}
+	opts := options.NewTokenString(setters...)
 
 	authz := r.Header.Get(opts.HeaderName)
 	if authz == "" {
