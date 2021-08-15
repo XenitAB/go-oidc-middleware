@@ -15,6 +15,10 @@ func TestSuiteChi(t *testing.T) {
 	oidctesting.RunTests(t, fmt.Sprintf("%sChi", testName), newTestChiHandler(t))
 }
 
+func BenchmarkSuiteChi(b *testing.B) {
+	oidctesting.RunBenchmarks(b, fmt.Sprintf("%sChi", testName), newTestChiHandler(b))
+}
+
 func testGetChiRouter(tb testing.TB) http.Handler {
 	tb.Helper()
 

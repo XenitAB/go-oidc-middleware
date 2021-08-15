@@ -15,6 +15,10 @@ func TestSuiteMux(t *testing.T) {
 	oidctesting.RunTests(t, fmt.Sprintf("%sMux", testName), newTestMuxHandler(t))
 }
 
+func BenchmarkSuiteMux(b *testing.B) {
+	oidctesting.RunBenchmarks(b, fmt.Sprintf("%sMux", testName), newTestMuxHandler(b))
+}
+
 func testGetMuxRouter(tb testing.TB) http.Handler {
 	tb.Helper()
 
