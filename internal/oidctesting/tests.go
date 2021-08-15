@@ -13,19 +13,27 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type newHandlerFn func(opts ...options.Option) http.Handler
-type toHandlerFn func(parseToken oidc.ParseTokenFunc) http.Handler
-
-func RunTests(t *testing.T, testName string, newHandlerFn newHandlerFn, toHandlerFn toHandlerFn) {
-	t.Helper()
-
-	runTestNew(t, testName, newHandlerFn)
-	runTestHandler(t, testName, newHandlerFn)
-	runTestLazyLoad(t, testName, toHandlerFn)
-	runTestRequirements(t, testName, newHandlerFn)
+type ServerTester interface {
+	Close()
+	URL() string
 }
 
-func runTestNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
+type tester interface {
+	NewHandlerFn(opts ...options.Option) http.Handler
+	ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler
+	NewTestServer(opts ...options.Option) ServerTester
+}
+
+func RunTests(t *testing.T, testName string, tester tester) {
+	t.Helper()
+
+	runTestNew(t, testName, tester)
+	runTestHandler(t, testName, tester)
+	runTestLazyLoad(t, testName, tester)
+	runTestRequirements(t, testName, tester)
+}
+
+func runTestNew(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_new", testName), func(t *testing.T) {
@@ -102,22 +110,22 @@ func runTestNew(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 			if c.expectPanic {
-				require.Panics(t, func() { newHandlerFn(c.config...) })
+				require.Panics(t, func() { tester.NewHandlerFn(c.config...) })
 			} else {
-				require.NotPanics(t, func() { newHandlerFn(c.config...) })
+				require.NotPanics(t, func() { tester.NewHandlerFn(c.config...) })
 			}
 		}
 	})
 }
 
-func runTestHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
+func runTestHandler(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_handler", testName), func(t *testing.T) {
 		op := server.NewTesting(t)
 		defer op.Close(t)
 
-		handler := newHandlerFn(
+		handler := tester.NewHandlerFn(
 			options.WithIssuer(op.GetURL(t)),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
@@ -147,7 +155,7 @@ func runTestHandler(t *testing.T, testName string, newHandlerFn newHandlerFn) {
 	})
 }
 
-func runTestLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
+func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_lazy_load", testName), func(t *testing.T) {
@@ -162,7 +170,7 @@ func runTestLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
 		)
 		require.NoError(t, err)
 
-		handler := toHandlerFn(oidcHandler.ParseToken)
+		handler := tester.ToHandlerFn(oidcHandler.ParseToken)
 
 		// Test without authentication
 		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -182,7 +190,7 @@ func runTestLazyLoad(t *testing.T, testName string, toHandlerFn toHandlerFn) {
 	})
 }
 
-func runTestRequirements(t *testing.T, testName string, newHandlerFn newHandlerFn) {
+func runTestRequirements(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_requirements", testName), func(t *testing.T) {
@@ -259,7 +267,7 @@ func runTestRequirements(t *testing.T, testName string, newHandlerFn newHandlerF
 			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 
-			handler := newHandlerFn(c.options...)
+			handler := tester.NewHandlerFn(c.options...)
 			token := op.GetToken(t)
 
 			if c.succeeds {

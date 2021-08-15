@@ -1,11 +1,13 @@
 package oidcfiber
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/phayes/freeport"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
@@ -15,35 +17,19 @@ import (
 const testName = "OidcFiber"
 
 func TestSuite(t *testing.T) {
-	oidctesting.RunTests(t, testName, testNewHandlerFn(t), testToHandlerFn(t))
+	oidctesting.RunTests(t, testName, newTestHandler(t))
 }
 
 func BenchmarkSuite(b *testing.B) {
-	oidctesting.RunBenchmarks(b, testName, testNewHandlerFn(b))
+	oidctesting.RunBenchmarks(b, testName, newTestHandler(b))
 }
 
-func testNewHandlerFn(tb testing.TB) func(opts ...options.Option) http.Handler {
+func testGetFiberRouter(tb testing.TB, middleware fiber.Handler) *fiber.App {
 	tb.Helper()
 
-	return func(opts ...options.Option) http.Handler {
-		middleware := New(opts...)
-		return testGetFiberRouter(tb, middleware)
-	}
-}
-
-func testToHandlerFn(tb testing.TB) func(parseToken oidc.ParseTokenFunc) http.Handler {
-	tb.Helper()
-
-	return func(parseToken oidc.ParseTokenFunc) http.Handler {
-		middleware := toFiberHandler(parseToken)
-		return testGetFiberRouter(tb, middleware)
-	}
-}
-
-func testGetFiberRouter(tb testing.TB, middleware fiber.Handler) http.Handler {
-	tb.Helper()
-
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		DisableStartupMessage: true,
+	})
 	app.Use(middleware)
 
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -55,20 +41,102 @@ func testGetFiberRouter(tb testing.TB, middleware fiber.Handler) http.Handler {
 		return c.JSON(claims)
 	})
 
-	fiberHttp := &testFiberHttpHandler{
-		app: app,
-		tb:  tb,
-	}
-
-	return fiberHttp
+	return app
 }
 
-type testFiberHttpHandler struct {
+type testServer struct {
+	tb   testing.TB
+	app  *fiber.App
+	port int
+}
+
+func newTestServer(tb testing.TB, app *fiber.App) *testServer {
+	tb.Helper()
+
+	port, err := freeport.GetFreePort()
+	require.NoError(tb, err)
+
+	go func() {
+		err := app.Listen(fmt.Sprintf("127.0.0.1:%d", port))
+		require.NoError(tb, err)
+	}()
+
+	return &testServer{
+		tb:   tb,
+		app:  app,
+		port: port,
+	}
+}
+
+func (srv *testServer) Close() {
+	srv.tb.Helper()
+
+	err := srv.app.Shutdown()
+	require.NoError(srv.tb, err)
+}
+
+func (srv *testServer) URL() string {
+	srv.tb.Helper()
+
+	return fmt.Sprintf("http://127.0.0.1:%d", srv.port)
+}
+
+type testHandler struct {
+	tb testing.TB
+}
+
+func newTestHandler(tb testing.TB) *testHandler {
+	tb.Helper()
+
+	return &testHandler{
+		tb: tb,
+	}
+}
+
+func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+	h.tb.Helper()
+
+	middleware := New(opts...)
+	app := testGetFiberRouter(h.tb, middleware)
+
+	return newTestFiberHandler(h.tb, app)
+}
+
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler {
+	h.tb.Helper()
+
+	middleware := toFiberHandler(parseToken)
+	app := testGetFiberRouter(h.tb, middleware)
+
+	return newTestFiberHandler(h.tb, app)
+}
+
+func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
+	h.tb.Helper()
+
+	middleware := New(opts...)
+	app := testGetFiberRouter(h.tb, middleware)
+
+	return newTestServer(h.tb, app)
+}
+
+type testFiberHandler struct {
 	app *fiber.App
 	tb  testing.TB
 }
 
-func (f *testFiberHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func newTestFiberHandler(tb testing.TB, app *fiber.App) http.Handler {
+	tb.Helper()
+
+	fiberHandler := &testFiberHandler{
+		app: app,
+		tb:  tb,
+	}
+
+	return fiberHandler
+}
+
+func (f *testFiberHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res, err := f.app.Test(r)
 	require.NoError(f.tb, err)
 
