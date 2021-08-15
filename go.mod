@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/gin-gonic/gin v1.7.3
 	github.com/go-chi/chi/v5 v5.0.3
+	github.com/gofiber/fiber/v2 v2.17.0
 	github.com/gorilla/mux v1.8.0
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/lestrrat-go/jwx v1.2.5
