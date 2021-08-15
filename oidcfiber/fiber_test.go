@@ -137,7 +137,7 @@ func newTestFiberHandler(tb testing.TB, app *fiber.App) http.Handler {
 }
 
 func (f *testFiberHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	res, err := f.app.Test(r)
+	res, err := f.app.Test(r, -1)
 	require.NoError(f.tb, err)
 
 	for name, values := range res.Header {

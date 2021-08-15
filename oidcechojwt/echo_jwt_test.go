@@ -2,6 +2,7 @@ package oidcechojwt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -63,7 +64,9 @@ func newTestServer(tb testing.TB, e *echo.Echo) *testServer {
 
 	go func() {
 		err := e.Start(fmt.Sprintf("127.0.0.1:%d", port))
-		require.NoError(tb, err)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			require.NoError(tb, err)
+		}
 	}()
 
 	return &testServer{
