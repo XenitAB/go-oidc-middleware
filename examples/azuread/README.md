@@ -58,6 +58,15 @@ TOKEN_AUDIENCE=$(az ad app list --identifier-uri ${AZ_APP_URI} | jq -r ".[0].app
 go run ./azuread/gin/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --token-tenant-id ${TENANT_ID} --port 8081
 ```
 
+### fiber
+
+```shell
+TENANT_ID=$(az account show -o json | jq -r .tenantId)
+TOKEN_ISSUER="https://login.microsoftonline.com/${TENANT_ID}/v2.0"
+TOKEN_AUDIENCE=$(az ad app list --identifier-uri ${AZ_APP_URI} | jq -r ".[0].appId")
+go run ./azuread/fiber/main.go --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --token-tenant-id ${TENANT_ID} --port 8081
+```
+
 ## Test with curl
 
 ### Using Azure CLI

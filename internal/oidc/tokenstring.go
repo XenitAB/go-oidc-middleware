@@ -17,6 +17,17 @@ func GetTokenStringFromRequest(r *http.Request, setters ...options.TokenStringOp
 		return "", fmt.Errorf("%s header empty", opts.HeaderName)
 	}
 
+	return GetTokenStringFromString(authz, setters...)
+}
+
+// GetTokenStringFromString extracts a token string from a string.
+func GetTokenStringFromString(authz string, setters ...options.TokenStringOption) (string, error) {
+	opts := options.NewTokenString(setters...)
+
+	if authz == "" {
+		return "", fmt.Errorf("%s header empty", opts.HeaderName)
+	}
+
 	comp := strings.Split(authz, opts.Delimiter)
 	if len(comp) != 2 {
 		return "", fmt.Errorf("%s header components not 2 but: %d", opts.HeaderName, len(comp))

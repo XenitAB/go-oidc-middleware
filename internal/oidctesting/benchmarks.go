@@ -3,7 +3,6 @@ package oidctesting
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -13,22 +12,22 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func RunBenchmarks(b *testing.B, testName string, newHandlerFn newHandlerFn) {
+func RunBenchmarks(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
-	runBenchmarkHandler(b, testName, newHandlerFn)
-	runBenchmarkRequirements(b, testName, newHandlerFn)
-	runBenchmarkHttp(b, testName, newHandlerFn)
+	runBenchmarkHandler(b, testName, tester)
+	runBenchmarkRequirements(b, testName, tester)
+	runBenchmarkHttp(b, testName, tester)
 }
 
-func runBenchmarkHandler(b *testing.B, testName string, newHandlerFn newHandlerFn) {
+func runBenchmarkHandler(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_handler", testName), func(b *testing.B) {
 		op := server.NewTesting(b)
 		defer op.Close(b)
 
-		handler := newHandlerFn(
+		handler := tester.NewHandlerFn(
 			options.WithIssuer(op.GetURL(b)),
 		)
 
@@ -40,14 +39,14 @@ func runBenchmarkHandler(b *testing.B, testName string, newHandlerFn newHandlerF
 	})
 }
 
-func runBenchmarkRequirements(b *testing.B, testName string, newHandlerFn newHandlerFn) {
+func runBenchmarkRequirements(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_requirements", testName), func(b *testing.B) {
 		op := server.NewTesting(b)
 		defer op.Close(b)
 
-		handler := newHandlerFn(
+		handler := tester.NewHandlerFn(
 			options.WithIssuer(op.GetURL(b)),
 			options.WithRequiredTokenType("JWT+AT"),
 			options.WithRequiredAudience("test-client"),
@@ -64,22 +63,21 @@ func runBenchmarkRequirements(b *testing.B, testName string, newHandlerFn newHan
 	})
 }
 
-func runBenchmarkHttp(b *testing.B, testName string, newHandlerFn newHandlerFn) {
+func runBenchmarkHttp(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_http", testName), func(b *testing.B) {
 		op := server.NewTesting(b)
 		defer op.Close(b)
 
-		handler := newHandlerFn(
+		testServer := tester.NewTestServer(
 			options.WithIssuer(op.GetURL(b)),
 		)
 
-		testServer := httptest.NewServer(handler)
 		defer testServer.Close()
 
 		fn := func(token *oauth2.Token) {
-			benchmarkHttpRequest(b, testServer.URL, token)
+			benchmarkHttpRequest(b, testServer.URL(), token)
 		}
 
 		runBenchmarkConcurrent(b, op.GetToken, fn)

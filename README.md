@@ -19,9 +19,10 @@ This library is under active development and the api will have breaking changes 
 
 ## Currently Supported frameworks
 
-- Echo (JWT ParseTokenFunc)
-- net/http, mux & chi
-- gin
+- [Echo (JWT ParseTokenFunc)](https://echo.labstack.com/middleware/jwt/#custom-configuration)
+- [net/http](https://pkg.go.dev/net/http), [mux](https://github.com/gorilla/mux) & [chi](https://github.com/go-chi/chi)
+- [gin](https://github.com/gin-gonic/gin)
+- [fiber](https://github.com/gofiber/fiber)
 
 ### Using options
 
@@ -143,6 +144,41 @@ func newClaimsHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, claims)
+	}
+}
+```
+
+### fiber
+
+**Import**
+
+`"github.com/xenitab/go-oidc-middleware/oidcfiber"`
+
+**Middleware**
+
+```go
+oidcHandler := oidcfiber.New(
+	options.WithIssuer(cfg.Issuer),
+	options.WithRequiredTokenType("JWT"),
+	options.WithRequiredAudience(cfg.Audience),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
+		"tid": cfg.TenantID,
+	}),
+)
+```
+
+**Handler**
+
+```go
+func newClaimsHandler() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("claims").(map[string]interface{})
+		if !ok {
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+
+		return c.JSON(claims)
 	}
 }
 ```
