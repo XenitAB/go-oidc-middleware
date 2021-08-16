@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
-	github.com/gin-gonic/gin v1.7.3
+	github.com/gin-gonic/gin v1.7.4
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/gofiber/fiber/v2 v2.17.0
 	github.com/gorilla/mux v1.8.0
