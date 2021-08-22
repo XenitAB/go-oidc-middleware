@@ -3,8 +3,13 @@ module examples
 go 1.16
 
 require (
+<<<<<<< HEAD
 	github.com/cristalhq/aconfig v0.16.5
 	github.com/gin-gonic/gin v1.7.3
+=======
+	github.com/cristalhq/aconfig v0.16.2
+	github.com/gin-gonic/gin v1.7.4
+>>>>>>> dependabot/go_modules/examples/github.com/gin-gonic/gin-1.7.4
 	github.com/gofiber/fiber/v2 v2.17.0
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/pkg/browser v0.0.0-20210706143420-7d21f8c997e2
