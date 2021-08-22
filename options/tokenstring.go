@@ -6,6 +6,11 @@ type TokenStringOptions struct {
 	// Default: "Authorization"
 	HeaderName string
 
+	// HeaderValueSeparator defines if the header value is separated into an array and if so what the separator is
+	// Default: ""
+	// Example could be: `HeaderName = foo,Bearer token,bar` and in that case HeaderValueSeparator should be set to "," (comma)
+	HeaderValueSeparator string
+
 	// Delimiter is the delimiter between the token type and the token.
 	// Default: " " (single space)
 	Delimiter string
@@ -17,9 +22,10 @@ type TokenStringOptions struct {
 
 func NewTokenString(setters ...TokenStringOption) *TokenStringOptions {
 	opts := &TokenStringOptions{
-		HeaderName: "Authorization",
-		Delimiter:  " ",
-		TokenType:  "Bearer",
+		HeaderName:           "Authorization",
+		HeaderValueSeparator: "",
+		Delimiter:            " ",
+		TokenType:            "Bearer",
 	}
 
 	for _, setter := range setters {
@@ -36,6 +42,13 @@ type TokenStringOption func(*TokenStringOptions)
 func WithTokenStringHeaderName(opt string) TokenStringOption {
 	return func(opts *TokenStringOptions) {
 		opts.HeaderName = opt
+	}
+}
+
+// WithHeaderValueSeparator sets the HeaderValueSeparator parameter for a TokenStringOptions pointer.
+func WithHeaderValueSeparator(opt string) TokenStringOption {
+	return func(opts *TokenStringOptions) {
+		opts.HeaderValueSeparator = opt
 	}
 }
 

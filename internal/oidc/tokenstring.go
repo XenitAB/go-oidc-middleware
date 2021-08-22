@@ -2,26 +2,54 @@ package oidc
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-// GetTokenStringFromRequest extracts a token string from an http request.
-func GetTokenStringFromRequest(r *http.Request, setters ...options.TokenStringOption) (string, error) {
+type GetHeaderFn func(key string) string
+
+// GetTokenString extracts a token string
+func GetTokenString(getHeaderFn GetHeaderFn, tokenStringOpts [][]options.TokenStringOption) (string, error) {
+	opts := tokenStringOpts
+	if len(opts) == 0 {
+		opts = append(opts, []options.TokenStringOption{})
+	}
+
+	var err error
+	for _, setters := range opts {
+		var tokenString string
+		tokenString, err = getTokenString(getHeaderFn, setters...)
+		if err == nil && tokenString != "" {
+			return tokenString, nil
+		}
+	}
+
+	return "", fmt.Errorf("unable to extract token: %w", err)
+}
+
+func getTokenString(getHeaderFn GetHeaderFn, setters ...options.TokenStringOption) (string, error) {
 	opts := options.NewTokenString(setters...)
 
-	authz := r.Header.Get(opts.HeaderName)
+	authz := getHeaderFn(opts.HeaderName)
 	if authz == "" {
 		return "", fmt.Errorf("%s header empty", opts.HeaderName)
 	}
 
-	return GetTokenStringFromString(authz, setters...)
+	if opts.HeaderValueSeparator != "" {
+		comp := strings.Split(authz, opts.HeaderValueSeparator)
+		for _, v := range comp {
+			tokenString, err := getTokenStringFromString(v, setters...)
+			if err == nil && tokenString != "" {
+				return tokenString, nil
+			}
+		}
+	}
+
+	return getTokenStringFromString(authz, setters...)
 }
 
-// GetTokenStringFromString extracts a token string from a string.
-func GetTokenStringFromString(authz string, setters ...options.TokenStringOption) (string, error) {
+func getTokenStringFromString(authz string, setters ...options.TokenStringOption) (string, error) {
 	opts := options.NewTokenString(setters...)
 
 	if authz == "" {

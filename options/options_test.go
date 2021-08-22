@@ -71,7 +71,7 @@ func TestOptions(t *testing.T) {
 
 	resultTokenString := &TokenStringOptions{}
 
-	for _, setter := range result.TokenString {
+	for _, setter := range result.TokenString[0] {
 		setter(resultTokenString)
 	}
 

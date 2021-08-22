@@ -13,7 +13,7 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 	cases := []struct {
 		testDescription       string
 		headers               http.Header
-		options               []options.TokenStringOption
+		options               [][]options.TokenStringOption
 		expectedToken         string
 		expectedErrorContains string
 	}{
@@ -21,7 +21,7 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 			testDescription:       "empty headers",
 			headers:               make(http.Header),
 			expectedToken:         "",
-			expectedErrorContains: "uthorization header empty",
+			expectedErrorContains: "Authorization header empty",
 		},
 		{
 			testDescription: "Authorization header empty",
@@ -84,12 +84,72 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 			headers: http.Header{
 				"Foo": {"Bar_baz"},
 			},
-			options: []options.TokenStringOption{
-				options.WithTokenStringHeaderName("Foo"),
-				options.WithTokenStringDelimiter("_"),
-				options.WithTokenStringTokenType("Bar"),
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Foo"),
+					options.WithTokenStringDelimiter("_"),
+					options.WithTokenStringTokenType("Bar"),
+				},
 			},
 			expectedToken:         "baz",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "test multiple options second header",
+			headers: http.Header{
+				"Too": {"Lar_kaz"},
+				"Foo": {"Bar_baz"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Foo"),
+					options.WithTokenStringDelimiter("_"),
+					options.WithTokenStringTokenType("Bar"),
+				},
+				{
+					options.WithTokenStringHeaderName("Too"),
+					options.WithTokenStringDelimiter("_"),
+					options.WithTokenStringTokenType("Lar"),
+				},
+			},
+			expectedToken:         "baz",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "test multiple options first header",
+			headers: http.Header{
+				"Too": {"Lar_kaz"},
+				"Foo": {"Bar_baz"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Too"),
+					options.WithTokenStringDelimiter("_"),
+					options.WithTokenStringTokenType("Lar"),
+				},
+				{
+					options.WithTokenStringHeaderName("Foo"),
+					options.WithTokenStringDelimiter("_"),
+					options.WithTokenStringTokenType("Bar"),
+				},
+			},
+			expectedToken:         "kaz",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "websockets",
+			headers: http.Header{
+				"Sec-WebSocket-Protocol": {"Foo.bar,Too.lar,Koo.nar"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
+					options.WithTokenStringDelimiter("."),
+					options.WithTokenStringTokenType("Too"),
+					options.WithHeaderValueSeparator(","),
+				},
+			},
+			expectedToken:         "lar",
 			expectedErrorContains: "",
 		},
 	}
@@ -103,7 +163,7 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 			req.Header[k] = v
 		}
 
-		token, err := GetTokenStringFromRequest(req, c.options...)
+		token, err := GetTokenString(req.Header.Get, c.options)
 		require.Equal(t, c.expectedToken, token)
 
 		if c.expectedErrorContains == "" {

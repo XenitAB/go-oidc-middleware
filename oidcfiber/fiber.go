@@ -21,14 +21,15 @@ func New(setters ...options.Option) fiber.Handler {
 
 func toFiberHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) fiber.Handler {
 	opts := options.New(setters...)
-	tokenStringOpts := options.NewTokenString(opts.TokenString...)
 
 	return func(c *fiber.Ctx) error {
 		ctx := c.Context()
 
-		authz := c.Get(tokenStringOpts.HeaderName)
+		getHeaderFn := func(key string) string {
+			return c.Get(key)
+		}
 
-		tokenString, err := oidc.GetTokenStringFromString(authz, opts.TokenString...)
+		tokenString, err := oidc.GetTokenString(getHeaderFn, opts.TokenString)
 		if err != nil {
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
