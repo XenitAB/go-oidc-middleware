@@ -6,26 +6,22 @@ type TokenStringOptions struct {
 	// Default: "Authorization"
 	HeaderName string
 
-	// HeaderValueSeparator defines if the header value is separated into an array and if so what the separator is
-	// Default: ""
-	// Example could be: `HeaderName = foo,Bearer token,bar` and in that case HeaderValueSeparator should be set to "," (comma)
-	HeaderValueSeparator string
+	// TokenPrefix defines the prefix that should be trimmed from the header value
+	// to extract the token.
+	// Default: "Bearer "
+	TokenPrefix string
 
-	// Delimiter is the delimiter between the token type and the token.
-	// Default: " " (single space)
-	Delimiter string
-
-	// TokenType is the type of token that is sent.
-	// Default: "Bearer"
-	TokenType string
+	// ListSeparator defines if the value of the header is a list or not.
+	// The value will be split (up to 20 slices) by the ListSeparator.
+	// Default disabled: ""
+	ListSeparator string
 }
 
 func NewTokenString(setters ...TokenStringOption) *TokenStringOptions {
 	opts := &TokenStringOptions{
-		HeaderName:           "Authorization",
-		HeaderValueSeparator: "",
-		Delimiter:            " ",
-		TokenType:            "Bearer",
+		HeaderName:    "Authorization",
+		TokenPrefix:   "Bearer ",
+		ListSeparator: "",
 	}
 
 	for _, setter := range setters {
@@ -45,23 +41,16 @@ func WithTokenStringHeaderName(opt string) TokenStringOption {
 	}
 }
 
-// WithHeaderValueSeparator sets the HeaderValueSeparator parameter for a TokenStringOptions pointer.
-func WithHeaderValueSeparator(opt string) TokenStringOption {
+// WithTokenStringTokenPrefix sets the TokenPrefix parameter for a TokenStringOptions pointer.
+func WithTokenStringTokenPrefix(opt string) TokenStringOption {
 	return func(opts *TokenStringOptions) {
-		opts.HeaderValueSeparator = opt
+		opts.TokenPrefix = opt
 	}
 }
 
-// WithTokenStringDelimiter sets the Delimiter parameter for a TokenStringOptions pointer.
-func WithTokenStringDelimiter(opt string) TokenStringOption {
+// WithTokenStringListSeparator sets the ListSeparator parameter for a TokenStringOptions pointer.
+func WithTokenStringListSeparator(opt string) TokenStringOption {
 	return func(opts *TokenStringOptions) {
-		opts.Delimiter = opt
-	}
-}
-
-// WithTokenStringTokenType sets the TokenType for a TokenStringOptions pointer.
-func WithTokenStringTokenType(opt string) TokenStringOption {
-	return func(opts *TokenStringOptions) {
-		opts.TokenType = opt
+		opts.ListSeparator = opt
 	}
 }

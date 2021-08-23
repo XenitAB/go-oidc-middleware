@@ -32,9 +32,9 @@ func TestOptions(t *testing.T) {
 	}
 
 	expectedTokenString := &TokenStringOptions{
-		HeaderName: "foo",
-		Delimiter:  "_",
-		TokenType:  "bar",
+		HeaderName:    "foo",
+		TokenPrefix:   "bar_",
+		ListSeparator: ",",
 	}
 
 	setters := []Option{
@@ -57,8 +57,8 @@ func TestOptions(t *testing.T) {
 		}),
 		WithTokenString(
 			WithTokenStringHeaderName("foo"),
-			WithTokenStringDelimiter("_"),
-			WithTokenStringTokenType("bar"),
+			WithTokenStringTokenPrefix("bar_"),
+			WithTokenStringListSeparator(","),
 		),
 		WithClaimsContextKeyName("foo"),
 	}

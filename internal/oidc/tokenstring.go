@@ -9,6 +9,8 @@ import (
 
 type GetHeaderFn func(key string) string
 
+const maxListSeparatorSlices = 20
+
 // GetTokenString extracts a token string
 func GetTokenString(getHeaderFn GetHeaderFn, tokenStringOpts [][]options.TokenStringOption) (string, error) {
 	opts := tokenStringOpts
@@ -31,39 +33,46 @@ func GetTokenString(getHeaderFn GetHeaderFn, tokenStringOpts [][]options.TokenSt
 func getTokenString(getHeaderFn GetHeaderFn, setters ...options.TokenStringOption) (string, error) {
 	opts := options.NewTokenString(setters...)
 
-	authz := getHeaderFn(opts.HeaderName)
-	if authz == "" {
+	headerValue := getHeaderFn(opts.HeaderName)
+	if headerValue == "" {
 		return "", fmt.Errorf("%s header empty", opts.HeaderName)
 	}
 
-	if opts.HeaderValueSeparator != "" {
-		comp := strings.Split(authz, opts.HeaderValueSeparator)
-		for _, v := range comp {
-			tokenString, err := getTokenStringFromString(v, setters...)
-			if err == nil && tokenString != "" {
-				return tokenString, nil
-			}
+	if opts.ListSeparator != "" && strings.Contains(headerValue, opts.ListSeparator) {
+		headerValueList := strings.SplitN(headerValue, opts.ListSeparator, maxListSeparatorSlices)
+		return getTokenFromList(headerValueList, setters...)
+	}
+
+	return getTokenFromString(headerValue, setters...)
+}
+
+func getTokenFromList(headerValueList []string, setters ...options.TokenStringOption) (string, error) {
+	for _, headerValue := range headerValueList {
+		tokenString, err := getTokenFromString(headerValue, setters...)
+		if err == nil && tokenString != "" {
+			return tokenString, nil
 		}
 	}
 
-	return getTokenStringFromString(authz, setters...)
+	return "", fmt.Errorf("no token found in list")
 }
 
-func getTokenStringFromString(authz string, setters ...options.TokenStringOption) (string, error) {
+func getTokenFromString(headerValue string, setters ...options.TokenStringOption) (string, error) {
 	opts := options.NewTokenString(setters...)
 
-	if authz == "" {
+	if headerValue == "" {
 		return "", fmt.Errorf("%s header empty", opts.HeaderName)
 	}
 
-	comp := strings.Split(authz, opts.Delimiter)
-	if len(comp) != 2 {
-		return "", fmt.Errorf("%s header components not 2 but: %d", opts.HeaderName, len(comp))
+	if !strings.HasPrefix(headerValue, opts.TokenPrefix) {
+		return "", fmt.Errorf("%s header does not begin with: %s", opts.HeaderName, opts.TokenPrefix)
 	}
 
-	if comp[0] != opts.TokenType {
-		return "", fmt.Errorf("%s headers first component not %s", opts.HeaderName, opts.TokenType)
+	token := strings.TrimPrefix(headerValue, opts.TokenPrefix)
+
+	if token == "" {
+		return "", fmt.Errorf("%s header empty after prefix is trimmed", opts.HeaderName)
 	}
 
-	return comp[1], nil
+	return token, nil
 }
