@@ -11,7 +11,7 @@ type GetHeaderFn func(key string) string
 
 const maxListSeparatorSlices = 20
 
-// GetTokenString extracts a token string
+// GetTokenString extracts a token string.
 func GetTokenString(getHeaderFn GetHeaderFn, tokenStringOpts [][]options.TokenStringOption) (string, error) {
 	opts := tokenStringOpts
 	if len(opts) == 0 {
