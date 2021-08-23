@@ -31,10 +31,16 @@ func TestOptions(t *testing.T) {
 		ClaimsContextKeyName: ClaimsContextKeyName("foo"),
 	}
 
-	expectedTokenString := &TokenStringOptions{
+	expectedFirstTokenString := &TokenStringOptions{
 		HeaderName:    "foo",
 		TokenPrefix:   "bar_",
 		ListSeparator: ",",
+	}
+
+	expectedSecondTokenString := &TokenStringOptions{
+		HeaderName:    "too",
+		TokenPrefix:   "lar_",
+		ListSeparator: "",
 	}
 
 	setters := []Option{
@@ -60,6 +66,10 @@ func TestOptions(t *testing.T) {
 			WithTokenStringTokenPrefix("bar_"),
 			WithTokenStringListSeparator(","),
 		),
+		WithTokenString(
+			WithTokenStringHeaderName("too"),
+			WithTokenStringTokenPrefix("lar_"),
+		),
 		WithClaimsContextKeyName("foo"),
 	}
 
@@ -69,15 +79,21 @@ func TestOptions(t *testing.T) {
 		setter(result)
 	}
 
-	resultTokenString := &TokenStringOptions{}
+	resultFirstTokenString := &TokenStringOptions{}
+	resultSecondTokenString := &TokenStringOptions{}
 
 	for _, setter := range result.TokenString[0] {
-		setter(resultTokenString)
+		setter(resultFirstTokenString)
+	}
+
+	for _, setter := range result.TokenString[1] {
+		setter(resultSecondTokenString)
 	}
 
 	// Needed or else expectedResult can't be compared to result
 	result.TokenString = nil
 
 	require.Equal(t, expectedResult, result)
-	require.Equal(t, expectedTokenString, resultTokenString)
+	require.Equal(t, expectedFirstTokenString, resultFirstTokenString)
+	require.Equal(t, expectedSecondTokenString, resultSecondTokenString)
 }
