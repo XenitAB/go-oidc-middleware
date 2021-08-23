@@ -183,6 +183,31 @@ func newClaimsHandler() fiber.Handler {
 }
 ```
 
+## Other options
+
+### Extract token from multiple headers
+
+Example for `Authorization` and `Sec-WebSocket-Protocol`. If token is found in `Authorization`, `Sec-WebSocket-Protocol` will not be tried.
+
+```go
+oidcHandler := oidcgin.New(
+	options.WithIssuer(cfg.Issuer),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
+		"cid": cfg.ClientID,
+	}),
+	options.WithTokenString(
+		options.WithTokenStringHeaderName("Authorization"),
+		options.WithTokenStringTokenPrefix("Bearer "),
+	),
+	options.WithTokenString(
+		options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
+		options.WithTokenStringTokenPrefix("base64url.bearer.authorization.k8s.io."),
+		options.WithTokenStringListSeparator(","),
+	),
+)
+```
+
 ## Examples
 
 See [examples readme](examples/README.md) for more information.
