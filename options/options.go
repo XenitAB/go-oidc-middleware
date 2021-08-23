@@ -104,7 +104,7 @@ type Options struct {
 	// TokenString makes it possible to configure how the JWT token should be extracted from
 	// an http header. Not supported by Echo JWT and will be ignored if used by it.
 	// Defaults to: 'Authorization: Bearer JWT'
-	TokenString []TokenStringOption
+	TokenString [][]TokenStringOption
 
 	// ClaimsContextKeyName is the name of key that will be used to pass claims using request context.
 	// Not supported by Echo JWT and will be ignored if used by it.
@@ -233,8 +233,11 @@ func WithHttpClient(opt *http.Client) Option {
 
 // WithTokenString sets the TokenString parameter for an Options pointer.
 func WithTokenString(setters ...TokenStringOption) Option {
+	var tokenString []TokenStringOption
+	tokenString = append(tokenString, setters...)
+
 	return func(opts *Options) {
-		opts.TokenString = append(opts.TokenString, setters...)
+		opts.TokenString = append(opts.TokenString, tokenString)
 	}
 }
 

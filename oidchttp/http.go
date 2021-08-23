@@ -26,7 +26,7 @@ func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, setters ...op
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tokenString, err := oidc.GetTokenStringFromRequest(r, opts.TokenString...)
+		tokenString, err := oidc.GetTokenString(r.Header.Get, opts.TokenString)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return

@@ -12,20 +12,20 @@ import (
 func TestGetTokenStringFromRequest(t *testing.T) {
 	cases := []struct {
 		testDescription       string
-		headers               http.Header
-		options               []options.TokenStringOption
+		headers               map[string][]string
+		options               [][]options.TokenStringOption
 		expectedToken         string
 		expectedErrorContains string
 	}{
 		{
 			testDescription:       "empty headers",
-			headers:               make(http.Header),
+			headers:               make(map[string][]string),
 			expectedToken:         "",
-			expectedErrorContains: "uthorization header empty",
+			expectedErrorContains: "Authorization header empty",
 		},
 		{
 			testDescription: "Authorization header empty",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {},
 			},
 			expectedToken:         "",
@@ -33,7 +33,7 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 		},
 		{
 			testDescription: "Authorization header empty string",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {""},
 			},
 			expectedToken:         "",
@@ -41,7 +41,7 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 		},
 		{
 			testDescription: "Authorization header first empty string",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {"", "Bearer foobar"},
 			},
 			expectedToken:         "",
@@ -49,31 +49,31 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 		},
 		{
 			testDescription: "Authorization header single component",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {"foo"},
 			},
 			expectedToken:         "",
-			expectedErrorContains: "Authorization header components not 2 but: 1",
+			expectedErrorContains: "Authorization header does not begin with: Bearer ",
 		},
 		{
 			testDescription: "Authorization header three component",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {"foo bar baz"},
 			},
 			expectedToken:         "",
-			expectedErrorContains: "Authorization header components not 2 but: 3",
+			expectedErrorContains: "Authorization header does not begin with: Bearer ",
 		},
 		{
 			testDescription: "Authorization header two components",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {"foo bar"},
 			},
 			expectedToken:         "",
-			expectedErrorContains: "Authorization headers first component not Bearer",
+			expectedErrorContains: "Authorization header does not begin with: Bearer ",
 		},
 		{
 			testDescription: "Authorization header two components",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Authorization": {"Bearer foobar"},
 			},
 			expectedToken:         "foobar",
@@ -81,15 +81,129 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 		},
 		{
 			testDescription: "test options",
-			headers: http.Header{
+			headers: map[string][]string{
 				"Foo": {"Bar_baz"},
 			},
-			options: []options.TokenStringOption{
-				options.WithTokenStringHeaderName("Foo"),
-				options.WithTokenStringDelimiter("_"),
-				options.WithTokenStringTokenType("Bar"),
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Foo"),
+					options.WithTokenStringTokenPrefix("Bar_"),
+				},
 			},
 			expectedToken:         "baz",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "test multiple options second header",
+			headers: map[string][]string{
+				"Too": {"Lar_kaz"},
+				"Foo": {"Bar_baz"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Foo"),
+					options.WithTokenStringTokenPrefix("Bar_"),
+				},
+				{
+					options.WithTokenStringHeaderName("Too"),
+					options.WithTokenStringTokenPrefix("Lar_"),
+				},
+			},
+			expectedToken:         "baz",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "test multiple options first header",
+			headers: map[string][]string{
+				"Too": {"Lar_kaz"},
+				"Foo": {"Bar_baz"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Too"),
+					options.WithTokenStringTokenPrefix("Lar_"),
+				},
+				{
+					options.WithTokenStringHeaderName("Foo"),
+					options.WithTokenStringTokenPrefix("Bar_"),
+				},
+			},
+			expectedToken:         "kaz",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "websockets",
+			headers: map[string][]string{
+				"Sec-WebSocket-Protocol": {"Foo.bar,Too.lar,Koo.nar"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
+					options.WithTokenStringTokenPrefix("Too."),
+					options.WithTokenStringListSeparator(","),
+				},
+			},
+			expectedToken:         "lar",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "authorization first and and then websockets",
+			headers: map[string][]string{
+				"Authorization":          {"Bearer foobar"},
+				"Sec-WebSocket-Protocol": {"Foo.bar,Too.lar,Koo.nar"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Authorization"),
+					options.WithTokenStringTokenPrefix("Bearer "),
+				},
+				{
+					options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
+					options.WithTokenStringTokenPrefix("Too."),
+					options.WithTokenStringListSeparator(","),
+				},
+			},
+			expectedToken:         "foobar",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "websockets first and then authorization",
+			headers: map[string][]string{
+				"Authorization":          {"Bearer foobar"},
+				"Sec-WebSocket-Protocol": {"Foo.bar,Too.lar,Koo.nar"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
+					options.WithTokenStringTokenPrefix("Too."),
+					options.WithTokenStringListSeparator(","),
+				},
+				{
+					options.WithTokenStringHeaderName("Authorization"),
+					options.WithTokenStringTokenPrefix("Bearer "),
+				},
+			},
+			expectedToken:         "lar",
+			expectedErrorContains: "",
+		},
+		{
+			testDescription: "websockets first and then authorization, but without a token in websockets",
+			headers: map[string][]string{
+				"Authorization":          {"Bearer foobar"},
+				"Sec-WebSocket-Protocol": {"Foo.bar"},
+			},
+			options: [][]options.TokenStringOption{
+				{
+					options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
+					options.WithTokenStringTokenPrefix("Too."),
+					options.WithTokenStringListSeparator(","),
+				},
+				{
+					options.WithTokenStringHeaderName("Authorization"),
+					options.WithTokenStringTokenPrefix("Bearer "),
+				},
+			},
+			expectedToken:         "foobar",
 			expectedErrorContains: "",
 		},
 	}
@@ -99,11 +213,13 @@ func TestGetTokenStringFromRequest(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-		for k, v := range c.headers {
-			req.Header[k] = v
+		for k, values := range c.headers {
+			for _, v := range values {
+				req.Header.Add(k, v)
+			}
 		}
 
-		token, err := GetTokenStringFromRequest(req, c.options...)
+		token, err := GetTokenString(req.Header.Get, c.options)
 		require.Equal(t, c.expectedToken, token)
 
 		if c.expectedErrorContains == "" {

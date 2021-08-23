@@ -26,7 +26,7 @@ func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tokenString, err := oidc.GetTokenStringFromRequest(c.Request, opts.TokenString...)
+		tokenString, err := oidc.GetTokenString(c.Request.Header.Get, opts.TokenString)
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return

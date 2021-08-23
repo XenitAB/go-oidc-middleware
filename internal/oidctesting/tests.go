@@ -131,8 +131,7 @@ func runTestHandler(t *testing.T, testName string, tester tester) {
 			options.WithRequiredTokenType("JWT+AT"),
 			options.WithTokenString(
 				options.WithTokenStringHeaderName("Authorization"),
-				options.WithTokenStringDelimiter(" "),
-				options.WithTokenStringTokenType("Bearer"),
+				options.WithTokenStringTokenPrefix("Bearer "),
 			),
 		)
 
