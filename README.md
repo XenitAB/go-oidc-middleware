@@ -187,7 +187,31 @@ func newClaimsHandler() fiber.Handler {
 
 ### Extract token from multiple headers
 
-Example for `Authorization` and `Sec-WebSocket-Protocol`. If token is found in `Authorization`, `Sec-WebSocket-Protocol` will not be tried.
+Example for `Authorization` and `Foo` headers. If token is found in `Authorization`, `Foo` will not be tried. If `Authorization` extraction fails but there's a header `Foo = Bar_baz` then `baz` would be extracted as the token.
+
+```go
+oidcHandler := oidcgin.New(
+	options.WithIssuer(cfg.Issuer),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
+		"cid": cfg.ClientID,
+	}),
+	options.WithTokenString(
+		options.WithTokenStringHeaderName("Authorization"),
+		options.WithTokenStringTokenPrefix("Bearer "),
+	),
+	options.WithTokenString(
+		options.WithTokenStringHeaderName("Foo"),
+		options.WithTokenStringTokenPrefix("Bar_"),
+	),
+)
+```
+
+### Manipulate the token string after extraction
+
+If you want to do any kind of manipulation of the token string after extraction, the option `WithTokenStringPostExtractionFn` is available.
+
+The following would be used by a the Kubernetes api server, where the kubernetes client can use both `Authorization` and `Sec-WebSocket-Protocol`.
 
 ```go
 oidcHandler := oidcgin.New(
@@ -204,6 +228,14 @@ oidcHandler := oidcgin.New(
 		options.WithTokenStringHeaderName("Sec-WebSocket-Protocol"),
 		options.WithTokenStringTokenPrefix("base64url.bearer.authorization.k8s.io."),
 		options.WithTokenStringListSeparator(","),
+		options.WithTokenStringPostExtractionFn(func(s string) (string, error) {
+			bytes, err := base64.RawStdEncoding.DecodeString(s)
+			if err != nil {
+				return "", err
+			}
+
+			return string(bytes), nil
+		}),
 	),
 )
 ```

@@ -13,16 +13,35 @@ const maxListSeparatorSlices = 20
 
 // GetTokenString extracts a token string.
 func GetTokenString(getHeaderFn GetHeaderFn, tokenStringOpts [][]options.TokenStringOption) (string, error) {
-	opts := tokenStringOpts
-	if len(opts) == 0 {
-		opts = append(opts, []options.TokenStringOption{})
+	optsList := tokenStringOpts
+	if len(optsList) == 0 {
+		optsList = append(optsList, []options.TokenStringOption{})
 	}
 
 	var err error
-	for _, setters := range opts {
+	for _, setters := range optsList {
+		opts := options.NewTokenString(setters...)
+
 		var tokenString string
-		tokenString, err = getTokenString(getHeaderFn, setters...)
+		tokenString, err = getTokenString(getHeaderFn, opts)
 		if err == nil && tokenString != "" {
+			// if a PostExtractionFn is defined, pass the token to it
+			if opts.PostExtractionFn != nil {
+				tokenString, err = opts.PostExtractionFn(tokenString)
+				if err != nil {
+					// if the PostExtractionFn returns an error, continue the loop
+					continue
+				}
+
+				if tokenString == "" {
+					// if the PostExtractionFn returns an empty string, continue the loop
+					err = fmt.Errorf("post extraction function returned an empty token string")
+					continue
+				}
+
+				return tokenString, nil
+			}
+
 			return tokenString, nil
 		}
 	}
@@ -30,9 +49,7 @@ func GetTokenString(getHeaderFn GetHeaderFn, tokenStringOpts [][]options.TokenSt
 	return "", fmt.Errorf("unable to extract token: %w", err)
 }
 
-func getTokenString(getHeaderFn GetHeaderFn, setters ...options.TokenStringOption) (string, error) {
-	opts := options.NewTokenString(setters...)
-
+func getTokenString(getHeaderFn GetHeaderFn, opts *options.TokenStringOptions) (string, error) {
 	headerValue := getHeaderFn(opts.HeaderName)
 	if headerValue == "" {
 		return "", fmt.Errorf("%s header empty", opts.HeaderName)
@@ -40,15 +57,15 @@ func getTokenString(getHeaderFn GetHeaderFn, setters ...options.TokenStringOptio
 
 	if opts.ListSeparator != "" && strings.Contains(headerValue, opts.ListSeparator) {
 		headerValueList := strings.SplitN(headerValue, opts.ListSeparator, maxListSeparatorSlices)
-		return getTokenFromList(headerValueList, setters...)
+		return getTokenFromList(headerValueList, opts)
 	}
 
-	return getTokenFromString(headerValue, setters...)
+	return getTokenFromString(headerValue, opts)
 }
 
-func getTokenFromList(headerValueList []string, setters ...options.TokenStringOption) (string, error) {
+func getTokenFromList(headerValueList []string, opts *options.TokenStringOptions) (string, error) {
 	for _, headerValue := range headerValueList {
-		tokenString, err := getTokenFromString(headerValue, setters...)
+		tokenString, err := getTokenFromString(headerValue, opts)
 		if err == nil && tokenString != "" {
 			return tokenString, nil
 		}
@@ -57,9 +74,7 @@ func getTokenFromList(headerValueList []string, setters ...options.TokenStringOp
 	return "", fmt.Errorf("no token found in list")
 }
 
-func getTokenFromString(headerValue string, setters ...options.TokenStringOption) (string, error) {
-	opts := options.NewTokenString(setters...)
-
+func getTokenFromString(headerValue string, opts *options.TokenStringOptions) (string, error) {
 	if headerValue == "" {
 		return "", fmt.Errorf("%s header empty", opts.HeaderName)
 	}

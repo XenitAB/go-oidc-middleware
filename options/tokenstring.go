@@ -15,13 +15,18 @@ type TokenStringOptions struct {
 	// The value will be split (up to 20 slices) by the ListSeparator.
 	// Default disabled: ""
 	ListSeparator string
+
+	// PostExtractionFn will be run if not nil after a token has been successfully extracted.
+	// Default: nil
+	PostExtractionFn func(string) (string, error)
 }
 
 func NewTokenString(setters ...TokenStringOption) *TokenStringOptions {
 	opts := &TokenStringOptions{
-		HeaderName:    "Authorization",
-		TokenPrefix:   "Bearer ",
-		ListSeparator: "",
+		HeaderName:       "Authorization",
+		TokenPrefix:      "Bearer ",
+		ListSeparator:    "",
+		PostExtractionFn: nil,
 	}
 
 	for _, setter := range setters {
@@ -52,5 +57,12 @@ func WithTokenStringTokenPrefix(opt string) TokenStringOption {
 func WithTokenStringListSeparator(opt string) TokenStringOption {
 	return func(opts *TokenStringOptions) {
 		opts.ListSeparator = opt
+	}
+}
+
+// WithTokenStringPostExtractionFn sets the PostExtractionFn parameter for a TokenStringOptions pointer.
+func WithTokenStringPostExtractionFn(opt func(string) (string, error)) TokenStringOption {
+	return func(opts *TokenStringOptions) {
+		opts.PostExtractionFn = opt
 	}
 }
