@@ -20,7 +20,7 @@ jobs:
           mkdir -p tmp
           make cover
       - name: Send coverage to coverall
-        uses: shogo82148/actions-goveralls@v1.4.6
+        uses: shogo82148/actions-goveralls@v1.4.7
         with:
           path-to-profile: tmp/coverage.out
           ignore: internal/oidctesting
