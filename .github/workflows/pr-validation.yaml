@@ -13,7 +13,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: "^1.16.6"
+          go-version: "^1.17"
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2.5.2
         with:
@@ -27,7 +27,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: "^1.16.6"
+          go-version: "^1.17"
       - name: Run fmt
         run: |
           make fmt
@@ -47,7 +47,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: "^1.16.6"
+          go-version: "^1.17"
       - name: Run build-examples
         run: |
           make build-examples
@@ -60,7 +60,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: "^1.16.6"
+          go-version: "^1.17"
       - name: Run test
         run: |
           make test
@@ -85,7 +85,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v2
         with:
-          go-version: "^1.16.6"
+          go-version: "^1.17"
       - name: coverage
         run: |
           make cover
