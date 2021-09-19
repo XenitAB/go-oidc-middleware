@@ -31,7 +31,7 @@ vet:
 .PHONY: staticcheck
 .SILENT: staticcheck
 staticcheck:
-	go get -u honnef.co/go/tools/cmd/staticcheck@latest
+	go install honnef.co/go/tools/cmd/staticcheck@latest
 	staticcheck ./...
 
 .SILENT: test
