@@ -14,18 +14,20 @@ There's a CLI utility that makes it easy to use the different OpenID Providers (
 
 ## Providers
 
+When starting the api for one of the providers, change `[server]` to one of: `http`, `echojwt`, `gin` or `fiber`
+
 ### Azure AD
 
-[Azure AD Readme](azuread/README.md)
+[Azure AD Readme](PROVIDER_AZUREAD.md)
 
 ### Okta
 
-[Okta Readme](okta/README.md)
+[Okta Readme](PROVIDER_OKTA.md)
 
 ### Auth0
 
-[Auth0 Readme](auth0/README.md)
+[Auth0 Readme](PROVIDER_AUTH0.md)
 
 ### Cognito
 
-[Cognito Readme](cognito/README.md)
+[Cognito Readme](PROVIDER_COGNITO.md)
