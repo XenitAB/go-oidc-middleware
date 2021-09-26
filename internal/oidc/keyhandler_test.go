@@ -229,7 +229,7 @@ func TestUpdateKeySetWithKeyIDEnabled(t *testing.T) {
 	testServer := testNewJwksServer(t, keySets)
 	defer testServer.Close()
 
-	keyHandler, err := newKeyHandler(http.DefaultClient, testServer.URL, 10*time.Millisecond, 100, disableKeyID)
+	keyHandler, err := newKeyHandler(http.DefaultClient, testServer.URL, 100*time.Millisecond, 100, disableKeyID)
 	require.NoError(t, err)
 
 	_, err = keyHandler.updateKeySet(ctx)
