@@ -87,7 +87,7 @@ func runBenchmarkHttp(b *testing.B, testName string, tester tester) {
 func runBenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token, fn func(token *oauth2.Token)) {
 	b.Helper()
 
-	concurrencyLevels := []int{5, 10, 20, 50}
+	concurrencyLevels := []int{10}
 	for _, clients := range concurrencyLevels {
 		numClients := clients
 		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
