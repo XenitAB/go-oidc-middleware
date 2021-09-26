@@ -61,16 +61,16 @@ cover:
 .SILENT: build-examples
 build-examples:
 	set -e
+
 	cd examples/
+	
 	go mod tidy
 	go fmt ./...
 	go vet ./...
-	echo build-examples: Start	
-	EXAMPLES=$$(find -name main.go -type f)
-	for EXAMPLE in $${EXAMPLES}; do
-		echo build-example: $${EXAMPLE}
-		EXECUTABLE_NAME=$$(echo $${EXAMPLE} | sed "s|\./||g" | sed "s|/main.go||g" | sed "s|/|_|g")
-		go build -o ../bin/$${EXECUTABLE_NAME} $${EXAMPLE} 
-	done
 
+	echo build-examples: Start
+	
+	go build -o ../bin/api ./api
+	go build -o ../bin/pkce-cli ./pkce-cli
+	
 	echo build-examples: Success
