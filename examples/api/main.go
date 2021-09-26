@@ -26,87 +26,122 @@ func main() {
 	}
 }
 
-func run(runtimeCfg shared.RuntimeConfig) error {
+func run(cfg shared.RuntimeConfig) error {
 	var opts []options.Option
 
-	switch runtimeCfg.Provider {
-	case shared.Auth0Provider:
-		cfg, err := shared.NewAuth0Config()
-		if err != nil {
-			return err
-		}
-
-		opts = []options.Option{
-			options.WithIssuer(cfg.Issuer),
-			options.WithRequiredTokenType("JWT"),
-			options.WithRequiredAudience(cfg.Audience),
-			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(map[string]interface{}{
-				"azp": cfg.ClientID,
-			}),
-		}
-	case shared.AzureADProvider:
-		cfg, err := shared.NewAzureADConfig()
-		if err != nil {
-			return err
-		}
-
-		opts = []options.Option{
-			options.WithIssuer(cfg.Issuer),
-			options.WithRequiredTokenType("JWT"),
-			options.WithRequiredAudience(cfg.Audience),
-			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(map[string]interface{}{
-				"tid": cfg.TenantID,
-			}),
-		}
-	case shared.CognitoProvider:
-		cfg, err := shared.NewCognitoConfig()
-		if err != nil {
-			return err
-		}
-		opts = []options.Option{
-			options.WithIssuer(cfg.Issuer),
-			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(map[string]interface{}{
-				"client_id": cfg.ClientID,
-			}),
-		}
-	case shared.OktaProvider:
-		cfg, err := shared.NewOktaConfig()
-		if err != nil {
-			return err
-		}
-		opts = []options.Option{
-			options.WithIssuer(cfg.Issuer),
-			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(map[string]interface{}{
-				"cid": cfg.ClientID,
-			}),
-		}
-	default:
-		return fmt.Errorf("unknown provider: %s", runtimeCfg.Provider)
+	requiredClaims := make(map[string]interface{})
+	for k, v := range cfg.RequiredClaims {
+		requiredClaims[k] = v
 	}
 
-	switch runtimeCfg.Server {
+	switch cfg.Provider {
+	case shared.Auth0Provider:
+		inputs := map[string]string{
+			"issuer":                     cfg.Issuer,
+			"audience":                   cfg.Audience,
+			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
+			"requiredClaims azp":         cfg.RequiredClaims["azp"],
+		}
+
+		err := stringNotEmpty(inputs)
+		if err != nil {
+			return err
+		}
+
+		opts = []options.Option{
+			options.WithIssuer(cfg.Issuer),
+			options.WithRequiredTokenType("JWT"),
+			options.WithRequiredAudience(cfg.Audience),
+			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+			options.WithRequiredClaims(requiredClaims),
+		}
+	case shared.AzureADProvider:
+		inputs := map[string]string{
+			"issuer":                     cfg.Issuer,
+			"audience":                   cfg.Audience,
+			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
+			"requiredClaims tid":         cfg.RequiredClaims["tid"],
+		}
+
+		err := stringNotEmpty(inputs)
+		if err != nil {
+			return err
+		}
+
+		opts = []options.Option{
+			options.WithIssuer(cfg.Issuer),
+			options.WithRequiredTokenType("JWT"),
+			options.WithRequiredAudience(cfg.Audience),
+			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+			options.WithRequiredClaims(requiredClaims),
+		}
+	case shared.CognitoProvider:
+		inputs := map[string]string{
+			"issuer":                     cfg.Issuer,
+			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
+			"requiredClaims client_id":   cfg.RequiredClaims["client_id"],
+		}
+
+		err := stringNotEmpty(inputs)
+		if err != nil {
+			return err
+		}
+
+		opts = []options.Option{
+			options.WithIssuer(cfg.Issuer),
+			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+			options.WithRequiredClaims(requiredClaims),
+		}
+	case shared.OktaProvider:
+		inputs := map[string]string{
+			"issuer":                     cfg.Issuer,
+			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
+			"requiredClaims cid":         cfg.RequiredClaims["cid"],
+		}
+
+		err := stringNotEmpty(inputs)
+		if err != nil {
+			return err
+		}
+
+		opts = []options.Option{
+			options.WithIssuer(cfg.Issuer),
+			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+			options.WithRequiredClaims(requiredClaims),
+		}
+	default:
+		return fmt.Errorf("unknown provider: %s", cfg.Provider)
+	}
+
+	switch cfg.Server {
 	case shared.HttpServer:
 		h := shared.NewHttpClaimsHandler()
 		oidcHandler := oidchttp.New(h, opts...)
 
-		return shared.RunHttp(oidcHandler, runtimeCfg.Address, runtimeCfg.Port)
+		return shared.RunHttp(oidcHandler, cfg.Address, cfg.Port)
 	case shared.GinServer:
 		oidcHandler := oidcgin.New(opts...)
 
-		return shared.RunGin(oidcHandler, runtimeCfg.Address, runtimeCfg.Port)
+		return shared.RunGin(oidcHandler, cfg.Address, cfg.Port)
 	case shared.EchoJwtServer:
 		parseToken := oidcechojwt.New(opts...)
 
-		return shared.RunEchoJWT(parseToken, runtimeCfg.Address, runtimeCfg.Port)
+		return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
 	case shared.FiberServer:
 		oidcHandler := oidcfiber.New(opts...)
 
-		return shared.RunFiber(oidcHandler, runtimeCfg.Address, runtimeCfg.Port)
+		return shared.RunFiber(oidcHandler, cfg.Address, cfg.Port)
 	default:
-		return fmt.Errorf("unknown server: %s", runtimeCfg.Server)
+		return fmt.Errorf("unknown server: %s", cfg.Server)
 	}
+}
+
+func stringNotEmpty(input map[string]string) error {
+	for k, v := range input {
+		if v == "" {
+			return fmt.Errorf("value for %s is empty", k)
+		}
+	}
+
+	return nil
 }

@@ -35,7 +35,7 @@ az rest --method PATCH --uri "https://graph.microsoft.com/beta/applications/${AZ
 TENANT_ID=$(az account show -o json | jq -r .tenantId)
 TOKEN_ISSUER="https://login.microsoftonline.com/${TENANT_ID}/v2.0"
 TOKEN_AUDIENCE=$(az ad app list --identifier-uri ${AZ_APP_URI} | jq -r ".[0].appId")
-go run ./api/main.go --server [server] --provider azuread --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --token-tenant-id ${TENANT_ID} --port 8081
+go run ./api/main.go --server [server] --provider azuread --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --required-claims tid:${TENANT_ID} --port 8081
 ```
 
 ## Test with curl

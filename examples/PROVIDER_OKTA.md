@@ -7,7 +7,7 @@ Create an Okta organization and a native app. Copy the issuer and client id.
 ```shell
 TOKEN_ISSUER="https://<domain>.okta.com/oauth2/default"
 CLIENT_ID="OktaClientID"
-go run ./api/main.go --server [server] --provider okta --token-issuer ${TOKEN_ISSUER} --client-id ${CLIENT_ID} --port 8081
+go run ./api/main.go --server [server] --provider okta --token-issuer ${TOKEN_ISSUER} --required-claims cid:${CLIENT_ID} --port 8081
 ```
 
 ## Test with curl
