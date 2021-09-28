@@ -28,19 +28,22 @@ func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin
 
 		tokenString, err := oidc.GetTokenString(c.Request.Header.Get, opts.TokenString)
 		if err != nil {
-			c.AbortWithStatus(http.StatusBadRequest)
+			//nolint:errcheck // false positive
+			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 
 		token, err := parseToken(ctx, tokenString)
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			//nolint:errcheck // false positive
+			c.AbortWithError(http.StatusUnauthorized, err)
 			return
 		}
 
 		tokenClaims, err := token.AsMap(ctx)
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			//nolint:errcheck // false positive
+			c.AbortWithError(http.StatusUnauthorized, err)
 			return
 		}
 
