@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cristalhq/aconfig v0.16.6
 	github.com/gin-gonic/gin v1.7.4
-	github.com/gofiber/fiber/v2 v2.19.0
+	github.com/gofiber/fiber/v2 v2.20.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pkg/browser v0.0.0-20210706143420-7d21f8c997e2
 	github.com/xenitab/go-oidc-middleware v0.0.0-00010101000000-000000000000
@@ -20,7 +20,7 @@ require (
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
-	github.com/goccy/go-json v0.7.6 // indirect
+	github.com/goccy/go-json v0.7.8 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/go-cmp v0.5.1 // indirect
@@ -32,7 +32,7 @@ require (
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.1 // indirect
-	github.com/lestrrat-go/jwx v1.2.6 // indirect
+	github.com/lestrrat-go/jwx v1.2.7 // indirect
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
