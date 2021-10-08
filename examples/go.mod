@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.20.1
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
-	github.com/xenitab/go-oidc-middleware v0.0.14
+	github.com/xenitab/go-oidc-middleware v0.0.15
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
