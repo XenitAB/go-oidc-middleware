@@ -47,11 +47,11 @@ func (h *testChiHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return New(router, opts...)
 }
 
-func (h *testChiHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler {
+func (h *testChiHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	router := testGetChiRouter(h.tb)
-	return toHttpHandler(router, parseToken)
+	return toHttpHandler(router, parseToken, opts...)
 }
 
 func (h *testChiHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {

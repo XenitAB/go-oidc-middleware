@@ -20,6 +20,15 @@ func New(setters ...options.Option) gin.HandlerFunc {
 	return toGinHandler(oidcHandler.ParseToken, setters...)
 }
 
+func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
+	if errorHandler != nil {
+		errorHandler(description, err)
+	}
+
+	//nolint:errcheck // false positive
+	c.AbortWithError(statusCode, err)
+}
+
 func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin.HandlerFunc {
 	opts := options.New(setters...)
 
@@ -28,22 +37,19 @@ func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin
 
 		tokenString, err := oidc.GetTokenString(c.Request.Header.Get, opts.TokenString)
 		if err != nil {
-			//nolint:errcheck // false positive
-			c.AbortWithError(http.StatusBadRequest, err)
+			onError(c, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
 			return
 		}
 
 		token, err := parseToken(ctx, tokenString)
 		if err != nil {
-			//nolint:errcheck // false positive
-			c.AbortWithError(http.StatusUnauthorized, err)
+			onError(c, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
 		tokenClaims, err := token.AsMap(ctx)
 		if err != nil {
-			//nolint:errcheck // false positive
-			c.AbortWithError(http.StatusUnauthorized, err)
+			onError(c, opts.ErrorHandler, http.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
 			return
 		}
 

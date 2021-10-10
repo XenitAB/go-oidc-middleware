@@ -93,11 +93,11 @@ func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return New(handler, opts...)
 }
 
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler {
+func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return toHttpHandler(handler, parseToken)
+	return toHttpHandler(handler, parseToken, opts...)
 }
 
 func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
