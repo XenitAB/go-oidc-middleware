@@ -240,6 +240,25 @@ oidcHandler := oidcgin.New(
 )
 ```
 
+### Custom error handler
+
+It is possible to add a custom function to handle errors. It will not be possible to change anything using it, but you will be able to add logic for logging as an example.
+
+```go
+errorHandler := func(description options.ErrorDescription, err error) {
+	fmt.Printf("Description: %s\tError: %v\n", description, err)
+}
+
+oidcHandler := oidcgin.New(
+	options.WithIssuer(cfg.Issuer),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
+		"cid": cfg.ClientID,
+	}),
+	options.WithErrorHandler(errorHandler),
+)
+```
+
 ## Examples
 
 See [examples readme](examples/README.md) for more information.
