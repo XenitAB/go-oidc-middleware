@@ -16,22 +16,32 @@ func New(setters ...options.Option) func(auth string, c echo.Context) (interface
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	return toEchoJWTParseTokenFunc(h.ParseToken)
+	return toEchoJWTParseTokenFunc(h.ParseToken, setters...)
 }
 
 type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
 
-func toEchoJWTParseTokenFunc(parseToken oidc.ParseTokenFunc) echoJWTParseTokenFunc {
+func onError(errorHandler options.ErrorHandler, description options.ErrorDescription, err error) {
+	if errorHandler != nil {
+		errorHandler(description, err)
+	}
+}
+
+func toEchoJWTParseTokenFunc(parseToken oidc.ParseTokenFunc, setters ...options.Option) echoJWTParseTokenFunc {
+	opts := options.New(setters...)
+
 	echoJWTParseTokenFunc := func(auth string, c echo.Context) (interface{}, error) {
 		ctx := c.Request().Context()
 
 		token, err := parseToken(ctx, auth)
 		if err != nil {
+			onError(opts.ErrorHandler, options.ParseTokenErrorDescription, err)
 			return nil, err
 		}
 
 		tokenClaims, err := token.AsMap(ctx)
 		if err != nil {
+			onError(opts.ErrorHandler, options.ConvertTokenErrorDescription, err)
 			return nil, err
 		}
 

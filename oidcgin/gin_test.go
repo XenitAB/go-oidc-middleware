@@ -100,10 +100,10 @@ func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return testGetGinRouter(h.tb, middleware)
 }
 
-func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler {
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := toGinHandler(parseToken)
+	middleware := toGinHandler(parseToken, opts...)
 	return testGetGinRouter(h.tb, middleware)
 }
 

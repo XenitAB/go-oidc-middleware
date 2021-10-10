@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,7 +22,7 @@ type ServerTester interface {
 
 type tester interface {
 	NewHandlerFn(opts ...options.Option) http.Handler
-	ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler
+	ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler
 	NewTestServer(opts ...options.Option) ServerTester
 }
 
@@ -31,6 +33,7 @@ func RunTests(t *testing.T, testName string, tester tester) {
 	runTestHandler(t, testName, tester)
 	runTestLazyLoad(t, testName, tester)
 	runTestRequirements(t, testName, tester)
+	runTestErrorHandler(t, testName, tester)
 }
 
 func runTestNew(t *testing.T, testName string, tester tester) {
@@ -275,6 +278,75 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 				testHttpWithAuthenticationFailure(t, token, handler)
 			}
 		}
+	})
+}
+
+func runTestErrorHandler(t *testing.T, testName string, tester tester) {
+	t.Helper()
+
+	t.Run(fmt.Sprintf("%s_error_handler", testName), func(t *testing.T) {
+		op := server.NewTesting(t)
+		defer op.Close(t)
+
+		var info struct {
+			sync.RWMutex
+			description options.ErrorDescription
+			err         error
+		}
+
+		setInfo := func(description options.ErrorDescription, err error) {
+			info.Lock()
+			info.description = description
+			info.err = err
+			info.Unlock()
+		}
+
+		getInfo := func() (description options.ErrorDescription, err error) {
+			info.RLock()
+			defer info.RUnlock()
+			return info.description, info.err
+		}
+
+		errorHandler := func(description options.ErrorDescription, err error) {
+			t.Logf("Description: %s\tError: %v", description, err)
+			setInfo(description, err)
+		}
+
+		opts := []options.Option{
+			options.WithIssuer(op.GetURL(t)),
+			options.WithRequiredAudience("test-client"),
+			options.WithRequiredTokenType("JWT+AT"),
+			options.WithErrorHandler(errorHandler),
+		}
+
+		oidcHandler, err := oidc.NewHandler(opts...)
+		require.NoError(t, err)
+
+		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)
+
+		// Test without token
+		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
+		recNoAuth := httptest.NewRecorder()
+		handler.ServeHTTP(recNoAuth, reqNoAuth)
+
+		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
+
+		d, e := getInfo()
+
+		if !strings.Contains(t.Name(), "OidcEchoJwt") {
+			require.Equal(t, options.GetTokenErrorDescription, d)
+			require.EqualError(t, e, "unable to extract token: Authorization header empty")
+		}
+
+		// Test with fake token
+		token := op.GetToken(t)
+		token.AccessToken = "foobar"
+		testHttpWithAuthenticationFailure(t, token, handler)
+
+		d, e = getInfo()
+
+		require.Equal(t, options.ParseTokenErrorDescription, d)
+		require.EqualError(t, e, "token type \"JWT+AT\" required")
 	})
 }
 

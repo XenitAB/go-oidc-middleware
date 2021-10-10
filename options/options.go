@@ -12,6 +12,21 @@ type ClaimsContextKeyName string
 // DefaultClaimsContextKeyName is of type ClaimsContextKeyName and defaults to "claims"
 const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
 
+// ErrorHandler is called by the middleware if not nil
+type ErrorHandler func(description ErrorDescription, err error)
+
+// ErrorDescription is used to pass the description of the error to ErrorHandler
+type ErrorDescription string
+
+const (
+	// GetTokenErrorDescription is returned to ErrorHandler if the middleware is unable to get a token from the request
+	GetTokenErrorDescription ErrorDescription = "unable to get token string"
+	// ParseTokenErrorDescription is returned to ErrorHandler if the middleware is unable to parse the token extracted from the request
+	ParseTokenErrorDescription ErrorDescription = "unable to parse token string"
+	// ConvertTokenErrorDescription is returned to ErrorHandler if the middleware is unable to convert the token to a map
+	ConvertTokenErrorDescription ErrorDescription = "unable to convert token to map"
+)
+
 // Options defines the options for OIDC Middleware.
 type Options struct {
 	Issuer                     string
@@ -29,6 +44,7 @@ type Options struct {
 	HttpClient                 *http.Client
 	TokenString                [][]TokenStringOption
 	ClaimsContextKeyName       ClaimsContextKeyName
+	ErrorHandler               ErrorHandler
 }
 
 // New takes Option setters and returns an Options pointer.
@@ -235,5 +251,14 @@ func WithTokenString(setters ...TokenStringOption) Option {
 func WithClaimsContextKeyName(opt string) Option {
 	return func(opts *Options) {
 		opts.ClaimsContextKeyName = ClaimsContextKeyName(opt)
+	}
+}
+
+// WithErrorHandler sets the ErrorHandler parameter for an Options pointer.
+// You can pass a function to run custom logic on errors, logging as an example.
+// Defaults to nil
+func WithErrorHandler(opt ErrorHandler) Option {
+	return func(opts *Options) {
+		opts.ErrorHandler = opt
 	}
 }

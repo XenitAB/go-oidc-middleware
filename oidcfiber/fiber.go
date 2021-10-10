@@ -19,6 +19,14 @@ func New(setters ...options.Option) fiber.Handler {
 	return toFiberHandler(oidcHandler.ParseToken, setters...)
 }
 
+func onError(c *fiber.Ctx, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) error {
+	if errorHandler != nil {
+		errorHandler(description, err)
+	}
+
+	return c.SendStatus(statusCode)
+}
+
 func toFiberHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) fiber.Handler {
 	opts := options.New(setters...)
 
@@ -31,17 +39,17 @@ func toFiberHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) f
 
 		tokenString, err := oidc.GetTokenString(getHeaderFn, opts.TokenString)
 		if err != nil {
-			return c.SendStatus(fiber.StatusBadRequest)
+			return onError(c, opts.ErrorHandler, fiber.StatusBadRequest, options.GetTokenErrorDescription, err)
 		}
 
 		token, err := parseToken(ctx, tokenString)
 		if err != nil {
-			return c.SendStatus(fiber.StatusUnauthorized)
+			return onError(c, opts.ErrorHandler, fiber.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 		}
 
 		tokenClaims, err := token.AsMap(ctx)
 		if err != nil {
-			return c.SendStatus(fiber.StatusUnauthorized)
+			return onError(c, opts.ErrorHandler, fiber.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
 		}
 
 		c.Locals(string(opts.ClaimsContextKeyName), tokenClaims)

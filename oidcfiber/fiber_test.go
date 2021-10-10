@@ -102,10 +102,10 @@ func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return newTestFiberHandler(h.tb, app)
 }
 
-func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler {
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := toFiberHandler(parseToken)
+	middleware := toFiberHandler(parseToken, opts...)
 	app := testGetFiberRouter(h.tb, middleware)
 
 	return newTestFiberHandler(h.tb, app)

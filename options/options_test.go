@@ -29,6 +29,7 @@ func TestOptions(t *testing.T) {
 		},
 		TokenString:          nil,
 		ClaimsContextKeyName: ClaimsContextKeyName("foo"),
+		ErrorHandler:         nil,
 	}
 
 	expectedFirstTokenString := &TokenStringOptions{
@@ -71,6 +72,7 @@ func TestOptions(t *testing.T) {
 			WithTokenStringTokenPrefix("lar_"),
 		),
 		WithClaimsContextKeyName("foo"),
+		WithErrorHandler(nil),
 	}
 
 	result := &Options{}

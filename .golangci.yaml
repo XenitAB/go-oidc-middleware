@@ -196,3 +196,7 @@ issues:
     - path: examples/
       linters:
         - lll
+    - path: options/
+      linters:
+        - godot
+        - gosec

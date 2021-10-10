@@ -47,11 +47,11 @@ func (h *testMuxHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return New(router, opts...)
 }
 
-func (h *testMuxHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc) http.Handler {
+func (h *testMuxHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	router := testGetMuxRouter(h.tb)
-	return toHttpHandler(router, parseToken)
+	return toHttpHandler(router, parseToken, opts...)
 }
 
 func (h *testMuxHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {

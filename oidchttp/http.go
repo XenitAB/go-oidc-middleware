@@ -20,6 +20,14 @@ func New(h http.Handler, setters ...options.Option) http.Handler {
 	return toHttpHandler(h, oidcHandler.ParseToken, setters...)
 }
 
+func onError(w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
+	if errorHandler != nil {
+		errorHandler(description, err)
+	}
+
+	w.WriteHeader(statusCode)
+}
+
 func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, setters ...options.Option) http.Handler {
 	opts := options.New(setters...)
 
@@ -28,19 +36,19 @@ func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, setters ...op
 
 		tokenString, err := oidc.GetTokenString(r.Header.Get, opts.TokenString)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			onError(w, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
 			return
 		}
 
 		token, err := parseToken(ctx, tokenString)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			onError(w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
 		tokenClaims, err := token.AsMap(ctx)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			onError(w, opts.ErrorHandler, http.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
 			return
 		}
 
