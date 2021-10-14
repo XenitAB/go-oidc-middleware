@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cristalhq/aconfig v0.16.6
 	github.com/gin-gonic/gin v1.7.4
-	github.com/gofiber/fiber/v2 v2.20.1
+	github.com/gofiber/fiber/v2 v2.20.2
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/xenitab/go-oidc-middleware v0.0.14
