@@ -9,7 +9,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.20.2
 	github.com/gorilla/mux v1.8.0
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/lestrrat-go/jwx v1.2.7
+	github.com/lestrrat-go/jwx v1.2.8
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/stretchr/testify v1.7.0
 	github.com/xenitab/dispans v0.0.5
@@ -33,7 +33,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/go-session/session v3.1.2+incompatible // indirect
-	github.com/goccy/go-json v0.7.9 // indirect
+	github.com/goccy/go-json v0.7.10 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
