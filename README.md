@@ -187,7 +187,7 @@ func newClaimsHandler() fiber.Handler {
 
 ### Deeply nested required claims
 
-If you want to use `WithRequiredClaims()` with deeply nested values, you need to specify the actual type and not interface and the middleware will use this to infer what types the token claims are.
+If you want to use `options.WithRequiredClaims()` with nested values, you need to specify the actual type when configuring it and not an interface and the middleware will use this to infer what types the token claims are.
 
 Example claims could look like this:
 
@@ -207,19 +207,17 @@ Example claims could look like this:
 This would then be interpreted as the following inside the code:
 
 ```go
-{ 
-	"foo": map[string]interface {}{
-		"bar":[]interface {}{
-			"uno", 
-			"dos", 
-			"baz", 
-			"tres"
-		},
+"foo": map[string]interface {}{
+	"bar":[]interface {}{
+		"uno", 
+		"dos", 
+		"baz", 
+		"tres"
 	},
 }
 ```
 
-If you want to make require the claim `baz`, it would look like this:
+If you want to require the claim `foo.bar` to contain the value `baz`, it would look like this:
 
 ```go
 options.WithRequiredClaims(map[string]interface{}{
