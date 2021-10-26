@@ -157,6 +157,21 @@ func TestGetCtyValueWithType(t *testing.T) {
 			expectedCtyType: cty.Map(cty.Map(cty.List(cty.String))),
 			expectedError:   false,
 		},
+		{
+			testDescription: "interface list in an interface map with wrong input type",
+			input: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": []interface{}{
+						"uno",
+						"dos",
+						"tres",
+					},
+				},
+			},
+			inputType:       cty.String,
+			expectedCtyType: cty.NilType,
+			expectedError:   true,
+		},
 	}
 
 	for i, c := range cases {
