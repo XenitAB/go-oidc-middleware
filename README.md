@@ -185,6 +185,48 @@ func newClaimsHandler() fiber.Handler {
 
 ## Other options
 
+### Deeply nested required claims
+
+If you want to use `options.WithRequiredClaims()` with nested values, you need to specify the actual type when configuring it and not an interface and the middleware will use this to infer what types the token claims are.
+
+Example claims could look like this:
+
+```json
+{
+  "foo": {
+    "bar": [
+      "uno",
+      "dos",
+      "baz",
+      "tres"
+    ]
+  }
+}
+```
+
+This would then be interpreted as the following inside the code:
+
+```go
+"foo": map[string]interface {}{
+	"bar":[]interface {}{
+		"uno", 
+		"dos", 
+		"baz", 
+		"tres"
+	},
+}
+```
+
+If you want to require the claim `foo.bar` to contain the value `baz`, it would look like this:
+
+```go
+options.WithRequiredClaims(map[string]interface{}{
+	"foo": map[string][]string{
+		"bar": {"baz"},
+	}
+})
+```
+
 ### Extract token from multiple headers
 
 Example for `Authorization` and `Foo` headers. If token is found in `Authorization`, `Foo` will not be tried. If `Authorization` extraction fails but there's a header `Foo = Bar_baz` then `baz` would be extracted as the token.

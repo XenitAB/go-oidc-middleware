@@ -1262,6 +1262,43 @@ func TestIsRequiredClaimsValid(t *testing.T) {
 			},
 			expectedResult: true,
 		},
+		{
+			testDescription: "valid interface list in an interface map",
+			requiredClaims: map[string]interface{}{
+				"foo": map[string][]string{
+					"bar": {"baz"},
+				},
+			},
+			tokenClaims: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": []interface{}{
+						"uno",
+						"dos",
+						"baz",
+						"tres",
+					},
+				},
+			},
+			expectedResult: true,
+		},
+		{
+			testDescription: "invalid interface list in an interface map",
+			requiredClaims: map[string]interface{}{
+				"foo": map[string][]string{
+					"bar": {"baz"},
+				},
+			},
+			tokenClaims: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": []interface{}{
+						"uno",
+						"dos",
+						"tres",
+					},
+				},
+			},
+			expectedResult: false,
+		},
 	}
 
 	for i, c := range cases {

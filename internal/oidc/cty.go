@@ -7,7 +7,7 @@ import (
 	"github.com/zclconf/go-cty/cty/gocty"
 )
 
-func getCtyValue(a interface{}) (cty.Value, error) {
+func getCtyValueWithImpliedType(a interface{}) (cty.Value, error) {
 	if a == nil {
 		return cty.NilVal, fmt.Errorf("input is nil")
 	}
@@ -17,7 +17,19 @@ func getCtyValue(a interface{}) (cty.Value, error) {
 		return cty.NilVal, fmt.Errorf("unable to get cty.Type: %w", err)
 	}
 
-	value, err := gocty.ToCtyValue(a, valueType)
+	return getCtyValueWithType(a, valueType)
+}
+
+func getCtyValueWithType(a interface{}, vt cty.Type) (cty.Value, error) {
+	if a == nil {
+		return cty.NilVal, fmt.Errorf("input value is nil")
+	}
+
+	if vt == cty.NilType {
+		return cty.NilVal, fmt.Errorf("input type is nil")
+	}
+
+	value, err := gocty.ToCtyValue(a, vt)
 	if err != nil {
 		// we should never receive this error
 		return cty.NilVal, fmt.Errorf("unable to get cty.Value: %w", err)
@@ -27,12 +39,12 @@ func getCtyValue(a interface{}) (cty.Value, error) {
 }
 
 func getCtyValues(a interface{}, b interface{}) (cty.Value, cty.Value, error) {
-	first, err := getCtyValue(a)
+	first, err := getCtyValueWithImpliedType(a)
 	if err != nil {
 		return cty.NilVal, cty.NilVal, err
 	}
 
-	second, err := getCtyValue(b)
+	second, err := getCtyValueWithType(b, first.Type())
 	if err != nil {
 		return cty.NilVal, cty.NilVal, err
 	}

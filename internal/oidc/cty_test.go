@@ -7,7 +7,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func TestGetCtyValue(t *testing.T) {
+func TestGetCtyValueWithImpliedType(t *testing.T) {
 	cases := []struct {
 		testDescription string
 		input           interface{}
@@ -67,7 +67,117 @@ func TestGetCtyValue(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
 
-		v, err := getCtyValue(c.input)
+		v, err := getCtyValueWithImpliedType(c.input)
+		require.Equal(t, c.expectedCtyType, v.Type())
+
+		if c.expectedError {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+	}
+}
+
+func TestGetCtyValueWithType(t *testing.T) {
+	cases := []struct {
+		testDescription string
+		input           interface{}
+		inputType       cty.Type
+		expectedCtyType cty.Type
+		expectedError   bool
+	}{
+		{
+			testDescription: "string as cty.String",
+			input:           "foo",
+			inputType:       cty.String,
+			expectedCtyType: cty.String,
+			expectedError:   false,
+		},
+		{
+			testDescription: "string number as cty.String",
+			input:           "1234",
+			inputType:       cty.String,
+			expectedCtyType: cty.String,
+			expectedError:   false,
+		},
+		{
+			testDescription: "int as cty.Number",
+			input:           int(1234),
+			inputType:       cty.Number,
+			expectedCtyType: cty.Number,
+			expectedError:   false,
+		},
+		{
+			testDescription: "float64 as cty.Number",
+			input:           float64(1234),
+			inputType:       cty.Number,
+			expectedCtyType: cty.Number,
+			expectedError:   false,
+		},
+		{
+			testDescription: "list of strings as cty.List(cty.String)",
+			input:           []string{"foo"},
+			inputType:       cty.List(cty.String),
+			expectedCtyType: cty.List(cty.String),
+			expectedError:   false,
+		},
+		{
+			testDescription: "string map as cty.Map(cty.String)",
+			input:           map[string]string{"foo": "bar"},
+			inputType:       cty.Map(cty.String),
+			expectedCtyType: cty.Map(cty.String),
+			expectedError:   false,
+		},
+		{
+			testDescription: "empty array of interfaces as cty.NilType and error",
+			input:           []interface{}{},
+			inputType:       cty.NilType,
+			expectedCtyType: cty.NilType,
+			expectedError:   true,
+		},
+		{
+			testDescription: "nil as cty.NilType and error",
+			input:           nil,
+			inputType:       cty.NilType,
+			expectedCtyType: cty.NilType,
+			expectedError:   true,
+		},
+		{
+			testDescription: "interface list in an interface map",
+			input: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": []interface{}{
+						"uno",
+						"dos",
+						"tres",
+					},
+				},
+			},
+			inputType:       cty.Map(cty.Map(cty.List(cty.String))),
+			expectedCtyType: cty.Map(cty.Map(cty.List(cty.String))),
+			expectedError:   false,
+		},
+		{
+			testDescription: "interface list in an interface map with wrong input type",
+			input: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": []interface{}{
+						"uno",
+						"dos",
+						"tres",
+					},
+				},
+			},
+			inputType:       cty.String,
+			expectedCtyType: cty.NilType,
+			expectedError:   true,
+		},
+	}
+
+	for i, c := range cases {
+		t.Logf("Test iteration %d: %s", i, c.testDescription)
+
+		v, err := getCtyValueWithType(c.input, c.inputType)
 		require.Equal(t, c.expectedCtyType, v.Type())
 
 		if c.expectedError {
