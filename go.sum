@@ -337,8 +337,8 @@ github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:
 github.com/xeipuuv/gojsonschema v1.2.0 h1:LhYJRs+L4fBtjZUfuSZIKGeVu0QRy8e5Xi7D17UxZ74=
 github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQluxsYJ78Id3Y=
 github.com/xenitab/dispans v0.0.3/go.mod h1:Nz+rsexK3w3Af7SmkVB0oKt6jJ6eFHL01F8w6LcCyEI=
-github.com/xenitab/dispans v0.0.5 h1:9uMDcVFMfMVREs78pNSly6OFICwycBZjU3jkFtJtXd8=
-github.com/xenitab/dispans v0.0.5/go.mod h1:UP+PXOz4lpAqko4XGeBlSoRYkj8ohc/j9TsmGujEUAg=
+github.com/xenitab/dispans v0.0.7 h1:zywkoKkMQfO0I92OlV4zLQFafDuY9FQvsFhsAoiU5rY=
+github.com/xenitab/dispans v0.0.7/go.mod h1:UP+PXOz4lpAqko4XGeBlSoRYkj8ohc/j9TsmGujEUAg=
 github.com/xenitab/go-oidc-middleware v0.0.2/go.mod h1:SvzP3YAkptnbYFJDvJZ4HoA6zHIRhZCYltW+PCk0O/8=
 github.com/xenitab/pkg v0.0.2 h1:OlfK5tHRRSOK4HrMCYZFadfALI054At8QU2uQO23NcE=
 github.com/xenitab/pkg v0.0.2/go.mod h1:Y8WrydjgisWoExwdlN8hs6SK9seZ3lgV5Tpub3pOw6o=
