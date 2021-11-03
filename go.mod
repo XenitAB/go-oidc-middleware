@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-chi/chi/v5 v5.0.4
-	github.com/gofiber/fiber/v2 v2.20.2
+	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/gorilla/mux v1.8.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/lestrrat-go/jwx v1.2.9
@@ -62,7 +62,7 @@ require (
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.30.0 // indirect
+	github.com/valyala/fasthttp v1.31.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
