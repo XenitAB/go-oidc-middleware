@@ -13,7 +13,7 @@ require (
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/stretchr/testify v1.7.0
 	github.com/xenitab/dispans v0.0.5
-	github.com/zclconf/go-cty v1.9.1
+	github.com/zclconf/go-cty v1.10.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/mod v0.5.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
