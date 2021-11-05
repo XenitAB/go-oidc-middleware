@@ -3,7 +3,7 @@ module examples
 go 1.17
 
 require (
-	github.com/cristalhq/aconfig v0.16.7
+	github.com/cristalhq/aconfig v0.16.8
 	github.com/gin-gonic/gin v1.7.4
 	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/labstack/echo/v4 v4.6.1
@@ -43,7 +43,7 @@ require (
 	github.com/valyala/fasthttp v1.31.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	github.com/zclconf/go-cty v1.9.1 // indirect
+	github.com/zclconf/go-cty v1.10.0 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211007125505-59d4e928ea9d // indirect
