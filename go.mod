@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/gorilla/mux v1.8.0
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/lestrrat-go/jwx v1.2.9
+	github.com/lestrrat-go/jwx v1.2.10
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/stretchr/testify v1.7.0
 	github.com/xenitab/dispans v0.0.9
