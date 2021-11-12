@@ -16,7 +16,7 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	honnef.co/go/tools v0.2.1
+	honnef.co/go/tools v0.2.2
 )
 
 require (
