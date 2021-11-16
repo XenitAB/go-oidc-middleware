@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cristalhq/aconfig v0.16.8
 	github.com/gin-gonic/gin v1.7.4
-	github.com/gofiber/fiber/v2 v2.21.0
+	github.com/gofiber/fiber/v2 v2.22.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/xenitab/go-oidc-middleware v0.0.17
@@ -31,7 +31,7 @@ require (
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.1 // indirect
-	github.com/lestrrat-go/jwx v1.2.9 // indirect
+	github.com/lestrrat-go/jwx v1.2.10 // indirect
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
