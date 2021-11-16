@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/gin-gonic/gin v1.7.4
-	github.com/go-chi/chi/v5 v5.0.5
+	github.com/go-chi/chi/v5 v5.0.6
 	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/gorilla/mux v1.8.0
 	github.com/labstack/echo/v4 v4.6.1
