@@ -3,7 +3,7 @@ module github.com/xenitab/go-oidc-middleware
 go 1.17
 
 require (
-	github.com/gin-gonic/gin v1.7.4
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-chi/chi/v5 v5.0.5
 	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/gorilla/mux v1.8.0
