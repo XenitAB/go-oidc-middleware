@@ -1,49 +1,72 @@
 .ONESHELL:
 SHELL := /bin/bash
 
-TEST_PACKAGES = $(shell go list ./... | grep -v "internal/oidctesting")
+TEST_PACKAGES = $(shell go list ./... | grep -v "internal/oidctesting" | grep -v "internal/coverage")
 TEST_PACKAGES_CSV = $(shell echo -n $(TEST_PACKAGES) | sed "s/ /,/g")
+
+PKGS = $(shell find ./ -name go.mod | sed "s/go.mod//g" | sort)
+PKGS_CLEAN = $(shell find ./ -name go.mod | sed "s/go.mod//g" | grep -v "./examples/" | grep -v "./internal/coverage/" | sort)
 
 .PHONY: all
 .SILENT: all
-all: tidy lint fmt vet staticcheck test test-race build-examples
+all: tidy lint fmt vet test build-examples
 
 .PHONY: lint
 .SILENT: lint
 lint:
-	golangci-lint run
+	ROOT_DIR=$(PWD)
+	for pkg in $(PKGS_CLEAN); do
+		(
+			echo $$pkg: golangci-lint run 
+			cd $$pkg
+			golangci-lint run -c $${ROOT_DIR}/.golangci.yaml
+		)
+	done
 
 .PHONY: fmt
 .SILENT: fmt
 fmt:
-	go fmt ./...
+	for pkg in $(PKGS); do
+		(
+			echo $$pkg: go fmt 
+			cd $$pkg
+			go fmt ./...
+		)
+	done
+	
 
 .PHONY: tidy
 .SILENT: tidy
 tidy:
-	go mod tidy
+	for pkg in $(PKGS); do
+		(
+			echo $$pkg: go mod tidy 
+			cd $$pkg
+			go mod tidy
+		)
+	done
 
 .PHONY: vet
 .SILENT: vet
 vet:
-	go vet ./...
-
-.PHONY: staticcheck
-.SILENT: staticcheck
-staticcheck:
-	go install honnef.co/go/tools/cmd/staticcheck@latest
-	staticcheck ./...
+	for pkg in $(PKGS); do
+		(
+			echo $$pkg: go vet
+			cd $$pkg
+			go vet ./...
+		)
+	done
 
 .SILENT: test
 .PHONY: test
 test: fmt vet
-	go test -timeout 30s -cover $(TEST_PACKAGES)
-
-.SILENT: test-race
-.PHONY: test-race
-test-race: fmt vet staticcheck
-	mkdir -p tmp/
-	go test -race --coverprofile=tmp/coverage.out --covermode=atomic $(TEST_PACKAGES)
+	for pkg in $(PKGS_CLEAN); do
+		(
+			echo $$pkg: go test
+			cd $$pkg
+			go test -timeout 30s -cover ./...
+		)
+	done
 
 .SILENT: bench
 .PHONY: bench

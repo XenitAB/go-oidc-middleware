@@ -2,13 +2,28 @@ module examples
 
 go 1.17
 
+replace (
+	github.com/xenitab/go-oidc-middleware => ../
+	github.com/xenitab/go-oidc-middleware/oidcechojwt => ../oidcechojwt
+	github.com/xenitab/go-oidc-middleware/oidcfiber => ../oidcfiber
+	github.com/xenitab/go-oidc-middleware/oidcgin => ../oidcgin
+	github.com/xenitab/go-oidc-middleware/oidchttp => ../oidchttp
+)
+
+require (
+	github.com/xenitab/go-oidc-middleware v0.0.18
+	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.0-00010101000000-000000000000
+	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.0-00010101000000-000000000000
+	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.0-00010101000000-000000000000
+	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.0-00010101000000-000000000000
+)
+
 require (
 	github.com/cristalhq/aconfig v0.16.8
 	github.com/gin-gonic/gin v1.7.4
-	github.com/gofiber/fiber/v2 v2.21.0
+	github.com/gofiber/fiber/v2 v2.22.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
-	github.com/xenitab/go-oidc-middleware v0.0.17
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
@@ -31,7 +46,7 @@ require (
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.1 // indirect
-	github.com/lestrrat-go/jwx v1.2.9 // indirect
+	github.com/lestrrat-go/jwx v1.2.11 // indirect
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -50,8 +65,7 @@ require (
 	golang.org/x/sys v0.0.0-20211103235746-7861aae1554b // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/xenitab/go-oidc-middleware => ../

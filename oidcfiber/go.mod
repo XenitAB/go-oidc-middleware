@@ -1,15 +1,15 @@
-module github.com/xenitab/go-oidc-middleware
+module github.com/xenitab/go-oidc-middleware/oidcfiber
 
 go 1.17
 
+replace github.com/xenitab/go-oidc-middleware => ../
+
+require github.com/xenitab/go-oidc-middleware v0.0.18
+
 require (
-	github.com/lestrrat-go/jwx v1.2.11
+	github.com/gofiber/fiber/v2 v2.22.0
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/stretchr/testify v1.7.0
-	github.com/xenitab/dispans v0.0.10
-	github.com/zclconf/go-cty v1.10.0
-	go.uber.org/ratelimit v0.2.0
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
 require (
@@ -25,15 +25,15 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/lestrrat-go/backoff/v2 v2.0.8 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.1 // indirect
+	github.com/lestrrat-go/jwx v1.2.11 // indirect
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/tidwall/btree v0.6.1 // indirect
 	github.com/tidwall/buntdb v1.2.7 // indirect
 	github.com/tidwall/gjson v1.11.0 // indirect
@@ -42,12 +42,19 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.31.0 // indirect
+	github.com/valyala/tcplisten v1.0.0 // indirect
+	github.com/xenitab/dispans v0.0.10 // indirect
+	github.com/zclconf/go-cty v1.10.0 // indirect
+	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211104170005-ce137452f963 // indirect
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sys v0.0.0-20211103235746-7861aae1554b // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
