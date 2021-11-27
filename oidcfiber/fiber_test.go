@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/phayes/freeport"
-	"github.com/stretchr/testify/require"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
 	"github.com/xenitab/go-oidc-middleware/options"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/phayes/freeport"
+	"github.com/stretchr/testify/require"
 )
 
 const testName = "OidcFiber"

@@ -6,9 +6,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/xenitab/go-oidc-middleware/options"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
-	"github.com/xenitab/go-oidc-middleware/options"
 	"golang.org/x/oauth2"
 )
 

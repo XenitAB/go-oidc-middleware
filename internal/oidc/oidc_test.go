@@ -11,13 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/options"
+
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
-	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 func TestGetHeadersFromTokenString(t *testing.T) {
