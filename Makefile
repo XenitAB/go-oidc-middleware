@@ -47,8 +47,17 @@ test-race: fmt vet staticcheck
 
 .SILENT: bench
 .PHONY: bench
-bench: fmt vet test
-	go test -timeout 4m -run="-" -bench=".*" $(TEST_PACKAGES)
+bench:
+	ROOT_DIR=$(PWD)
+	mkdir -p $${ROOT_DIR}/tmp/
+	echo -n > $${ROOT_DIR}/tmp/bench.txt
+	for pkg in $(PKGS_CLEAN); do
+		(
+			echo $$pkg: go test -bench
+			cd $$pkg
+			go test -timeout 4m -run="-" -bench=".*" | tee -a $${ROOT_DIR}/tmp/bench.txt
+		)
+	done
 
 .PHONY: cover
 .SILENT: cover
