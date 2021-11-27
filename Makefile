@@ -62,9 +62,33 @@ bench:
 .PHONY: cover
 .SILENT: cover
 cover:
-	mkdir -p tmp/
-	go test -timeout 1m -coverpkg=$(TEST_PACKAGES_CSV) -coverprofile=tmp/coverage.out $(TEST_PACKAGES)
-	go tool cover -html=tmp/coverage.out	
+	ROOT_DIR=$(PWD)
+	mkdir -p $${ROOT_DIR}/tmp/
+	for pkg in $(PKGS_CLEAN); do
+		(
+			echo $$pkg: go test -coverprofile
+			cd $$pkg
+			PKG_NAME=$$(basename $$(pwd))
+			if [[ "$${pkg}" == "./" ]]; then
+				go test -timeout 1m -coverpkg=$(TEST_PACKAGES_CSV) -coverprofile=$${ROOT_DIR}/tmp/$${PKG_NAME}_coverage.out ./...
+			else
+				go test -timeout 1m -coverpkg=./... -coverprofile=$${ROOT_DIR}/tmp/$${PKG_NAME}_coverage.out ./...
+			fi
+		)
+	done
+
+	echo "mode: set" > $${ROOT_DIR}/tmp/coverage_merged.out
+	COVERAGE_FILES=$$(find $${ROOT_DIR}/tmp/ -name "*_coverage.out")
+	for coverage_file in $${COVERAGE_FILES}; do
+		tail -n +2 $${coverage_file} >> $${ROOT_DIR}/tmp/coverage_merged.out
+	done
+	
+
+	(
+		cd ./internal/coverage
+		go tool cover -html=$${ROOT_DIR}/tmp/coverage_merged.out
+	)
+	
 
 .PHONY: build-examples
 .SILENT: build-examples
