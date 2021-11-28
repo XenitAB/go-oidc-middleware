@@ -23,6 +23,7 @@ This library is under active development and the api will have breaking changes 
 - [gin](https://github.com/gin-gonic/gin)
 - [fiber](https://github.com/gofiber/fiber)
 - [Echo (JWT ParseTokenFunc)](https://echo.labstack.com/middleware/jwt/#custom-configuration)
+- Build your own middleware
 
 ### Using options
 
@@ -180,6 +181,37 @@ func newClaimsHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, claims)
+}
+```
+
+### Build your own middleware
+
+**Import**
+
+`"github.com/xenitab/go-oidc-middleware/oidctoken"`
+
+**Example**
+
+```go
+oidcTokenHandler := oidctoken.New(h,
+	options.WithIssuer(cfg.Issuer),
+	options.WithRequiredTokenType("JWT"),
+	options.WithRequiredAudience(cfg.Audience),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithRequiredClaims(map[string]interface{}{
+		"tid": cfg.TenantID,
+	}),
+)
+
+// oidctoken.GetTokenString is optional, but you will need the JWT token as a string
+tokenString, err := oidctoken.GetTokenString(...)
+if err != nil {
+	panic(err)
+}
+
+token, err := oidcTokenHandler.ParseToken(ctx, tokenString)
+if err != nil {
+	panic(err)
 }
 ```
 
