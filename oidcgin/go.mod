@@ -4,7 +4,7 @@ go 1.17
 
 replace github.com/xenitab/go-oidc-middleware => ../
 
-require github.com/xenitab/go-oidc-middleware v0.0.21
+require github.com/xenitab/go-oidc-middleware v0.0.22
 
 require github.com/gin-gonic/gin v1.7.4
 
