@@ -1,4 +1,4 @@
-name: GoReleaser
+name: Release
 
 on:
   release:
@@ -11,6 +11,11 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v2.3.4
+      - name: Get variables
+        id: get_variables
+        run: |
+          echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+          echo "::set-output name=modules_csv::$(find ./ -name go.mod | grep -Ev "^./go.mod$|^./examples/|^./internal/coverage/" | sed -e "s|^./||g" -e "s|/go.mod$||g" | tr '\n' ',' | sed "s|,$||g")"
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -22,3 +27,22 @@ jobs:
         with:
           version: latest
           args: release --rm-dist
+      - name: Create tag
+        uses: actions/github-script@v5
+        env:
+          TAG: ${{ steps.get_variables.outputs.tag }}
+          MODULES_CSV: ${{ steps.get_variables.outputs.modules_csv }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { TAG, MODULES_CSV } = process.env
+            const TAGS = MODULES_CSV.split(",").map((m) => { return `${m}/${TAG}` })
+
+            for (const tag of TAGS) {
+              github.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/${tag}`,
+                sha: context.sha
+              })
+            }
