@@ -6,7 +6,7 @@ on:
       - published
 
 jobs:
-  goreleaser:
+  releaser:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repo
@@ -39,7 +39,7 @@ jobs:
             const TAGS = MODULES_CSV.split(",").map((m) => { return `${m}/${TAG}` })
 
             for (const tag of TAGS) {
-              github.git.createRef({
+              github.rest.git.createRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 ref: `refs/tags/${tag}`,
