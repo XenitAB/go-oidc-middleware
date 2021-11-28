@@ -113,10 +113,13 @@ cover:
 		tail -n +2 $${coverage_file} >> $${ROOT_DIR}/tmp/coverage_merged.out
 	done
 	
-
 	(
 		cd ./internal/coverage
-		go tool cover -html=$${ROOT_DIR}/tmp/coverage_merged.out
+		if [[ $${CI} == "true" ]]; then
+			go tool cover -func=$${ROOT_DIR}/tmp/coverage_merged.out
+		else
+			go tool cover -html=$${ROOT_DIR}/tmp/coverage_merged.out
+		fi
 	)
 	
 
