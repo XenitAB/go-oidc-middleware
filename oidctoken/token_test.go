@@ -110,6 +110,8 @@ func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.Serv
 }
 
 func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
+	tb.Helper()
+
 	if errorHandler != nil {
 		errorHandler(description, err)
 	}
