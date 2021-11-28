@@ -97,7 +97,6 @@ cover:
 	set -e
 	ROOT_DIR=$(PWD)
 	mkdir -p $${ROOT_DIR}/tmp/
-	echo $(TEST_PACKAGES_CSV)
 	for pkg in $(PKGS_CLEAN); do
 		(
 			echo $$pkg: go test -coverprofile
