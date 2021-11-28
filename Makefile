@@ -14,6 +14,7 @@ all: tidy lint fmt vet test build-examples
 .PHONY: lint
 .SILENT: lint
 lint:
+	set -e
 	ROOT_DIR=$(PWD)
 	for pkg in $(PKGS_CLEAN); do
 		(
@@ -26,6 +27,7 @@ lint:
 .PHONY: fmt
 .SILENT: fmt
 fmt:
+	set -e
 	for pkg in $(PKGS); do
 		(
 			echo $$pkg: go fmt 
@@ -38,6 +40,7 @@ fmt:
 .PHONY: tidy
 .SILENT: tidy
 tidy:
+	set -e
 	for pkg in $(PKGS); do
 		(
 			echo $$pkg: go mod tidy 
@@ -49,6 +52,7 @@ tidy:
 .PHONY: vet
 .SILENT: vet
 vet:
+	set -e
 	for pkg in $(PKGS); do
 		(
 			echo $$pkg: go vet
@@ -60,6 +64,7 @@ vet:
 .SILENT: test
 .PHONY: test
 test: fmt vet
+	set -e
 	for pkg in $(PKGS_CLEAN); do
 		(
 			echo $$pkg: go test
@@ -71,6 +76,7 @@ test: fmt vet
 .SILENT: bench
 .PHONY: bench
 bench:
+	set -e
 	ROOT_DIR=$(PWD)
 	mkdir -p $${ROOT_DIR}/tmp/
 	echo -n > $${ROOT_DIR}/tmp/bench.txt
@@ -85,6 +91,7 @@ bench:
 .PHONY: cover
 .SILENT: cover
 cover:
+	set -e
 	ROOT_DIR=$(PWD)
 	mkdir -p $${ROOT_DIR}/tmp/
 	for pkg in $(PKGS_CLEAN); do
