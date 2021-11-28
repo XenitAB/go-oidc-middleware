@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
+	"github.com/xenitab/go-oidc-middleware/options"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/phayes/freeport"
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/go-oidc-middleware/internal/oidc"
-	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
-	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 const testName = "OidcEchoJwt"

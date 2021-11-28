@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/options"
+
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
-	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 var (

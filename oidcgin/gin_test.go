@@ -6,10 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
 	"github.com/xenitab/go-oidc-middleware/options"
+
+	"github.com/gin-gonic/gin"
 )
 
 const testName = "OidcGin"

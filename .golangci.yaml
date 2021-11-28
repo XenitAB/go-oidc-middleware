@@ -193,9 +193,17 @@ issues:
         - lll
         - goconst
         - dupl
-    - path: examples/
+    - path: pkce-cli/
       linters:
         - lll
+        - gocritic
+    - path: shared/
+      linters:
+        - lll
+    - path: api/
+      linters:
+        - funlen
+        - gocritic
     - path: options/
       linters:
         - godot
