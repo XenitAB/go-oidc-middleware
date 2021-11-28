@@ -11,7 +11,7 @@ replace (
 )
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.18
+	github.com/xenitab/go-oidc-middleware v0.0.21
 	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.0-00010101000000-000000000000
 	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.0-00010101000000-000000000000
 	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.0-00010101000000-000000000000
