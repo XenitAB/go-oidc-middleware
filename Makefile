@@ -1,11 +1,14 @@
 .ONESHELL:
 SHELL := /bin/bash
 
+ROOT_MODULE_NAME = github.com/xenitab/go-oidc-middleware
+
 TEST_PACKAGES = $(shell go list ./... | grep -v "internal/oidctesting" | grep -v "internal/coverage")
 TEST_PACKAGES_CSV = $(shell echo -n $(TEST_PACKAGES) | sed "s/ /,/g")
 
 PKGS = $(shell find ./ -name go.mod | sed "s/go.mod//g" | sort)
 PKGS_CLEAN = $(shell find ./ -name go.mod | sed "s/go.mod//g" | grep -v "./examples/" | grep -v "./internal/coverage/" | sort)
+RELEASE_MODULES = $(shell find ./ -name go.mod | grep -Ev "^./go.mod$$|^./examples/|^./internal/coverage/" | sed -e "s|^./||g" -e "s|/go.mod$$||g")
 
 .PHONY: all
 .SILENT: all
@@ -140,3 +143,30 @@ build-examples:
 	go build -o ../bin/pkce-cli ./pkce-cli
 	
 	echo build-examples: Success
+
+.PHONY: release-modules
+.SILENT: release-modules
+release-modules:
+	set -e
+
+	if [[ -z "$${RELEASE_VERSION}" ]]; then
+		echo The variable RELEASE_VERSION is empty. 1>&2
+		exit 1
+	fi
+
+	if [[ "$${CI}" != "true" ]]; then
+		echo release-modules should only be run in CI. 1>&2
+		exit 1
+	fi
+
+	for module in $(RELEASE_MODULES); do
+		(
+			cd $$module
+			go mod edit -require "$(ROOT_MODULE_NAME)@$${RELEASE_VERSION}"
+			go mod tidy
+			git add go.mod
+			git commit -m "bump $(ROOT_MODULE_NAME) to $${RELEASE_VERSION} in $(ROOT_MODULE_NAME)/$${module}"
+			git tag --message "$(ROOT_MODULE_NAME)/$${module} $${RELEASE_VERSION}" $${module}/$${RELEASE_VERSION}
+		)
+	done
+
