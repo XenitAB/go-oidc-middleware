@@ -3,10 +3,12 @@ package oidctoken
 import (
 	"context"
 
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+// TokenHandler is used to parse tokens.
 type TokenHandler struct {
 	parseTokenFunc oidc.ParseTokenFunc
 	tokenOptions   *options.Options
@@ -28,20 +30,19 @@ func New(setters ...options.Option) (*TokenHandler, error) {
 	}, nil
 }
 
-func (t *TokenHandler) ParseToken(ctx context.Context, tokenString string) (map[string]interface{}, error) {
+// ParseToken takes a context and a string and returns a jwt.Token or an error.
+// jwt.Token is from `github.com/lestrrat-go/jwx/jwt`.
+func (t *TokenHandler) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
 	token, err := t.parseTokenFunc(ctx, tokenString)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenClaims, err := token.AsMap(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return tokenClaims, nil
+	return token, nil
 }
 
-func (t *TokenHandler) GetTokenString(getHeaderFn oidc.GetHeaderFn) (string, error) {
-	return oidc.GetTokenString(getHeaderFn, t.tokenOptions.TokenString)
+// GetTokenString takes a GetHeaderFn `func(key string) string` and [][]options.TokenStringOption and
+// returns the token as an string or an error.
+func GetTokenString(getHeaderFn oidc.GetHeaderFn, tokenStringOpts [][]options.TokenStringOption) (string, error) {
+	return oidc.GetTokenString(getHeaderFn, tokenStringOpts)
 }
