@@ -97,6 +97,7 @@ cover:
 	set -e
 	ROOT_DIR=$(PWD)
 	mkdir -p $${ROOT_DIR}/tmp/
+	echo $(TEST_PACKAGES_CSV)
 	for pkg in $(PKGS_CLEAN); do
 		(
 			echo $$pkg: go test -coverprofile
@@ -105,7 +106,7 @@ cover:
 			if [[ "$${pkg}" == "./" ]]; then
 				go test -timeout 1m -coverpkg=$(TEST_PACKAGES_CSV) -coverprofile=$${ROOT_DIR}/tmp/$${PKG_NAME}_coverage.out ./...
 			else
-				go test -timeout 1m -coverpkg=./... -coverprofile=$${ROOT_DIR}/tmp/$${PKG_NAME}_coverage.out ./...
+				go test -timeout 1m -coverpkg=./...,$(TEST_PACKAGES_CSV) -coverprofile=$${ROOT_DIR}/tmp/$${PKG_NAME}_coverage.out ./...
 			fi
 		)
 	done
