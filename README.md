@@ -19,49 +19,14 @@ This library is under active development and the api will have breaking changes 
 
 ## Currently Supported frameworks
 
-- [Echo (JWT ParseTokenFunc)](https://echo.labstack.com/middleware/jwt/#custom-configuration)
 - [net/http](https://pkg.go.dev/net/http), [mux](https://github.com/gorilla/mux) & [chi](https://github.com/go-chi/chi)
 - [gin](https://github.com/gin-gonic/gin)
 - [fiber](https://github.com/gofiber/fiber)
+- [Echo (JWT ParseTokenFunc)](https://echo.labstack.com/middleware/jwt/#custom-configuration)
 
 ### Using options
 
 Import: `"github.com/xenitab/go-oidc-middleware/options"`
-
-### Echo (JWT ParseTokenFunc)
-
-**Import**
-
-`"github.com/xenitab/go-oidc-middleware/oidcechojwt"`
-
-**Middleware**
-
-```go
-e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-    ParseTokenFunc: oidcechojwt.New(
-		options.WithIssuer(cfg.Issuer),
-		options.WithRequiredTokenType("JWT"),
-		options.WithRequiredAudience(cfg.Audience),
-		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-		options.WithRequiredClaims(map[string]interface{}{
-			"tid": cfg.TenantID,
-		}),
-	),
-}))
-```
-
-**Handler**
-
-```go
-func newClaimsHandler(c echo.Context) error {
-	claims, ok := c.Get("user").(map[string]interface{})
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
-	}
-
-	return c.JSON(http.StatusOK, claims)
-}
-```
 
 ### net/http, mux & chi
 
@@ -180,6 +145,41 @@ func newClaimsHandler() fiber.Handler {
 
 		return c.JSON(claims)
 	}
+}
+```
+
+### Echo (JWT ParseTokenFunc)
+
+**Import**
+
+`"github.com/xenitab/go-oidc-middleware/oidcechojwt"`
+
+**Middleware**
+
+```go
+e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+    ParseTokenFunc: oidcechojwt.New(
+		options.WithIssuer(cfg.Issuer),
+		options.WithRequiredTokenType("JWT"),
+		options.WithRequiredAudience(cfg.Audience),
+		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+		options.WithRequiredClaims(map[string]interface{}{
+			"tid": cfg.TenantID,
+		}),
+	),
+}))
+```
+
+**Handler**
+
+```go
+func newClaimsHandler(c echo.Context) error {
+	claims, ok := c.Get("user").(map[string]interface{})
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+	}
+
+	return c.JSON(http.StatusOK, claims)
 }
 ```
 
