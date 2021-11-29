@@ -77,6 +77,27 @@ func (op *OPTest) RotateKeys() error {
 	return nil
 }
 
+func (op *OPTest) GetToken() (*TokenResponse, error) {
+	accessToken, err := newAccessToken(op.options.Issuer, op.jwks.getPrivateKey())
+	if err != nil {
+		return nil, err
+	}
+
+	idToken, err := newIdToken(op.options.Issuer, op.jwks.getPrivateKey())
+	if err != nil {
+		return nil, err
+	}
+
+	tokenResponse := TokenResponse{
+		AccessToken: accessToken,
+		TokenType:   "Bearer",
+		ExpiresIn:   3600,
+		IdToken:     idToken,
+	}
+
+	return &tokenResponse, nil
+}
+
 type Metadata struct {
 	Issuer                 string   `json:"issuer"`
 	AuthorizationEndpoint  string   `json:"authorization_endpoint"`
@@ -90,6 +111,10 @@ type TokenResponse struct {
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
 	IdToken     string `json:"id_token"`
+}
+
+func (t *TokenResponse) SetAuthHeader(r *http.Request) {
+	r.Header.Set("Authorization", fmt.Sprintf("%s %s", t.TokenType, t.AccessToken))
 }
 
 func (op *OPTest) routeHandler() *http.ServeMux {
