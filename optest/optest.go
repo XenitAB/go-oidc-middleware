@@ -70,11 +70,7 @@ func (op *OPTest) RotateKeys() error {
 	}
 
 	err = op.jwks.removeOldestKey()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (op *OPTest) GetToken() (*TokenResponse, error) {
