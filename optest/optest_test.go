@@ -183,8 +183,8 @@ func (td *testData) testValidateTokenResponse(t *testing.T) {
 	require.Equal(t, td.baseURL, accessToken.Issuer())
 	require.Equal(t, td.clientID, accessToken.Audience()[0])
 	require.Equal(t, "test", accessToken.Subject())
-	require.WithinDuration(t, time.Now(), accessToken.NotBefore(), 1*time.Second)
-	require.WithinDuration(t, time.Now().Add(3600*time.Second), accessToken.Expiration(), 1*time.Second)
+	require.WithinDuration(t, time.Now(), accessToken.NotBefore(), 5*time.Second)
+	require.WithinDuration(t, time.Now().Add(3600*time.Second), accessToken.Expiration(), 5*time.Second)
 
 	idToken, err := jwt.Parse([]byte(td.tokenResponse.IdToken), jwt.WithKeySet(td.publicKey))
 	require.NoError(t, err)
@@ -192,8 +192,8 @@ func (td *testData) testValidateTokenResponse(t *testing.T) {
 	require.Equal(t, td.baseURL, idToken.Issuer())
 	require.Equal(t, td.clientID, idToken.Audience()[0])
 	require.Equal(t, "test", idToken.Subject())
-	require.WithinDuration(t, time.Now(), idToken.NotBefore(), 1*time.Second)
-	require.WithinDuration(t, time.Now().Add(3600*time.Second), idToken.Expiration(), 1*time.Second)
+	require.WithinDuration(t, time.Now(), idToken.NotBefore(), 5*time.Second)
+	require.WithinDuration(t, time.Now().Add(3600*time.Second), idToken.Expiration(), 5*time.Second)
 }
 
 func testGenerateCodeChallengeS256(t *testing.T) (string, string) {
