@@ -6,10 +6,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// OPTesting is a wrapper for the OPTest to be used in tests.
 type OPTesting struct {
 	op *OPTest
 }
 
+// NewTesting sets up a new test OpenID Provider.
 func NewTesting(tb testing.TB, setters ...Option) *OPTesting {
 	tb.Helper()
 
@@ -21,18 +23,21 @@ func NewTesting(tb testing.TB, setters ...Option) *OPTesting {
 	}
 }
 
+// Close shuts down the http server.
 func (o *OPTesting) Close(tb testing.TB) {
 	tb.Helper()
 
 	o.op.Close()
 }
 
+// GetURL returns the current URL of the http server.
 func (o *OPTesting) GetURL(tb testing.TB) string {
 	tb.Helper()
 
 	return o.op.GetURL()
 }
 
+// RotateKeys rotates the jwks keys.
 func (o *OPTesting) RotateKeys(tb testing.TB) {
 	tb.Helper()
 
@@ -40,6 +45,7 @@ func (o *OPTesting) RotateKeys(tb testing.TB) {
 	require.NoError(tb, err)
 }
 
+// GetToken returns a TokenResponse with an id_token and an access_token.
 func (o *OPTesting) GetToken(tb testing.TB) *TokenResponse {
 	tb.Helper()
 

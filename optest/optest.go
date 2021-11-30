@@ -11,24 +11,14 @@ import (
 	"time"
 )
 
-type Options struct {
-	Issuer string
-}
-
-type Option func(*Options)
-
-func WithIssuer(issuer string) Option {
-	return func(opts *Options) {
-		opts.Issuer = issuer
-	}
-}
-
+// OPTest is the struct used for the test OpenID Provider.
 type OPTest struct {
 	server  *httptest.Server
 	options Options
 	jwks    *jwksHandler
 }
 
+// New sets up a new test OpenID Provider.
 func New(setters ...Option) (*OPTest, error) {
 	jwks, err := newJwksHandler()
 	if err != nil {
@@ -44,7 +34,17 @@ func New(setters ...Option) (*OPTest, error) {
 	op.server = srv
 
 	opts := &Options{
-		Issuer: srv.URL,
+		Issuer:             srv.URL,
+		Audience:           "test-client",
+		Subject:            "test",
+		Name:               "Test Testersson",
+		GivenName:          "Test",
+		FamilyName:         "Testersson",
+		Locale:             "en-US",
+		Email:              "test@testersson.com",
+		AccessTokenKeyType: "JWT+AT",
+		IdTokenKeyType:     "JWT",
+		TokenExpiration:    time.Hour,
 	}
 
 	for _, setter := range setters {
@@ -56,14 +56,17 @@ func New(setters ...Option) (*OPTest, error) {
 	return op, nil
 }
 
+// Close shuts down the http server.
 func (op *OPTest) Close() {
 	op.server.Close()
 }
 
+// GetURL returns the current URL of the http server.
 func (op *OPTest) GetURL() string {
 	return op.server.URL
 }
 
+// RotateKeys rotates the jwks keys.
 func (op *OPTest) RotateKeys() error {
 	err := op.jwks.addNewKey()
 	if err != nil {
@@ -74,13 +77,14 @@ func (op *OPTest) RotateKeys() error {
 	return err
 }
 
+// GetToken returns a TokenResponse with an id_token and an access_token.
 func (op *OPTest) GetToken() (*TokenResponse, error) {
-	accessToken, err := newAccessToken(op.options.Issuer, op.jwks.getPrivateKey())
+	accessToken, err := op.newAccessToken()
 	if err != nil {
 		return nil, err
 	}
 
-	idToken, err := newIdToken(op.options.Issuer, op.jwks.getPrivateKey())
+	idToken, err := op.newIdToken()
 	if err != nil {
 		return nil, err
 	}
@@ -88,14 +92,15 @@ func (op *OPTest) GetToken() (*TokenResponse, error) {
 	tokenResponse := TokenResponse{
 		AccessToken: accessToken,
 		TokenType:   "Bearer",
-		ExpiresIn:   3600,
+		ExpiresIn:   int(op.options.TokenExpiration.Seconds()),
 		IdToken:     idToken,
-		Expiry:      time.Now().Add(3600 * time.Second),
+		Expiry:      time.Now().Add(op.options.TokenExpiration),
 	}
 
 	return &tokenResponse, nil
 }
 
+// Metadata contains the information exposed through `/.well-known/openid-configuration`.
 type Metadata struct {
 	Issuer                 string   `json:"issuer"`
 	AuthorizationEndpoint  string   `json:"authorization_endpoint"`
@@ -104,6 +109,7 @@ type Metadata struct {
 	ResponseTypesSupported []string `json:"response_types_supported"`
 }
 
+// TokenResponse contains the token endpoint response data.
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -112,10 +118,12 @@ type TokenResponse struct {
 	Expiry      time.Time
 }
 
+// SetAuthHeader adds the access_token to the `Authorization` header of the request.
 func (t *TokenResponse) SetAuthHeader(r *http.Request) {
 	r.Header.Set("Authorization", fmt.Sprintf("%s %s", t.TokenType, t.AccessToken))
 }
 
+// Valid returns true if the token exists and isn't expired.
 func (t *TokenResponse) Valid() bool {
 	return t != nil && t.AccessToken != "" && !t.expired()
 }
@@ -180,13 +188,13 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {
-	accessToken, err := newAccessToken(op.options.Issuer, op.jwks.getPrivateKey())
+	accessToken, err := op.newAccessToken()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	idToken, err := newIdToken(op.options.Issuer, op.jwks.getPrivateKey())
+	idToken, err := op.newIdToken()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -195,9 +203,9 @@ func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {
 	tokenResponse := TokenResponse{
 		AccessToken: accessToken,
 		TokenType:   "Bearer",
-		ExpiresIn:   3600,
+		ExpiresIn:   int(op.options.TokenExpiration.Seconds()),
 		IdToken:     idToken,
-		Expiry:      time.Now().Add(3600 * time.Second),
+		Expiry:      time.Now().Add(op.options.TokenExpiration),
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
