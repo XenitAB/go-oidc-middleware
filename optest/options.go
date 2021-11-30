@@ -17,6 +17,7 @@ type Options struct {
 	TokenExpiration        time.Duration
 	ExtraAccessTokenClaims map[string]interface{}
 	ExtraIdTokenClaims     map[string]interface{}
+	AutoStart              bool
 }
 
 // Option is used to configure functional options for OPTest.
@@ -31,7 +32,7 @@ func WithIssuer(opt string) Option {
 }
 
 // WithAudience sets the audience claim for issued tokens.
-// Default: "test-client"
+// Defaults: "test-client".
 func WithAudience(opt string) Option {
 	return func(opts *Options) {
 		opts.Audience = opt
@@ -39,7 +40,7 @@ func WithAudience(opt string) Option {
 }
 
 // WithSubject configures the subject for tokens.
-// Default: "test"
+// Default: "test".
 func WithSubject(opt string) Option {
 	return func(opts *Options) {
 		opts.Subject = opt
@@ -47,7 +48,7 @@ func WithSubject(opt string) Option {
 }
 
 // WithName configures the name claim in id_tokens.
-// Default: Test Testersson
+// Default: "Test Testersson".
 func WithName(opt string) Option {
 	return func(opts *Options) {
 		opts.Name = opt
@@ -55,7 +56,7 @@ func WithName(opt string) Option {
 }
 
 // WithGivenName configures the given_name claim in id_tokens.
-// Default: Test
+// Default: "Test".
 func WithGivenName(opt string) Option {
 	return func(opts *Options) {
 		opts.GivenName = opt
@@ -63,7 +64,7 @@ func WithGivenName(opt string) Option {
 }
 
 // WithFamilyName configures the family_name claim in id_tokens.
-// Default: Testersson
+// Default: "Testersson".
 func WithFamilyName(opt string) Option {
 	return func(opts *Options) {
 		opts.FamilyName = opt
@@ -71,7 +72,7 @@ func WithFamilyName(opt string) Option {
 }
 
 // WithLocale configures the locale claim in id_tokens.
-// Default: en-US
+// Default: "en-US".
 func WithLocale(opt string) Option {
 	return func(opts *Options) {
 		opts.Locale = opt
@@ -79,7 +80,7 @@ func WithLocale(opt string) Option {
 }
 
 // WithEmail configures the email claim in id_tokens.
-// Default: test@testersson.com
+// Default: "test@testersson.com".
 func WithEmail(opt string) Option {
 	return func(opts *Options) {
 		opts.Email = opt
@@ -87,7 +88,7 @@ func WithEmail(opt string) Option {
 }
 
 // WithAccessTokenKeyType configures the access_token key type (header).
-// Default: JWT+AT
+// Default: "JWT+AT".
 func WithAccessTokenKeyType(opt string) Option {
 	return func(opts *Options) {
 		opts.AccessTokenKeyType = opt
@@ -95,7 +96,7 @@ func WithAccessTokenKeyType(opt string) Option {
 }
 
 // WithIdTokenKeyType configures the id_token key type (header).
-// Default: JWT
+// Default: "JWT".
 func WithIdTokenKeyType(opt string) Option {
 	return func(opts *Options) {
 		opts.IdTokenKeyType = opt
@@ -103,7 +104,7 @@ func WithIdTokenKeyType(opt string) Option {
 }
 
 // WithTokenExpiration configures the expiration for tokens.
-// Default: 1 hour (3600 seconds)
+// Default: 1 hour (3600 seconds).
 func WithTokenExpiration(opt time.Duration) Option {
 	return func(opts *Options) {
 		opts.TokenExpiration = opt
@@ -111,7 +112,7 @@ func WithTokenExpiration(opt time.Duration) Option {
 }
 
 // WithExtraAccessTokenClaims configures extra claims for the access_token.
-// Default: empty map[string]interface{}{}
+// Default: map[string]interface{}{}.
 func WithExtraAccessTokenClaims(opt map[string]interface{}) Option {
 	return func(opts *Options) {
 		opts.ExtraAccessTokenClaims = opt
@@ -119,9 +120,17 @@ func WithExtraAccessTokenClaims(opt map[string]interface{}) Option {
 }
 
 // WithExtraIdTokenClaims configures extra claims for the id_token.
-// Default: empty map[string]interface{}{}
+// Default: map[string]interface{}{}.
 func WithExtraIdTokenClaims(opt map[string]interface{}) Option {
 	return func(opts *Options) {
 		opts.ExtraIdTokenClaims = opt
+	}
+}
+
+// WithoutAutoStart disables the autostart of the http server.
+// Default is AutoStart enabled.
+func WithoutAutoStart() Option {
+	return func(opts *Options) {
+		opts.AutoStart = false
 	}
 }

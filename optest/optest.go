@@ -14,6 +14,7 @@ import (
 // OPTest is the struct used for the test OpenID Provider.
 type OPTest struct {
 	server  *httptest.Server
+	router  *http.ServeMux
 	options Options
 	jwks    *jwksHandler
 }
@@ -30,7 +31,9 @@ func New(setters ...Option) (*OPTest, error) {
 	}
 
 	router := op.routeHandler()
-	srv := httptest.NewServer(router)
+	op.router = router
+
+	srv := httptest.NewUnstartedServer(router)
 	op.server = srv
 
 	opts := &Options{
@@ -45,15 +48,33 @@ func New(setters ...Option) (*OPTest, error) {
 		AccessTokenKeyType: "JWT+AT",
 		IdTokenKeyType:     "JWT",
 		TokenExpiration:    time.Hour,
+		AutoStart:          true,
 	}
 
 	for _, setter := range setters {
 		setter(opts)
 	}
 
+	if opts.AutoStart {
+		srv.Start()
+		if opts.Issuer == "" {
+			opts.Issuer = srv.URL
+		}
+	}
+
 	op.options = *opts
 
 	return op, nil
+}
+
+// Start starts the http server if AutoStart was disabled.
+func (op *OPTest) Start() {
+	if !op.options.AutoStart {
+		op.server.Start()
+		if op.options.Issuer == "" {
+			op.options.Issuer = op.server.URL
+		}
+	}
 }
 
 // Close shuts down the http server.
@@ -64,6 +85,11 @@ func (op *OPTest) Close() {
 // GetURL returns the current URL of the http server.
 func (op *OPTest) GetURL() string {
 	return op.server.URL
+}
+
+// GetRouter returns the router to be used by a http server.
+func (op *OPTest) GetRouter() *http.ServeMux {
+	return op.router
 }
 
 // RotateKeys rotates the jwks keys.

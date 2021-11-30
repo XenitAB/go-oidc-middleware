@@ -1,6 +1,7 @@
 package optest
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,6 +24,13 @@ func NewTesting(tb testing.TB, setters ...Option) *OPTesting {
 	}
 }
 
+// Start starts the http server if AutoStart was disabled.
+func (o *OPTesting) Start(tb testing.TB) {
+	tb.Helper()
+
+	o.op.Start()
+}
+
 // Close shuts down the http server.
 func (o *OPTesting) Close(tb testing.TB) {
 	tb.Helper()
@@ -35,6 +43,13 @@ func (o *OPTesting) GetURL(tb testing.TB) string {
 	tb.Helper()
 
 	return o.op.GetURL()
+}
+
+// GetRouter returns the router to be used by a http server.
+func (o *OPTesting) GetRouter(tb testing.TB) *http.ServeMux {
+	tb.Helper()
+
+	return o.op.GetRouter()
 }
 
 // RotateKeys rotates the jwks keys.
