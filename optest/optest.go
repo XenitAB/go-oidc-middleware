@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"time"
 )
 
 type Options struct {
@@ -89,6 +90,7 @@ func (op *OPTest) GetToken() (*TokenResponse, error) {
 		TokenType:   "Bearer",
 		ExpiresIn:   3600,
 		IdToken:     idToken,
+		Expiry:      time.Now().Add(3600 * time.Second),
 	}
 
 	return &tokenResponse, nil
@@ -107,10 +109,22 @@ type TokenResponse struct {
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
 	IdToken     string `json:"id_token"`
+	Expiry      time.Time
 }
 
 func (t *TokenResponse) SetAuthHeader(r *http.Request) {
 	r.Header.Set("Authorization", fmt.Sprintf("%s %s", t.TokenType, t.AccessToken))
+}
+
+func (t *TokenResponse) Valid() bool {
+	return t != nil && t.AccessToken != "" && !t.expired()
+}
+
+func (t *TokenResponse) expired() bool {
+	if t.Expiry.IsZero() {
+		return false
+	}
+	return t.Expiry.Round(0).Add(-10 * time.Second).Before(time.Now())
 }
 
 func (op *OPTest) routeHandler() *http.ServeMux {
@@ -183,6 +197,7 @@ func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		TokenType:   "Bearer",
 		ExpiresIn:   3600,
 		IdToken:     idToken,
+		Expiry:      time.Now().Add(3600 * time.Second),
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
