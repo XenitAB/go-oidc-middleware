@@ -6,11 +6,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/dispans/server"
-	"golang.org/x/oauth2"
 )
 
 func RunBenchmarks(b *testing.B, testName string, tester tester) {
@@ -25,14 +24,14 @@ func runBenchmarkHandler(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_handler", testName), func(b *testing.B) {
-		op := server.NewTesting(b)
+		op := optest.NewTesting(b)
 		defer op.Close(b)
 
 		handler := tester.NewHandlerFn(
 			options.WithIssuer(op.GetURL(b)),
 		)
 
-		fn := func(token *oauth2.Token) {
+		fn := func(token *optest.TokenResponse) {
 			testHttpWithAuthentication(b, token, handler)
 		}
 
@@ -44,7 +43,7 @@ func runBenchmarkRequirements(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_requirements", testName), func(b *testing.B) {
-		op := server.NewTesting(b)
+		op := optest.NewTesting(b)
 		defer op.Close(b)
 
 		handler := tester.NewHandlerFn(
@@ -56,7 +55,7 @@ func runBenchmarkRequirements(b *testing.B, testName string, tester tester) {
 			}),
 		)
 
-		fn := func(token *oauth2.Token) {
+		fn := func(token *optest.TokenResponse) {
 			testHttpWithAuthentication(b, token, handler)
 		}
 
@@ -68,7 +67,7 @@ func runBenchmarkHttp(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_http", testName), func(b *testing.B) {
-		op := server.NewTesting(b)
+		op := optest.NewTesting(b)
 		defer op.Close(b)
 
 		testServer := tester.NewTestServer(
@@ -77,7 +76,7 @@ func runBenchmarkHttp(b *testing.B, testName string, tester tester) {
 
 		defer testServer.Close()
 
-		fn := func(token *oauth2.Token) {
+		fn := func(token *optest.TokenResponse) {
 			benchmarkHttpRequest(b, testServer.URL(), token)
 		}
 
@@ -85,14 +84,14 @@ func runBenchmarkHttp(b *testing.B, testName string, tester tester) {
 	})
 }
 
-func runBenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.Token, fn func(token *oauth2.Token)) {
+func runBenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *optest.TokenResponse, fn func(token *optest.TokenResponse)) {
 	b.Helper()
 
 	concurrencyLevels := []int{10}
 	for _, clients := range concurrencyLevels {
 		numClients := clients
 		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
-			var tokens []*oauth2.Token
+			var tokens []*optest.TokenResponse
 			for i := 0; i < b.N; i++ {
 				tokens = append(tokens, getToken(b))
 			}
@@ -116,7 +115,7 @@ func runBenchmarkConcurrent(b *testing.B, getToken func(t testing.TB) *oauth2.To
 	}
 }
 
-func benchmarkHttpRequest(tb testing.TB, urlString string, token *oauth2.Token) {
+func benchmarkHttpRequest(tb testing.TB, urlString string, token *optest.TokenResponse) {
 	tb.Helper()
 
 	req, err := http.NewRequest(http.MethodGet, urlString, nil)

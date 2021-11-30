@@ -11,13 +11,13 @@ import (
 
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/dispans/server"
+	"github.com/xenitab/go-oidc-middleware/optest"
 )
 
 func TestNewKeyHandler(t *testing.T) {
 	ctx := context.Background()
 
-	op := server.NewTesting(t)
+	op := optest.NewTesting(t)
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
@@ -84,7 +84,7 @@ func TestNewKeyHandler(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
 
-	op := server.NewTesting(t)
+	op := optest.NewTesting(t)
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
 	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
