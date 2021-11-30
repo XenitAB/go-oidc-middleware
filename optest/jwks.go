@@ -138,7 +138,7 @@ func (h *jwksHandler) getPublicKeySet() jwk.Set {
 	h.RLock()
 
 	for i := range h.publicKeys {
-		keySet.Add(h.pgiublicKeys[i])
+		keySet.Add(h.publicKeys[i])
 	}
 
 	h.RUnlock()
