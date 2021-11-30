@@ -66,7 +66,7 @@ vet:
 
 .SILENT: test
 .PHONY: test
-test: fmt vet
+test:
 	set -e
 	for pkg in $(PKGS_CLEAN); do
 		(

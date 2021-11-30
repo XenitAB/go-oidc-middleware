@@ -8,7 +8,6 @@ require (
 	github.com/xenitab/dispans v0.0.10
 	github.com/zclconf/go-cty v1.10.0
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
@@ -45,6 +44,7 @@ require (
 	github.com/valyala/fasthttp v1.31.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211104170005-ce137452f963 // indirect
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect

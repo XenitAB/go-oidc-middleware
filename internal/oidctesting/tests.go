@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/dispans/server"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
-	"golang.org/x/oauth2"
 )
 
 type ServerTester interface {
@@ -40,7 +39,7 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_new", testName), func(t *testing.T) {
-		op := server.NewTesting(t)
+		op := optest.NewTesting(t)
 		defer op.Close(t)
 
 		cases := []struct {
@@ -125,7 +124,7 @@ func runTestHandler(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_handler", testName), func(t *testing.T) {
-		op := server.NewTesting(t)
+		op := optest.NewTesting(t)
 		defer op.Close(t)
 
 		handler := tester.NewHandlerFn(
@@ -161,7 +160,7 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_lazy_load", testName), func(t *testing.T) {
-		op := server.NewTesting(t)
+		op := optest.NewTesting(t)
 		defer op.Close(t)
 
 		oidcHandler, err := oidc.NewHandler(
@@ -196,7 +195,7 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_requirements", testName), func(t *testing.T) {
-		op := server.NewTesting(t)
+		op := optest.NewTesting(t)
 		defer op.Close(t)
 
 		cases := []struct {
@@ -285,7 +284,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_error_handler", testName), func(t *testing.T) {
-		op := server.NewTesting(t)
+		op := optest.NewTesting(t)
 		defer op.Close(t)
 
 		var info struct {
@@ -350,7 +349,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 	})
 }
 
-func testHttpWithAuthentication(tb testing.TB, token *oauth2.Token, handler http.Handler) {
+func testHttpWithAuthentication(tb testing.TB, token *optest.TokenResponse, handler http.Handler) {
 	tb.Helper()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -366,15 +365,12 @@ func testHttpWithAuthentication(tb testing.TB, token *oauth2.Token, handler http
 	require.Equal(tb, http.StatusOK, res.StatusCode)
 }
 
-func testHttpWithIDTokenFailure(tb testing.TB, token *oauth2.Token, handler http.Handler) {
+func testHttpWithIDTokenFailure(tb testing.TB, token *optest.TokenResponse, handler http.Handler) {
 	tb.Helper()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	idToken, ok := token.Extra("id_token").(string)
-	require.True(tb, ok)
-
-	token.AccessToken = idToken
+	token.AccessToken = token.IdToken
 
 	token.SetAuthHeader(req)
 
@@ -386,7 +382,7 @@ func testHttpWithIDTokenFailure(tb testing.TB, token *oauth2.Token, handler http
 	require.Equal(tb, http.StatusUnauthorized, res.StatusCode)
 }
 
-func testHttpWithAuthenticationFailure(tb testing.TB, token *oauth2.Token, handler http.Handler) {
+func testHttpWithAuthenticationFailure(tb testing.TB, token *optest.TokenResponse, handler http.Handler) {
 	tb.Helper()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
