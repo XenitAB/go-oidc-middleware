@@ -333,6 +333,41 @@ oidcHandler := oidcgin.New(
 )
 ```
 
+### Testing with the middleware enabled
+
+There's a small package that simulates an OpenID Provider that can be used with tests.
+
+```go
+package main
+
+import (
+	"testing"
+
+	"github.com/xenitab/go-oidc-middleware/optest"
+)
+
+func TestFoobar(t *testing.T) {
+	op := optest.NewTesting(t)
+	defer op.Close(t)
+
+	[...]
+
+	oidcHandler := oidchttp.New(h,
+		options.WithIssuer(op.GetURL(t)),
+		options.WithRequiredTokenType("JWT+AT"),
+		options.WithRequiredAudience("test-client"),
+	)
+
+	token := op.GetToken(t)
+
+	[...]
+
+	token.SetAuthHeader(req)
+
+	[...]
+}
+```
+
 ## Examples
 
 See [examples readme](examples/README.md) for more information.
