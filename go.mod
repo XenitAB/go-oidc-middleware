@@ -3,7 +3,7 @@ module github.com/xenitab/go-oidc-middleware
 go 1.17
 
 require (
-	github.com/lestrrat-go/jwx v1.2.11
+	github.com/lestrrat-go/jwx v1.2.15
 	github.com/stretchr/testify v1.7.0
 	github.com/xenitab/dispans v0.0.10
 	github.com/zclconf/go-cty v1.10.0
@@ -18,7 +18,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/go-oauth2/oauth2/v4 v4.4.2 // indirect
 	github.com/go-session/session v3.1.2+incompatible // indirect
-	github.com/goccy/go-json v0.7.10 // indirect
+	github.com/goccy/go-json v0.9.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
