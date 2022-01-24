@@ -11,7 +11,7 @@ replace (
 )
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.22
+	github.com/xenitab/go-oidc-middleware v0.0.23
 	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.0-00010101000000-000000000000
 	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.0-00010101000000-000000000000
 	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.0-00010101000000-000000000000
@@ -21,7 +21,7 @@ require (
 require (
 	github.com/cristalhq/aconfig v0.16.8
 	github.com/gin-gonic/gin v1.7.4
-	github.com/gofiber/fiber/v2 v2.22.0
+	github.com/gofiber/fiber/v2 v2.25.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
@@ -55,7 +55,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.31.0 // indirect
+	github.com/valyala/fasthttp v1.32.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/zclconf/go-cty v1.10.0 // indirect
