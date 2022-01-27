@@ -4,7 +4,7 @@ go 1.17
 
 replace github.com/xenitab/go-oidc-middleware => ../
 
-require github.com/xenitab/go-oidc-middleware v0.0.23
+require github.com/xenitab/go-oidc-middleware v0.0.24
 
 require (
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
