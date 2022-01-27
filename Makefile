@@ -76,6 +76,20 @@ test:
 		)
 	done
 
+.SILENT: go-update
+.PHONY: go-update
+go-update:
+	set -e
+	for pkg in $(PKGS); do
+		(
+			echo $$pkg: go get -u ./...
+			cd $$pkg
+			go mod tidy
+			go get -u ./...
+			go mod tidy
+		)
+	done
+
 .SILENT: bench
 .PHONY: bench
 bench:
