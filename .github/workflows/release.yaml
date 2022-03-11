@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Get tag
@@ -22,7 +22,7 @@ jobs:
         with:
           go-version: "^1.17"
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2.8.1
+        uses: goreleaser/goreleaser-action@v2.9.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
