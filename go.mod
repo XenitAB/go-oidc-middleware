@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/lestrrat-go/jwx v1.2.20
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/xenitab/dispans v0.0.10
 	github.com/zclconf/go-cty v1.10.0
 	go.uber.org/ratelimit v0.2.0
