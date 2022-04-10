@@ -11,11 +11,11 @@ replace (
 )
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.25
-	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.24
-	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.24
-	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.24
-	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.24
+	github.com/xenitab/go-oidc-middleware v0.0.26
+	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.26
+	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.26
+	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.26
+	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.26
 )
 
 require (
