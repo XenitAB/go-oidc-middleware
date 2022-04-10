@@ -12,6 +12,7 @@ func TestOptions(t *testing.T) {
 	expectedResult := &Options{
 		Issuer:                     "foo",
 		DiscoveryUri:               "foo",
+		DiscoveryFetchTimeout:      1234 * time.Second,
 		JwksUri:                    "foo",
 		JwksFetchTimeout:           1234 * time.Second,
 		JwksRateLimit:              1234,
@@ -47,6 +48,7 @@ func TestOptions(t *testing.T) {
 	setters := []Option{
 		WithIssuer("foo"),
 		WithDiscoveryUri("foo"),
+		WithDiscoveryFetchTimeout(1234 * time.Second),
 		WithJwksUri("foo"),
 		WithJwksFetchTimeout(1234 * time.Second),
 		WithJwksRateLimit(1234),

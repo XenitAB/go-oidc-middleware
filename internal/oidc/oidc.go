@@ -25,6 +25,7 @@ var (
 type handler struct {
 	issuer                     string
 	discoveryUri               string
+	discoveryFetchTimeout      time.Duration
 	jwksUri                    string
 	jwksFetchTimeout           time.Duration
 	jwksRateLimit              uint
@@ -43,17 +44,18 @@ func NewHandler(setters ...options.Option) (*handler, error) {
 	opts := options.New(setters...)
 
 	h := &handler{
-		issuer:            opts.Issuer,
-		discoveryUri:      opts.DiscoveryUri,
-		jwksUri:           opts.JwksUri,
-		jwksFetchTimeout:  opts.JwksFetchTimeout,
-		jwksRateLimit:     opts.JwksRateLimit,
-		allowedTokenDrift: opts.AllowedTokenDrift,
-		requiredTokenType: opts.RequiredTokenType,
-		requiredAudience:  opts.RequiredAudience,
-		requiredClaims:    opts.RequiredClaims,
-		disableKeyID:      opts.DisableKeyID,
-		httpClient:        opts.HttpClient,
+		issuer:                opts.Issuer,
+		discoveryUri:          opts.DiscoveryUri,
+		discoveryFetchTimeout: opts.DiscoveryFetchTimeout,
+		jwksUri:               opts.JwksUri,
+		jwksFetchTimeout:      opts.JwksFetchTimeout,
+		jwksRateLimit:         opts.JwksRateLimit,
+		allowedTokenDrift:     opts.AllowedTokenDrift,
+		requiredTokenType:     opts.RequiredTokenType,
+		requiredAudience:      opts.RequiredAudience,
+		requiredClaims:        opts.RequiredClaims,
+		disableKeyID:          opts.DisableKeyID,
+		httpClient:            opts.HttpClient,
 	}
 
 	if h.issuer == "" {
@@ -82,7 +84,7 @@ func NewHandler(setters ...options.Option) (*handler, error) {
 
 func (h *handler) loadJwks() error {
 	if h.jwksUri == "" {
-		jwksUri, err := getJwksUriFromDiscoveryUri(h.httpClient, h.discoveryUri, 5*time.Second)
+		jwksUri, err := getJwksUriFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 		if err != nil {
 			return fmt.Errorf("unable to fetch jwksUri from discoveryUri (%s): %w", h.discoveryUri, err)
 		}

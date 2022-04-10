@@ -31,6 +31,7 @@ const (
 type Options struct {
 	Issuer                     string
 	DiscoveryUri               string
+	DiscoveryFetchTimeout      time.Duration
 	JwksUri                    string
 	JwksFetchTimeout           time.Duration
 	JwksRateLimit              uint
@@ -52,11 +53,12 @@ type Options struct {
 // needed by any external application using this library.
 func New(setters ...Option) *Options {
 	opts := &Options{
-		JwksFetchTimeout:     5 * time.Second,
-		JwksRateLimit:        1,
-		AllowedTokenDrift:    10 * time.Second,
-		HttpClient:           http.DefaultClient,
-		ClaimsContextKeyName: DefaultClaimsContextKeyName,
+		DiscoveryFetchTimeout: 5 * time.Second,
+		JwksFetchTimeout:      5 * time.Second,
+		JwksRateLimit:         1,
+		AllowedTokenDrift:     10 * time.Second,
+		HttpClient:            http.DefaultClient,
+		ClaimsContextKeyName:  DefaultClaimsContextKeyName,
 	}
 
 	for _, setter := range setters {
@@ -83,6 +85,15 @@ func WithIssuer(opt string) Option {
 func WithDiscoveryUri(opt string) Option {
 	return func(opts *Options) {
 		opts.DiscoveryUri = opt
+	}
+}
+
+// WithDiscoveryFetchTimeout sets the DiscoveryFetchTimeout parameter for an Options pointer.
+// DiscoveryFetchTimeout sets the context timeout when downloading the discovery metadata
+// Defaults to 5 seconds
+func WithDiscoveryFetchTimeout(opt time.Duration) Option {
+	return func(opts *Options) {
+		opts.DiscoveryFetchTimeout = opt
 	}
 }
 
