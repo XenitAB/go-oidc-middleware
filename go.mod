@@ -3,7 +3,11 @@ module github.com/xenitab/go-oidc-middleware
 go 1.17
 
 require (
+<<<<<<< HEAD
 	github.com/lestrrat-go/jwx v1.2.21
+=======
+	github.com/lestrrat-go/jwx v1.2.20
+>>>>>>> dependabot/go_modules/github.com/stretchr/testify-1.7.1
 	github.com/stretchr/testify v1.7.1
 	github.com/xenitab/dispans v0.0.10
 	github.com/zclconf/go-cty v1.10.0
