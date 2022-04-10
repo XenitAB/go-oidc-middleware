@@ -4,7 +4,7 @@ go 1.17
 
 replace github.com/xenitab/go-oidc-middleware => ../
 
-require github.com/xenitab/go-oidc-middleware v0.0.26
+require github.com/xenitab/go-oidc-middleware v0.0.27
 
 require (
 	github.com/labstack/echo/v4 v4.7.2
