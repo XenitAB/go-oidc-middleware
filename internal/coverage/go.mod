@@ -1,21 +1,13 @@
 module coverage
 
-go 1.17
-
-replace (
-	github.com/xenitab/go-oidc-middleware => ../../
-	github.com/xenitab/go-oidc-middleware/oidcechojwt => ../../oidcechojwt
-	github.com/xenitab/go-oidc-middleware/oidcfiber => ../../oidcfiber
-	github.com/xenitab/go-oidc-middleware/oidcgin => ../../oidcgin
-	github.com/xenitab/go-oidc-middleware/oidchttp => ../../oidchttp
-)
+go 1.18
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.26
-	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.26
-	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.26
-	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.26
-	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.26
+	github.com/xenitab/go-oidc-middleware v0.0.27
+	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.27
+	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.27
+	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.27
+	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.27
 )
 
 require (
@@ -58,6 +50,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f // indirect
 	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

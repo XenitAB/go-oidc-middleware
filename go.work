@@ -1,0 +1,11 @@
+go 1.18
+
+use (
+	.
+	./examples
+	./internal/coverage
+	./oidcechojwt
+	./oidcfiber
+	./oidcgin
+	./oidchttp
+)
