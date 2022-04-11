@@ -23,7 +23,7 @@ jobs:
           path: new
 
       - name: Install Dependencies
-        run: go get -v golang.org/x/perf/cmd/benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
 
       - name: Run Benchmark (Previous)
         run: |
