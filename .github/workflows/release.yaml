@@ -18,7 +18,7 @@ jobs:
         run: |
           echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: "^1.18"
       - name: Run GoReleaser
