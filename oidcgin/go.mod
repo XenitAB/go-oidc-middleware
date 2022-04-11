@@ -1,8 +1,6 @@
 module github.com/xenitab/go-oidc-middleware/oidcgin
 
-go 1.17
-
-replace github.com/xenitab/go-oidc-middleware => ../
+go 1.18
 
 require github.com/xenitab/go-oidc-middleware v0.0.27
 
@@ -36,6 +34,7 @@ require (
 	github.com/zclconf/go-cty v1.10.0 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921 // indirect
+	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f // indirect
 	golang.org/x/text v0.3.7 // indirect
