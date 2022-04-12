@@ -139,12 +139,12 @@ github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7Fw
 github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 github.com/xenitab/dispans v0.0.10 h1:S+gSUM14rDJWK7MYNrjb8JbjeQPip6mlNJyLX+g7Agc=
-github.com/xenitab/go-oidc-middleware v0.0.27 h1:sYuLGGyLMuPriecJ/is3+FQV95Avl4gRSrl9XI6eeP8=
-github.com/xenitab/go-oidc-middleware v0.0.27/go.mod h1:7OJkSzZceMk4r+OYLb9BeiP+35e3xy8+cJXf6JxnvUc=
+github.com/xenitab/go-oidc-middleware v0.0.28 h1:GpwRX0IlkUwzoBTtwQypu7cmGDKCdKk4TU7HDHnDkyA=
+github.com/xenitab/go-oidc-middleware v0.0.28/go.mod h1:TSn3/nWnymRRFTLJ5GVJ88001QgqTRFr5wcd8kOJ/kY=
 github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.27 h1:hpdtSb8ZeFZ98OwkAZdTWp+t4lhBg1gqXkjD6K8cC5E=
 github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.27/go.mod h1:bMztUDNL7gL6Rkt7NkEe99IF+WFQv6xCY5AkbfbIVH8=
-github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.27 h1:yBFT7SalrHhG1wlukWvNoLDyI3RBrlTV7K5jcKtshbc=
-github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.27/go.mod h1:LVFHrvY3NTcKsr2YPWfIjnXN3kkEVrSvJAj5pt+q8SM=
+github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.28 h1:C8yJ62NRAb5dPIdHjwdaarHa492d1+Mf9uVpylVj0lU=
+github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.28/go.mod h1:gAZ4aymsh5I/A+vkapv5G3fnHyy51DKmOPZplFHWSw0=
 github.com/xenitab/go-oidc-middleware/oidcgin v0.0.27 h1:D1oGZghl+UExfHhBODktVl7PY2Bgd4Vp3pSkafWbCV8=
 github.com/xenitab/go-oidc-middleware/oidcgin v0.0.27/go.mod h1:42L2eWMqxcvL6qRQuHGnubjGAWgnKcFsOlxCcjHNgPc=
 github.com/xenitab/go-oidc-middleware/oidchttp v0.0.27 h1:WLpl4wwNVV4mjKU05qSXQY6QtCEdc4YarX/20P/u9Mw=
