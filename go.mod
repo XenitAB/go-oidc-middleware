@@ -41,7 +41,7 @@ require (
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/valyala/fasthttp v1.35.0 // indirect
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f // indirect
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
