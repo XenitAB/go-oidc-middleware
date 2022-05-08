@@ -37,22 +37,36 @@ func New(setters ...Option) (*OPTest, error) {
 	op.server = srv
 
 	opts := &Options{
-		Issuer:             srv.URL,
-		Audience:           "test-client",
-		Subject:            "test",
-		Name:               "Test Testersson",
-		GivenName:          "Test",
-		FamilyName:         "Testersson",
-		Locale:             "en-US",
-		Email:              "test@testersson.com",
-		AccessTokenKeyType: "JWT+AT",
-		IdTokenKeyType:     "JWT",
-		TokenExpiration:    time.Hour,
-		AutoStart:          true,
+		Issuer:          srv.URL,
+		DefaultTestUser: "test",
+		TestUsers: map[string]TestUser{
+			"test": {
+				Audience:           "test-client",
+				Subject:            "test",
+				Name:               "Test Testersson",
+				GivenName:          "Test",
+				FamilyName:         "Testersson",
+				Locale:             "en-US",
+				Email:              "test@testersson.com",
+				AccessTokenKeyType: "JWT+AT",
+				IdTokenKeyType:     "JWT",
+			},
+		},
+		TokenExpiration: time.Hour,
+		AutoStart:       true,
 	}
 
 	for _, setter := range setters {
 		setter(opts)
+	}
+
+	if len(opts.TestUsers) == 0 {
+		return nil, fmt.Errorf("at least one test user is required")
+	}
+
+	_, ok := opts.TestUsers[opts.DefaultTestUser]
+	if !ok {
+		return nil, fmt.Errorf("the DefaultTestUser %q could not be find in TestUsers: %v", opts.DefaultTestUser, opts.TestUsers)
 	}
 
 	if opts.AutoStart {
@@ -105,12 +119,22 @@ func (op *OPTest) RotateKeys() error {
 
 // GetToken returns a TokenResponse with an id_token and an access_token.
 func (op *OPTest) GetToken() (*TokenResponse, error) {
-	accessToken, err := op.newAccessToken()
+	return op.GetTokenByUser(op.options.DefaultTestUser)
+}
+
+// GetToken returns a TokenResponse with an id_token and an access_token.
+func (op *OPTest) GetTokenByUser(userString string) (*TokenResponse, error) {
+	testUser, ok := op.options.TestUsers[userString]
+	if !ok {
+		return nil, fmt.Errorf("unable to find test user: %s", userString)
+	}
+
+	accessToken, err := op.newAccessToken(testUser)
 	if err != nil {
 		return nil, err
 	}
 
-	idToken, err := op.newIdToken()
+	idToken, err := op.newIdToken(testUser)
 	if err != nil {
 		return nil, err
 	}
@@ -214,24 +238,15 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {
-	accessToken, err := op.newAccessToken()
+	userString := r.URL.Query().Get("test_user")
+	if userString == "" {
+		userString = op.options.DefaultTestUser
+	}
+
+	tokenResponse, err := op.GetTokenByUser(userString)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	idToken, err := op.newIdToken()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	tokenResponse := TokenResponse{
-		AccessToken: accessToken,
-		TokenType:   "Bearer",
-		ExpiresIn:   int(op.options.TokenExpiration.Seconds()),
-		IdToken:     idToken,
-		Expiry:      time.Now().Add(op.options.TokenExpiration),
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")

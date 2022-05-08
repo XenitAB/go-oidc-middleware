@@ -226,12 +226,7 @@ Example claims could look like this:
 ```json
 {
   "foo": {
-    "bar": [
-      "uno",
-      "dos",
-      "baz",
-      "tres"
-    ]
+    "bar": ["uno", "dos", "baz", "tres"]
   }
 }
 ```
@@ -241,9 +236,9 @@ This would then be interpreted as the following inside the code:
 ```go
 "foo": map[string]interface {}{
 	"bar":[]interface {}{
-		"uno", 
-		"dos", 
-		"baz", 
+		"uno",
+		"dos",
+		"baz",
 		"tres"
 	},
 }
@@ -365,6 +360,46 @@ func TestFoobar(t *testing.T) {
 	token.SetAuthHeader(req)
 
 	[...]
+}
+```
+
+You can also configure multiple users by setting the following:
+
+```go
+func TestFoobar(t *testing.T) {
+	testUsers := map[string]TestUser{
+		"test": {
+			Audience:           "test-client",
+			Subject:            "test",
+			Name:               "Test Testersson",
+			GivenName:          "Test",
+			FamilyName:         "Testersson",
+			Locale:             "en-US",
+			Email:              "test@testersson.com",
+			AccessTokenKeyType: "JWT+AT",
+			IdTokenKeyType:     "JWT",
+		},
+		"foo": {
+			Audience:           "foo-client",
+			Subject:            "foo",
+			Name:               "Foo Bar",
+			GivenName:          "Foo",
+			FamilyName:         "Bar",
+			Locale:             "en-US",
+			Email:              "foo@bar.com",
+			AccessTokenKeyType: "JWT+AT",
+			IdTokenKeyType:     "JWT",
+		},
+	}
+
+	op := optest.NewTesting(t, optest.WithTestUsers(testUsers), optest.WithDefaultTestUser("test"))
+	defer op.Close(t)
+
+	[...]
+
+	token1 := op.GetToken(t) // for user `test`
+	token2 := op.GetTokenByUser(t, "test") // for user `test`
+	token3 := op.GetTokenByUser(t, "foo") // for user `foo`
 }
 ```
 

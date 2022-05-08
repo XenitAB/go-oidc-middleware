@@ -8,13 +8,27 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
-func (op *OPTest) newAccessToken() (string, error) {
+type TestUser struct {
+	Audience               string
+	Subject                string
+	Name                   string
+	GivenName              string
+	FamilyName             string
+	Locale                 string
+	Email                  string
+	AccessTokenKeyType     string
+	IdTokenKeyType         string
+	ExtraIdTokenClaims     map[string]interface{}
+	ExtraAccessTokenClaims map[string]interface{}
+}
+
+func (op *OPTest) newAccessToken(user TestUser) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 
 	c := map[string]interface{}{
 		jwt.IssuerKey:     op.options.Issuer,
-		jwt.AudienceKey:   op.options.Audience,
-		jwt.SubjectKey:    op.options.Subject,
+		jwt.AudienceKey:   user.Audience,
+		jwt.SubjectKey:    user.Subject,
 		jwt.ExpirationKey: time.Now().Add(op.options.TokenExpiration).Unix(),
 		jwt.NotBeforeKey:  time.Now().Unix(),
 	}
@@ -27,7 +41,7 @@ func (op *OPTest) newAccessToken() (string, error) {
 		}
 	}
 
-	for k, v := range op.options.ExtraAccessTokenClaims {
+	for k, v := range user.ExtraAccessTokenClaims {
 		err := token.Set(k, v)
 		if err != nil {
 			return "", err
@@ -36,7 +50,7 @@ func (op *OPTest) newAccessToken() (string, error) {
 
 	h := map[string]interface{}{
 		jws.KeyIDKey: privKey.KeyID(),
-		jws.TypeKey:  op.options.AccessTokenKeyType,
+		jws.TypeKey:  user.AccessTokenKeyType,
 	}
 
 	headers := jws.NewHeaders()
@@ -57,19 +71,19 @@ func (op *OPTest) newAccessToken() (string, error) {
 	return access, nil
 }
 
-func (op *OPTest) newIdToken() (string, error) {
+func (op *OPTest) newIdToken(user TestUser) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 	c := map[string]interface{}{
 		jwt.IssuerKey:     op.options.Issuer,
-		jwt.AudienceKey:   op.options.Audience,
-		jwt.SubjectKey:    op.options.Subject,
+		jwt.AudienceKey:   user.Audience,
+		jwt.SubjectKey:    user.Subject,
 		jwt.ExpirationKey: time.Now().Add(op.options.TokenExpiration).Unix(),
 		jwt.NotBeforeKey:  time.Now().Unix(),
-		"name":            op.options.Name,
-		"given_name":      op.options.GivenName,
-		"family_name":     op.options.FamilyName,
-		"locale":          op.options.Locale,
-		"email":           op.options.Email,
+		"name":            user.Name,
+		"given_name":      user.GivenName,
+		"family_name":     user.FamilyName,
+		"locale":          user.Locale,
+		"email":           user.Email,
 	}
 
 	token := jwt.New()
@@ -80,7 +94,7 @@ func (op *OPTest) newIdToken() (string, error) {
 		}
 	}
 
-	for k, v := range op.options.ExtraIdTokenClaims {
+	for k, v := range user.ExtraIdTokenClaims {
 		err := token.Set(k, v)
 		if err != nil {
 			return "", err
@@ -89,7 +103,7 @@ func (op *OPTest) newIdToken() (string, error) {
 
 	h := map[string]interface{}{
 		jws.KeyIDKey: privKey.KeyID(),
-		jws.TypeKey:  op.options.IdTokenKeyType,
+		jws.TypeKey:  user.IdTokenKeyType,
 	}
 
 	headers := jws.NewHeaders()

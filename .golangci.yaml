@@ -208,3 +208,7 @@ issues:
       linters:
         - godot
         - gosec
+    - path: optest/
+      text: "hugeParam: user is heavy"
+      linters:
+        - gocritic

@@ -69,3 +69,13 @@ func (o *OPTesting) GetToken(tb testing.TB) *TokenResponse {
 
 	return tokenResponse
 }
+
+// GetTokenByUser takes a userString and returns a TokenResponse with an id_token and an access_token.
+func (o *OPTesting) GetTokenByUser(tb testing.TB, userString string) *TokenResponse {
+	tb.Helper()
+
+	tokenResponse, err := o.op.GetTokenByUser(userString)
+	require.NoError(tb, err)
+
+	return tokenResponse
+}

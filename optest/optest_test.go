@@ -18,19 +18,43 @@ import (
 )
 
 type testData struct {
-	baseURL       string
-	redirectUrl   string
-	clientID      string
-	codeVerifier  string
-	code          string
-	metadata      Metadata
-	tokenResponse TokenResponse
-	publicKey     jwk.Set
-	httpClient    *http.Client
+	baseURL      string
+	redirectUrl  string
+	clientID     string
+	codeVerifier string
+	code         string
+	metadata     Metadata
+	publicKey    jwk.Set
+	httpClient   *http.Client
 }
 
 func TestE2E(t *testing.T) {
-	op, err := New()
+	testUsers := map[string]TestUser{
+		"test": {
+			Audience:           "test-client",
+			Subject:            "test",
+			Name:               "Test Testersson",
+			GivenName:          "Test",
+			FamilyName:         "Testersson",
+			Locale:             "en-US",
+			Email:              "test@testersson.com",
+			AccessTokenKeyType: "JWT+AT",
+			IdTokenKeyType:     "JWT",
+		},
+		"foo": {
+			Audience:           "foo-client",
+			Subject:            "foo",
+			Name:               "Foo Bar",
+			GivenName:          "Foo",
+			FamilyName:         "Bar",
+			Locale:             "en-US",
+			Email:              "foo@bar.com",
+			AccessTokenKeyType: "JWT+AT",
+			IdTokenKeyType:     "JWT",
+		},
+	}
+
+	op, err := New(WithTestUsers(testUsers), WithDefaultTestUser("test"))
 	require.NoError(t, err)
 	defer op.Close()
 
@@ -49,9 +73,13 @@ func TestE2E(t *testing.T) {
 
 	td.testMetadata(t)
 	td.testAuthorization(t)
-	td.testToken(t)
 	td.testJwks(t)
-	td.testValidateTokenResponse(t)
+	tr1 := td.testToken(t, "")
+	tr2 := td.testToken(t, "test")
+	tr3 := td.testToken(t, "foo")
+	td.testValidateTokenResponse(t, tr1, testUsers["test"])
+	td.testValidateTokenResponse(t, tr2, testUsers["test"])
+	td.testValidateTokenResponse(t, tr3, testUsers["foo"])
 }
 
 func (td *testData) testAuthorization(t *testing.T) {
@@ -116,7 +144,7 @@ func (td *testData) testMetadata(t *testing.T) {
 	td.metadata = metadata
 }
 
-func (td *testData) testToken(t *testing.T) {
+func (td *testData) testToken(t *testing.T, user string) *TokenResponse {
 	t.Helper()
 
 	data := url.Values{}
@@ -126,7 +154,12 @@ func (td *testData) testToken(t *testing.T) {
 	data.Set("code", td.code)
 	data.Set("redirect_uri", td.redirectUrl)
 
-	req, err := http.NewRequest("POST", td.metadata.TokenEndpoint, strings.NewReader(data.Encode()))
+	tokenEndpoint := td.metadata.TokenEndpoint
+	if user != "" {
+		tokenEndpoint = fmt.Sprintf("%s?test_user=%s", tokenEndpoint, user)
+	}
+
+	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(data.Encode()))
 	require.NoError(t, err)
 
 	req.Header.Set("Accept", "application/json")
@@ -149,7 +182,7 @@ func (td *testData) testToken(t *testing.T) {
 	require.NotEmpty(t, tokenResponse.ExpiresIn)
 	require.NotEmpty(t, tokenResponse.IdToken)
 
-	td.tokenResponse = tokenResponse
+	return &tokenResponse
 }
 
 func (td *testData) testJwks(t *testing.T) {
@@ -174,24 +207,24 @@ func (td *testData) testJwks(t *testing.T) {
 	td.publicKey = publicKey
 }
 
-func (td *testData) testValidateTokenResponse(t *testing.T) {
+func (td *testData) testValidateTokenResponse(t *testing.T, tr *TokenResponse, user TestUser) {
 	t.Helper()
 
-	accessToken, err := jwt.Parse([]byte(td.tokenResponse.AccessToken), jwt.WithKeySet(td.publicKey))
+	accessToken, err := jwt.Parse([]byte(tr.AccessToken), jwt.WithKeySet(td.publicKey))
 	require.NoError(t, err)
 
 	require.Equal(t, td.baseURL, accessToken.Issuer())
-	require.Equal(t, td.clientID, accessToken.Audience()[0])
-	require.Equal(t, "test", accessToken.Subject())
+	require.Equal(t, user.Audience, accessToken.Audience()[0])
+	require.Equal(t, user.Subject, accessToken.Subject())
 	require.WithinDuration(t, time.Now(), accessToken.NotBefore(), 5*time.Second)
 	require.WithinDuration(t, time.Now().Add(3600*time.Second), accessToken.Expiration(), 5*time.Second)
 
-	idToken, err := jwt.Parse([]byte(td.tokenResponse.IdToken), jwt.WithKeySet(td.publicKey))
+	idToken, err := jwt.Parse([]byte(tr.IdToken), jwt.WithKeySet(td.publicKey))
 	require.NoError(t, err)
 
 	require.Equal(t, td.baseURL, idToken.Issuer())
-	require.Equal(t, td.clientID, idToken.Audience()[0])
-	require.Equal(t, "test", idToken.Subject())
+	require.Equal(t, user.Audience, idToken.Audience()[0])
+	require.Equal(t, user.Subject, idToken.Subject())
 	require.WithinDuration(t, time.Now(), idToken.NotBefore(), 5*time.Second)
 	require.WithinDuration(t, time.Now().Add(3600*time.Second), idToken.Expiration(), 5*time.Second)
 }
@@ -220,4 +253,32 @@ func testGenerateState(t *testing.T) string {
 	state := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
 
 	return state
+}
+
+func TestNew(t *testing.T) {
+	testUsers := map[string]TestUser{
+		"foo": {
+			Audience:           "foo-client",
+			Subject:            "foo",
+			Name:               "Foo Bar",
+			GivenName:          "Foo",
+			FamilyName:         "Bar",
+			Locale:             "en-US",
+			Email:              "foo@bar.com",
+			AccessTokenKeyType: "JWT+AT",
+			IdTokenKeyType:     "JWT",
+		},
+	}
+
+	_, err := New()
+	require.NoError(t, err)
+
+	_, err = New(WithTestUsers(nil))
+	require.ErrorContains(t, err, "at least one test user is required")
+
+	_, err = New(WithTestUsers(testUsers))
+	require.ErrorContains(t, err, "the DefaultTestUser \"test\" could not be find in TestUsers")
+
+	_, err = New(WithTestUsers(testUsers), WithDefaultTestUser("foo"))
+	require.NoError(t, err)
 }

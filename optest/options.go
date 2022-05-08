@@ -4,20 +4,11 @@ import "time"
 
 // Options is the configuration object for OPTest.
 type Options struct {
-	Issuer                 string
-	Audience               string
-	Subject                string
-	Name                   string
-	GivenName              string
-	FamilyName             string
-	Locale                 string
-	Email                  string
-	AccessTokenKeyType     string
-	IdTokenKeyType         string
-	TokenExpiration        time.Duration
-	ExtraAccessTokenClaims map[string]interface{}
-	ExtraIdTokenClaims     map[string]interface{}
-	AutoStart              bool
+	Issuer          string
+	DefaultTestUser string
+	TestUsers       map[string]TestUser
+	TokenExpiration time.Duration
+	AutoStart       bool
 }
 
 // Option is used to configure functional options for OPTest.
@@ -31,75 +22,19 @@ func WithIssuer(opt string) Option {
 	}
 }
 
-// WithAudience sets the audience claim for issued tokens.
-// Defaults: "test-client".
-func WithAudience(opt string) Option {
+// WithDefaultTestUser configures the default test user, needs to match one of the users provided in `WithTestUsers()`.
+// Defaults to the addr of the http server.
+func WithDefaultTestUser(opt string) Option {
 	return func(opts *Options) {
-		opts.Audience = opt
+		opts.DefaultTestUser = opt
 	}
 }
 
-// WithSubject configures the subject for tokens.
-// Default: "test".
-func WithSubject(opt string) Option {
+// WithTestUsers configures the users that can be used to issue tokens.
+// Defaults to a single test user named `test`.
+func WithTestUsers(opt map[string]TestUser) Option {
 	return func(opts *Options) {
-		opts.Subject = opt
-	}
-}
-
-// WithName configures the name claim in id_tokens.
-// Default: "Test Testersson".
-func WithName(opt string) Option {
-	return func(opts *Options) {
-		opts.Name = opt
-	}
-}
-
-// WithGivenName configures the given_name claim in id_tokens.
-// Default: "Test".
-func WithGivenName(opt string) Option {
-	return func(opts *Options) {
-		opts.GivenName = opt
-	}
-}
-
-// WithFamilyName configures the family_name claim in id_tokens.
-// Default: "Testersson".
-func WithFamilyName(opt string) Option {
-	return func(opts *Options) {
-		opts.FamilyName = opt
-	}
-}
-
-// WithLocale configures the locale claim in id_tokens.
-// Default: "en-US".
-func WithLocale(opt string) Option {
-	return func(opts *Options) {
-		opts.Locale = opt
-	}
-}
-
-// WithEmail configures the email claim in id_tokens.
-// Default: "test@testersson.com".
-func WithEmail(opt string) Option {
-	return func(opts *Options) {
-		opts.Email = opt
-	}
-}
-
-// WithAccessTokenKeyType configures the access_token key type (header).
-// Default: "JWT+AT".
-func WithAccessTokenKeyType(opt string) Option {
-	return func(opts *Options) {
-		opts.AccessTokenKeyType = opt
-	}
-}
-
-// WithIdTokenKeyType configures the id_token key type (header).
-// Default: "JWT".
-func WithIdTokenKeyType(opt string) Option {
-	return func(opts *Options) {
-		opts.IdTokenKeyType = opt
+		opts.TestUsers = opt
 	}
 }
 
@@ -108,22 +43,6 @@ func WithIdTokenKeyType(opt string) Option {
 func WithTokenExpiration(opt time.Duration) Option {
 	return func(opts *Options) {
 		opts.TokenExpiration = opt
-	}
-}
-
-// WithExtraAccessTokenClaims configures extra claims for the access_token.
-// Default: map[string]interface{}{}.
-func WithExtraAccessTokenClaims(opt map[string]interface{}) Option {
-	return func(opts *Options) {
-		opts.ExtraAccessTokenClaims = opt
-	}
-}
-
-// WithExtraIdTokenClaims configures extra claims for the id_token.
-// Default: map[string]interface{}{}.
-func WithExtraIdTokenClaims(opt map[string]interface{}) Option {
-	return func(opts *Options) {
-		opts.ExtraIdTokenClaims = opt
 	}
 }
 
