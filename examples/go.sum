@@ -144,8 +144,8 @@ github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.28 h1:1VWGanucVnrA/pAAkKQ
 github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.28/go.mod h1:SzCZBr0zP5VJGt2AgHyYtdgQdN+rce0ImUIUgwCx2gk=
 github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.27 h1:yBFT7SalrHhG1wlukWvNoLDyI3RBrlTV7K5jcKtshbc=
 github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.27/go.mod h1:LVFHrvY3NTcKsr2YPWfIjnXN3kkEVrSvJAj5pt+q8SM=
-github.com/xenitab/go-oidc-middleware/oidcgin v0.0.27 h1:D1oGZghl+UExfHhBODktVl7PY2Bgd4Vp3pSkafWbCV8=
-github.com/xenitab/go-oidc-middleware/oidcgin v0.0.27/go.mod h1:42L2eWMqxcvL6qRQuHGnubjGAWgnKcFsOlxCcjHNgPc=
+github.com/xenitab/go-oidc-middleware/oidcgin v0.0.28 h1:Pgb91jsLSVBMb3fLkGEeXK2Pso9ql1J4N0aDGp96aZM=
+github.com/xenitab/go-oidc-middleware/oidcgin v0.0.28/go.mod h1:N9aQNc16SAdLpb20MjzXzgo9TNuuyCuTUKXGkD1kXBI=
 github.com/xenitab/go-oidc-middleware/oidchttp v0.0.27 h1:WLpl4wwNVV4mjKU05qSXQY6QtCEdc4YarX/20P/u9Mw=
 github.com/xenitab/go-oidc-middleware/oidchttp v0.0.27/go.mod h1:R+s03XUlronwIZDwI2tqVwsa2giTaj0ZlqWOWdM7+PU=
 github.com/zclconf/go-cty v1.10.0 h1:mp9ZXQeIcN8kAwuqorjH+Q+njbJKjLrvB2yIh4q7U+0=
