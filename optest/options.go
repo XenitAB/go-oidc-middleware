@@ -9,7 +9,18 @@ type Options struct {
 	TestUsers       map[string]TestUser
 	TokenExpiration time.Duration
 	AutoStart       bool
+	AccessTokenType AccessTokenType
 }
+
+// AccessTokenType defines the type of token to be used.
+type AccessTokenType int
+
+const (
+	// JwtAccessTokenType sets the access token to be a JWT.
+	JwtAccessTokenType = iota
+	// OpaqueAccessTokenType sets the access token to be opaque.
+	OpaqueAccessTokenType
+)
 
 // Option is used to configure functional options for OPTest.
 type Option func(*Options)
@@ -51,5 +62,13 @@ func WithTokenExpiration(opt time.Duration) Option {
 func WithoutAutoStart() Option {
 	return func(opts *Options) {
 		opts.AutoStart = false
+	}
+}
+
+// WithOpaqueAccessTokens enables opaque access tokens.
+// Default is access tokens as JWT.
+func WithOpaqueAccessTokens() Option {
+	return func(opts *Options) {
+		opts.AccessTokenType = OpaqueAccessTokenType
 	}
 }

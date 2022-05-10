@@ -8,15 +8,20 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/lestrrat-go/jwx/jws"
+	"github.com/lestrrat-go/jwx/jwt"
 )
 
 // OPTest is the struct used for the test OpenID Provider.
 type OPTest struct {
-	server  *httptest.Server
-	router  *http.ServeMux
-	options Options
-	jwks    *jwksHandler
+	server       *httptest.Server
+	router       *http.ServeMux
+	options      Options
+	jwks         *jwksHandler
+	opaqueTokens *opaqueAccessTokenContainer
 }
 
 // New sets up a new test OpenID Provider.
@@ -27,7 +32,8 @@ func New(setters ...Option) (*OPTest, error) {
 	}
 
 	op := &OPTest{
-		jwks: jwks,
+		jwks:         jwks,
+		opaqueTokens: newOpaqueAccessTokenContainer(),
 	}
 
 	router := op.routeHandler()
@@ -54,6 +60,7 @@ func New(setters ...Option) (*OPTest, error) {
 		},
 		TokenExpiration: time.Hour,
 		AutoStart:       true,
+		AccessTokenType: JwtAccessTokenType,
 	}
 
 	for _, setter := range setters {
@@ -123,18 +130,30 @@ func (op *OPTest) GetToken() (*TokenResponse, error) {
 }
 
 // GetTokenByUser returns a TokenResponse with an id_token and an access_token for the specified user.
-func (op *OPTest) GetTokenByUser(userString string) (*TokenResponse, error) {
-	testUser, ok := op.options.TestUsers[userString]
+func (op *OPTest) GetTokenByUser(id string) (*TokenResponse, error) {
+	testUser, ok := op.options.TestUsers[id]
 	if !ok {
-		return nil, fmt.Errorf("unable to find test user: %s", userString)
+		return nil, fmt.Errorf("unable to find test user: %s", id)
 	}
 
-	accessToken, err := op.newAccessToken(testUser)
-	if err != nil {
-		return nil, err
+	var accessToken string
+	var err error
+	switch op.options.AccessTokenType {
+	case JwtAccessTokenType:
+		accessToken, err = op.newAccessToken(id, testUser)
+		if err != nil {
+			return nil, err
+		}
+	case OpaqueAccessTokenType:
+		accessToken, err = op.newOpaqueAccessToken(id, testUser)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown access token type: %T", op.options.AccessTokenType)
 	}
 
-	idToken, err := op.newIdToken(testUser)
+	idToken, err := op.newIdToken(id, testUser)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +176,7 @@ type Metadata struct {
 	TokenEndpoint          string   `json:"token_endpoint"`
 	JwksUri                string   `json:"jwks_uri"`
 	ResponseTypesSupported []string `json:"response_types_supported"`
+	UserinfoEndpoint       string   `json:"userinfo_endpoint"`
 }
 
 // TokenResponse contains the token endpoint response data.
@@ -192,6 +212,7 @@ func (op *OPTest) routeHandler() *http.ServeMux {
 	router.HandleFunc("/authorization", op.authorizationHandler)
 	router.HandleFunc("/token", op.tokenHandler)
 	router.HandleFunc("/jwks", op.jwksHandler)
+	router.HandleFunc("/userinfo", op.userInfoHandler)
 
 	return router
 }
@@ -204,6 +225,7 @@ func (op *OPTest) metadataHandler(w http.ResponseWriter, r *http.Request) {
 		TokenEndpoint:          fmt.Sprintf("%s/token", issuer),
 		JwksUri:                fmt.Sprintf("%s/jwks", issuer),
 		ResponseTypesSupported: []string{"code"},
+		UserinfoEndpoint:       fmt.Sprintf("%s/userinfo", issuer),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -268,6 +290,113 @@ func (op *OPTest) jwksHandler(w http.ResponseWriter, r *http.Request) {
 
 	//nolint: errcheck // false positive
 	e.Encode(pubKey)
+}
+
+func (op *OPTest) userInfoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	tokenString, err := getTokenString(r)
+	if err != nil {
+		w.Header().Set("WWW-Authenticate", "error=\"invalid_token\", error_description=\"Unable to extract token\"")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user, err := op.getUserInfoFromToken(tokenString)
+	if err != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprintf("error=\"invalid_token\", error_description=\"%v\"", err))
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	e := json.NewEncoder(w)
+	e.SetIndent("", "  ")
+
+	//nolint: errcheck // false positive
+	e.Encode(user)
+}
+
+func (op *OPTest) getUserInfoFromJwtToken(tokenString string) (TestUser, error) {
+	msg, err := jws.ParseString(tokenString)
+	if err != nil {
+		return TestUser{}, fmt.Errorf("unable to parse jws")
+	}
+
+	signatures := msg.Signatures()
+	if len(signatures) != 1 {
+		return TestUser{}, fmt.Errorf("more than one signature")
+	}
+
+	headers := signatures[0].ProtectedHeaders()
+	jwtTypeRaw, ok := headers.Get("jwt_typ")
+	if !ok {
+		return TestUser{}, fmt.Errorf("unable to extract 'jwt_typ' from signature header")
+	}
+
+	jwtType, ok := jwtTypeRaw.(string)
+	if !ok {
+		return TestUser{}, fmt.Errorf("unable to typecast 'jwt_typ' to string")
+	}
+
+	if jwtType != "access_token" {
+		return TestUser{}, fmt.Errorf("'jwt_typ' does not equal 'access_token': %s", jwtType)
+	}
+
+	token, err := jwt.Parse([]byte(tokenString), jwt.WithKeySet(op.jwks.getPublicKeySet()), jwt.WithValidate(true))
+	if err != nil {
+		return TestUser{}, fmt.Errorf("unable to parse token: %w", err)
+	}
+
+	idRaw, ok := token.Get("id")
+	if !ok {
+		return TestUser{}, fmt.Errorf("unable to get 'id' claim from token")
+	}
+
+	id, ok := idRaw.(string)
+	if !ok {
+		return TestUser{}, fmt.Errorf("unable to typecast 'id' to string")
+	}
+
+	user, ok := op.options.TestUsers[id]
+	if !ok {
+		return TestUser{}, fmt.Errorf("unable to find test user: %s", id)
+	}
+
+	return user, nil
+}
+
+func (op *OPTest) getUserInfoFromToken(tokenString string) (TestUser, error) {
+	switch op.options.AccessTokenType {
+	case JwtAccessTokenType:
+		return op.getUserInfoFromJwtToken(tokenString)
+	case OpaqueAccessTokenType:
+		jwtAccessToken, ok := op.opaqueTokens.get(tokenString)
+		if !ok {
+			return TestUser{}, fmt.Errorf("unable to find opaque token in store")
+		}
+		return op.getUserInfoFromJwtToken(jwtAccessToken)
+	default:
+		return TestUser{}, fmt.Errorf("unknown AccessTokenType defined: %d", op.options.AccessTokenType)
+	}
+}
+
+func getTokenString(r *http.Request) (string, error) {
+	headerValue := r.Header.Get("Authorization")
+	if headerValue == "" {
+		return "", fmt.Errorf("'Authorization' header empty")
+	}
+
+	if !strings.HasPrefix(headerValue, "Bearer ") {
+		return "", fmt.Errorf("'Authorization' header does not begin with 'Bearer '")
+	}
+
+	token := strings.TrimPrefix(headerValue, "Bearer ")
+
+	if token == "" {
+		return "", fmt.Errorf("'Authorization' header empty after prefix is trimmed")
+	}
+
+	return token, nil
 }
 
 func generateRandomString(n int) (string, error) {
