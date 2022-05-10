@@ -2,7 +2,7 @@ module github.com/xenitab/go-oidc-middleware/oidcfiber
 
 go 1.18
 
-require github.com/xenitab/go-oidc-middleware v0.0.29
+require github.com/xenitab/go-oidc-middleware v0.0.30
 
 require (
 	github.com/gofiber/fiber/v2 v2.33.0
