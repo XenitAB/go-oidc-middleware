@@ -28,9 +28,11 @@ type testData struct {
 	httpClient   *http.Client
 }
 
-func TestE2E(t *testing.T) {
-	testUsers := map[string]TestUser{
-		"test": {
+var (
+	testDefaultUser   = "test"
+	testSecondaryUser = "foo"
+	testUsers         = map[string]TestUser{
+		testDefaultUser: {
 			Audience:           "test-client",
 			Subject:            "test",
 			Name:               "Test Testersson",
@@ -41,7 +43,7 @@ func TestE2E(t *testing.T) {
 			AccessTokenKeyType: "JWT+AT",
 			IdTokenKeyType:     "JWT",
 		},
-		"foo": {
+		testSecondaryUser: {
 			Audience:           "foo-client",
 			Subject:            "foo",
 			Name:               "Foo Bar",
@@ -53,8 +55,10 @@ func TestE2E(t *testing.T) {
 			IdTokenKeyType:     "JWT",
 		},
 	}
+)
 
-	op, err := New(WithTestUsers(testUsers), WithDefaultTestUser("test"))
+func TestE2E(t *testing.T) {
+	op, err := New(WithTestUsers(testUsers), WithDefaultTestUser(testDefaultUser))
 	require.NoError(t, err)
 	defer op.Close()
 
@@ -75,11 +79,40 @@ func TestE2E(t *testing.T) {
 	td.testAuthorization(t)
 	td.testJwks(t)
 	tr1 := td.testToken(t, "")
-	tr2 := td.testToken(t, "test")
-	tr3 := td.testToken(t, "foo")
-	td.testValidateTokenResponse(t, tr1, testUsers["test"])
-	td.testValidateTokenResponse(t, tr2, testUsers["test"])
-	td.testValidateTokenResponse(t, tr3, testUsers["foo"])
+	tr2 := td.testToken(t, testDefaultUser)
+	tr3 := td.testToken(t, testSecondaryUser)
+	td.testValidateTokenResponse(t, tr1, testUsers[testDefaultUser])
+	td.testValidateTokenResponse(t, tr2, testUsers[testDefaultUser])
+	td.testValidateTokenResponse(t, tr3, testUsers[testSecondaryUser])
+}
+
+func TestE2EOpaque(t *testing.T) {
+	op, err := New(WithTestUsers(testUsers), WithDefaultTestUser(testDefaultUser), WithOpaqueAccessTokens())
+	require.NoError(t, err)
+	defer op.Close()
+
+	httpClient := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	td := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td.testMetadata(t)
+	td.testAuthorization(t)
+	td.testJwks(t)
+	tr1 := td.testToken(t, "")
+	tr2 := td.testToken(t, testDefaultUser)
+	tr3 := td.testToken(t, testSecondaryUser)
+	td.testValidateOpaqueTokenResponse(t, tr1, testUsers[testDefaultUser])
+	td.testValidateOpaqueTokenResponse(t, tr2, testUsers[testDefaultUser])
+	td.testValidateOpaqueTokenResponse(t, tr3, testUsers[testSecondaryUser])
 }
 
 func (td *testData) testAuthorization(t *testing.T) {
@@ -218,6 +251,38 @@ func (td *testData) testValidateTokenResponse(t *testing.T, tr *TokenResponse, u
 	require.Equal(t, user.Subject, accessToken.Subject())
 	require.WithinDuration(t, time.Now(), accessToken.NotBefore(), 5*time.Second)
 	require.WithinDuration(t, time.Now().Add(3600*time.Second), accessToken.Expiration(), 5*time.Second)
+
+	idToken, err := jwt.Parse([]byte(tr.IdToken), jwt.WithKeySet(td.publicKey))
+	require.NoError(t, err)
+
+	require.Equal(t, td.baseURL, idToken.Issuer())
+	require.Equal(t, user.Audience, idToken.Audience()[0])
+	require.Equal(t, user.Subject, idToken.Subject())
+	require.WithinDuration(t, time.Now(), idToken.NotBefore(), 5*time.Second)
+	require.WithinDuration(t, time.Now().Add(3600*time.Second), idToken.Expiration(), 5*time.Second)
+}
+
+func (td *testData) testValidateOpaqueTokenResponse(t *testing.T, tr *TokenResponse, user TestUser) {
+	t.Helper()
+
+	req, err := http.NewRequest(http.MethodGet, td.metadata.UserinfoEndpoint, http.NoBody)
+	require.NoError(t, err)
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tr.AccessToken))
+
+	res, err := td.httpClient.Do(req)
+	require.NoError(t, err)
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	var userInfoResponse TestUser
+	err = json.Unmarshal(bodyBytes, &userInfoResponse)
+	require.NoError(t, err)
+
+	require.Equal(t, user.Audience, userInfoResponse.Audience)
+	require.Equal(t, user.Subject, userInfoResponse.Subject)
 
 	idToken, err := jwt.Parse([]byte(tr.IdToken), jwt.WithKeySet(td.publicKey))
 	require.NoError(t, err)

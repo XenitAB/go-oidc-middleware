@@ -1,6 +1,8 @@
 package optest
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"time"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -22,7 +24,7 @@ type TestUser struct {
 	ExtraAccessTokenClaims map[string]interface{}
 }
 
-func (op *OPTest) newAccessToken(user TestUser) (string, error) {
+func (op *OPTest) newAccessToken(id string, user TestUser) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 
 	c := map[string]interface{}{
@@ -31,6 +33,7 @@ func (op *OPTest) newAccessToken(user TestUser) (string, error) {
 		jwt.SubjectKey:    user.Subject,
 		jwt.ExpirationKey: time.Now().Add(op.options.TokenExpiration).Unix(),
 		jwt.NotBeforeKey:  time.Now().Unix(),
+		"id":              id,
 	}
 
 	token := jwt.New()
@@ -51,6 +54,7 @@ func (op *OPTest) newAccessToken(user TestUser) (string, error) {
 	h := map[string]interface{}{
 		jws.KeyIDKey: privKey.KeyID(),
 		jws.TypeKey:  user.AccessTokenKeyType,
+		"jwt_typ":    "access_token",
 	}
 
 	headers := jws.NewHeaders()
@@ -71,7 +75,7 @@ func (op *OPTest) newAccessToken(user TestUser) (string, error) {
 	return access, nil
 }
 
-func (op *OPTest) newIdToken(user TestUser) (string, error) {
+func (op *OPTest) newIdToken(id string, user TestUser) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 	c := map[string]interface{}{
 		jwt.IssuerKey:     op.options.Issuer,
@@ -84,6 +88,7 @@ func (op *OPTest) newIdToken(user TestUser) (string, error) {
 		"family_name":     user.FamilyName,
 		"locale":          user.Locale,
 		"email":           user.Email,
+		"id":              id,
 	}
 
 	token := jwt.New()
@@ -104,6 +109,7 @@ func (op *OPTest) newIdToken(user TestUser) (string, error) {
 	h := map[string]interface{}{
 		jws.KeyIDKey: privKey.KeyID(),
 		jws.TypeKey:  user.IdTokenKeyType,
+		"jwt_typ":    "id_token",
 	}
 
 	headers := jws.NewHeaders()
@@ -120,4 +126,28 @@ func (op *OPTest) newIdToken(user TestUser) (string, error) {
 	}
 
 	return string(signedToken), nil
+}
+
+func (op *OPTest) newOpaqueAccessToken(id string, user TestUser) (string, error) {
+	opaqueTokenBytes := make([]byte, 64)
+	_, err := rand.Read(opaqueTokenBytes)
+	if err != nil {
+		return "", err
+	}
+
+	opaqueTokenB64 := base64.RawURLEncoding.EncodeToString(opaqueTokenBytes)
+
+	jwtAccessToken, err := op.newAccessToken(id, user)
+	if err != nil {
+		return "", err
+	}
+
+	parsedJwtAccessToken, err := jwt.ParseString(jwtAccessToken)
+	if err != nil {
+		return "", err
+	}
+
+	op.opaqueTokens.set(opaqueTokenB64, jwtAccessToken, parsedJwtAccessToken.Expiration())
+
+	return opaqueTokenB64, nil
 }

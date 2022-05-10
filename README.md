@@ -403,6 +403,8 @@ func TestFoobar(t *testing.T) {
 }
 ```
 
+It is also possible to enable opaque access tokens with the option `optest.WithOpaqueAccessTokens()`.
+
 ## Examples
 
 See [examples readme](examples/README.md) for more information.
