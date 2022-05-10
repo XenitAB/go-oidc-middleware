@@ -60,11 +60,21 @@ func (o *OPTesting) RotateKeys(tb testing.TB) {
 	require.NoError(tb, err)
 }
 
-// GetToken returns a TokenResponse with an id_token and an access_token.
+// GetToken returns a TokenResponse with an id_token and an access_token for the default test user.
 func (o *OPTesting) GetToken(tb testing.TB) *TokenResponse {
 	tb.Helper()
 
 	tokenResponse, err := o.op.GetToken()
+	require.NoError(tb, err)
+
+	return tokenResponse
+}
+
+// GetTokenByUser returns a TokenResponse with an id_token and an access_token for the specified user.
+func (o *OPTesting) GetTokenByUser(tb testing.TB, userString string) *TokenResponse {
+	tb.Helper()
+
+	tokenResponse, err := o.op.GetTokenByUser(userString)
 	require.NoError(tb, err)
 
 	return tokenResponse
