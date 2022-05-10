@@ -66,7 +66,7 @@ func New(setters ...Option) (*OPTest, error) {
 
 	_, ok := opts.TestUsers[opts.DefaultTestUser]
 	if !ok {
-		return nil, fmt.Errorf("the DefaultTestUser %q could not be find in TestUsers: %v", opts.DefaultTestUser, opts.TestUsers)
+		return nil, fmt.Errorf("the DefaultTestUser %q could not be found in TestUsers: %v", opts.DefaultTestUser, opts.TestUsers)
 	}
 
 	if opts.AutoStart {
@@ -117,12 +117,12 @@ func (op *OPTest) RotateKeys() error {
 	return err
 }
 
-// GetToken returns a TokenResponse with an id_token and an access_token.
+// GetToken returns a TokenResponse with an id_token and an access_token for the default test user.
 func (op *OPTest) GetToken() (*TokenResponse, error) {
 	return op.GetTokenByUser(op.options.DefaultTestUser)
 }
 
-// GetToken returns a TokenResponse with an id_token and an access_token.
+// GetTokenByUser returns a TokenResponse with an id_token and an access_token for the specified user.
 func (op *OPTest) GetTokenByUser(userString string) (*TokenResponse, error) {
 	testUser, ok := op.options.TestUsers[userString]
 	if !ok {

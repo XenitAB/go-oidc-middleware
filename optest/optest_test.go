@@ -276,8 +276,12 @@ func TestNew(t *testing.T) {
 	_, err = New(WithTestUsers(nil))
 	require.ErrorContains(t, err, "at least one test user is required")
 
+	emptyTestUsers := make(map[string]TestUser)
+	_, err = New(WithTestUsers(emptyTestUsers))
+	require.ErrorContains(t, err, "at least one test user is required")
+
 	_, err = New(WithTestUsers(testUsers))
-	require.ErrorContains(t, err, "the DefaultTestUser \"test\" could not be find in TestUsers")
+	require.ErrorContains(t, err, "the DefaultTestUser \"test\" could not be found in TestUsers")
 
 	_, err = New(WithTestUsers(testUsers), WithDefaultTestUser("foo"))
 	require.NoError(t, err)
