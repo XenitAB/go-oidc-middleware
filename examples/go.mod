@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/cristalhq/aconfig v0.16.8
+	github.com/cristalhq/aconfig v0.18.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gofiber/fiber/v2 v2.33.0
 	github.com/labstack/echo/v4 v4.7.2
