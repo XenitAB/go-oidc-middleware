@@ -2,12 +2,12 @@ module github.com/xenitab/go-oidc-middleware/oidcechojwt
 
 go 1.19
 
-require github.com/xenitab/go-oidc-middleware v0.0.31
+require github.com/xenitab/go-oidc-middleware v0.0.32
 
 require (
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 )
 
 require (
@@ -39,5 +39,5 @@ require (
 	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
