@@ -1,1 +1,3 @@
+github.com/cristalhq/aconfig v0.16.8/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCSvEhMTm/H3E=
 github.com/ugorji/go v1.2.7 h1:qYhyWUUd6WbiM+C6JZAUkIJt/1WrjzNHY9+KCIjVqTo=
+github.com/xenitab/go-oidc-middleware v0.0.31/go.mod h1:jstNDKrVIR2QLgbtD6FC9yKTd5/ACkvwiXtLAGaNEWw=
