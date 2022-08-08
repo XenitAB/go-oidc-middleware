@@ -2,12 +2,12 @@ module github.com/xenitab/go-oidc-middleware/oidcfiber
 
 go 1.19
 
-require github.com/xenitab/go-oidc-middleware v0.0.31
+require github.com/xenitab/go-oidc-middleware v0.0.32
 
 require (
 	github.com/gofiber/fiber/v2 v2.36.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 )
 
 require (
@@ -36,5 +36,5 @@ require (
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
