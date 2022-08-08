@@ -195,14 +195,16 @@ func WithRequiredAudience(opt string) Option {
 // Example:
 //
 // ```go
-// map[string]interface{}{
-// 	"foo": "bar",
-// 	"bar": 1337,
-// 	"baz": []string{"bar"},
-// 	"oof": []map[string]string{
-// 		{"bar": "baz"},
-// 	},
-// },
+//
+//	map[string]interface{}{
+//		"foo": "bar",
+//		"bar": 1337,
+//		"baz": []string{"bar"},
+//		"oof": []map[string]string{
+//			{"bar": "baz"},
+//		},
+//	},
+//
 // ```
 func WithRequiredClaims(opt map[string]interface{}) Option {
 	return func(opts *Options) {
@@ -255,7 +257,7 @@ func WithTokenString(setters ...TokenStringOption) Option {
 // `claims, ok := r.Context().Value(options.ClaimsContextKeyName("foo")).(map[string]interface{})`
 //
 // Default: `options.DefaultClaimsContextKeyName`
-// Used like this: ``claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})``
+// Used like this: “claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})“
 //
 // When used with gin, it is converted to normal string - by default:
 // `claimsValue, found := c.Get("claims")`
