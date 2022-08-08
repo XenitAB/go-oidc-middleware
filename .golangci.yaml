@@ -43,7 +43,7 @@ linters-settings:
     locale: US
 
   unused:
-    go: "1.18"
+    go: "1.19"
 
   unparam:
     check-exported: true
@@ -52,7 +52,7 @@ linters-settings:
     check-shadowing: false
 
   gosimple:
-    go: "1.18"
+    go: "1.19"
     checks: ["all"]
 
   errorlint:
@@ -161,7 +161,7 @@ linters-settings:
     require-specific: true
 
   staticcheck:
-    go: "1.18"
+    go: "1.19"
     checks: ["all"]
 
   thelper:

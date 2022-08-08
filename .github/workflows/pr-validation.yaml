@@ -13,11 +13,11 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: "^1.18"
+          go-version: "^1.19"
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.1.0
+        uses: golangci/golangci-lint-action@v3.2.0
         with:
-          version: v1.45.2
+          version: v1.48.0
 
   fmt:
     runs-on: ubuntu-latest
@@ -27,7 +27,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: "^1.18"
+          go-version: "^1.19"
       - name: Run fmt
         run: |
           make fmt
@@ -47,7 +47,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: "^1.18"
+          go-version: "^1.19"
       - name: Run build-examples
         run: |
           make build-examples
@@ -60,7 +60,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: "^1.18"
+          go-version: "^1.19"
       - name: Run test
         run: |
           make test
@@ -73,7 +73,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: "^1.18"
+          go-version: "^1.19"
       - name: coverage
         env:
           CI: true
