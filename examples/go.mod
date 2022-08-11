@@ -14,7 +14,7 @@ require (
 	github.com/cristalhq/aconfig v0.18.1
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gofiber/fiber/v2 v2.36.0
-	github.com/labstack/echo/v4 v4.7.2
+	github.com/labstack/echo/v4 v4.8.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 )
