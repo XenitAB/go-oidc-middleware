@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -18,7 +19,6 @@ import (
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/dispans/server"
 )
 
 func TestGetHeadersFromTokenString(t *testing.T) {
@@ -432,13 +432,15 @@ func TestIsTokenTypeValid(t *testing.T) {
 }
 
 func TestGetAndValidateTokenFromString(t *testing.T) {
-	op := server.NewTesting(t)
+	op := optest.NewTesting(t)
 	defer op.Close(t)
 
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
-	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	metadata, err := getMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
+	require.NotEmpty(t, metadata.JwksUri)
+	jwksUri := metadata.JwksUri
 
 	keyHandler, err := newKeyHandler(http.DefaultClient, jwksUri, 50*time.Millisecond, 100, false)
 	require.NoError(t, err)
@@ -446,11 +448,12 @@ func TestGetAndValidateTokenFromString(t *testing.T) {
 	validKey, ok := keyHandler.getKeySet().Get(0)
 	require.True(t, ok)
 
-	validAccessToken := op.GetToken(t).AccessToken
+	token := op.GetToken(t)
+
+	validAccessToken := token.AccessToken
 	require.NotEmpty(t, validAccessToken)
 
-	validIDToken, ok := op.GetToken(t).Extra("id_token").(string)
-	require.True(t, ok)
+	validIDToken := token.IdToken
 	require.NotEmpty(t, validIDToken)
 
 	invalidKey, invalidPubKey := testNewKey(t)

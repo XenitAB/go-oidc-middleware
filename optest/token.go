@@ -11,17 +11,17 @@ import (
 )
 
 type TestUser struct {
-	Audience               string
-	Subject                string
-	Name                   string
-	GivenName              string
-	FamilyName             string
-	Locale                 string
-	Email                  string
-	AccessTokenKeyType     string
-	IdTokenKeyType         string
-	ExtraIdTokenClaims     map[string]interface{}
-	ExtraAccessTokenClaims map[string]interface{}
+	Audience               string                 `json:"audience"`
+	Subject                string                 `json:"subject"`
+	Name                   string                 `json:"name"`
+	GivenName              string                 `json:"given_name"`
+	FamilyName             string                 `json:"family_name"`
+	Locale                 string                 `json:"locale"`
+	Email                  string                 `json:"email"`
+	AccessTokenKeyType     string                 `json:"access_token_key_type"`
+	IdTokenKeyType         string                 `json:"id_token_key_type"`
+	ExtraIdTokenClaims     map[string]interface{} `json:"extra_id_token_claims,omitempty"`
+	ExtraAccessTokenClaims map[string]interface{} `json:"extra_access_token_claims,omitempty"`
 }
 
 func (op *OPTest) newAccessToken(id string, user TestUser) (string, error) {

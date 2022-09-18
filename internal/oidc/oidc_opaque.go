@@ -2,22 +2,23 @@ package oidc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type opaqueHandler struct {
+type opaqueHandler[T any] struct {
 	userinfoUri    string
 	tokenTTL       time.Duration
 	requiredClaims map[string]interface{}
 	httpClient     *http.Client
 }
 
-func NewOpaqueHandler(setters ...options.OpaqueOption) (*opaqueHandler, error) {
+func NewOpaqueHandler[T any](setters ...options.OpaqueOption) (*opaqueHandler[T], error) {
 	opts := options.NewOpaque(setters...)
 
 	var (
@@ -25,7 +26,7 @@ func NewOpaqueHandler(setters ...options.OpaqueOption) (*opaqueHandler, error) {
 		discoveryUri = opts.DiscoveryUri
 	)
 
-	h := &opaqueHandler{
+	h := &opaqueHandler[T]{
 		userinfoUri:    opts.UserinfoUri,
 		tokenTTL:       opts.TokenTTL,
 		requiredClaims: opts.RequiredClaims,
@@ -53,16 +54,70 @@ func NewOpaqueHandler(setters ...options.OpaqueOption) (*opaqueHandler, error) {
 	return h, nil
 }
 
-func (h *opaqueHandler) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
-	if h.requiredClaims != nil {
-		// FIXME: get the claims
-		tokenClaims := map[string]interface{}{}
+func (h *opaqueHandler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
+	claims, err := h.getClaims(ctx, tokenString)
+	if err != nil {
+		return h.emptyT(), err
+	}
 
-		err := isRequiredClaimsValid(h.requiredClaims, tokenClaims)
+	if h.requiredClaims != nil {
+		claimsMap, err := h.getClaimsMap(claims)
 		if err != nil {
-			return nil, fmt.Errorf("unable to validate required claims: %w", err)
+			return h.emptyT(), err
+		}
+
+		err = isRequiredClaimsValid(h.requiredClaims, claimsMap)
+		if err != nil {
+			return h.emptyT(), fmt.Errorf("unable to validate required claims: %w", err)
 		}
 	}
 
-	return token, nil
+	return claims, nil
+}
+
+func (h *opaqueHandler[T]) emptyT() T {
+	return *new(T)
+}
+
+func (h *opaqueHandler[T]) getClaims(ctx context.Context, tokenString string) (T, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.userinfoUri, http.NoBody)
+	if err != nil {
+		return h.emptyT(), err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tokenString))
+
+	res, err := h.httpClient.Do(req)
+	if err != nil {
+		return h.emptyT(), err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return h.emptyT(), err
+	}
+	defer res.Body.Close()
+
+	var userinfo T
+	err = json.Unmarshal(body, &userinfo)
+	if err != nil {
+		return h.emptyT(), err
+	}
+
+	return userinfo, nil
+}
+
+func (h *opaqueHandler[T]) getClaimsMap(claims T) (map[string]interface{}, error) {
+	marshalledClaims, err := json.Marshal(claims)
+	if err != nil {
+		return nil, err
+	}
+
+	var claimsMap map[string]interface{}
+	err = json.Unmarshal(marshalledClaims, &claimsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return claimsMap, nil
 }

@@ -1,7 +1,7 @@
 github.com/cristalhq/aconfig v0.16.8 h1:lg8i0XHgfhvsnjNM5q/ou6jIHDRXlbBybjRP9t2fWuw=
 github.com/cristalhq/aconfig v0.16.8/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCSvEhMTm/H3E=
 github.com/go-playground/validator/v10 v10.10.0/go.mod h1:74x4gJWsvQexRdW8Pn3dXSGrTK4nAUsbPlLADvpJkos=
+github.com/google/go-cmp v0.5.8/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/pelletier/go-toml/v2 v2.0.1/go.mod h1:r9LEWfGN8R5k0VXJ+0BkIe7MYkRdwZOjgMj2KwnJFUo=
 github.com/ugorji/go v1.2.7 h1:qYhyWUUd6WbiM+C6JZAUkIJt/1WrjzNHY9+KCIjVqTo=
-github.com/xenitab/go-oidc-middleware v0.0.32/go.mod h1:0TK8rKoVii+Z7iRdDvL1s2aN2EL7rZ3S7veae1vJzK8=
 golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

@@ -20,8 +20,10 @@ func TestNewKeyHandler(t *testing.T) {
 	op := optest.NewTesting(t)
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
-	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	metadata, err := getMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
+	require.NotEmpty(t, metadata.JwksUri)
+	jwksUri := metadata.JwksUri
 
 	keyHandler, err := newKeyHandler(http.DefaultClient, jwksUri, 10*time.Millisecond, 100, false)
 	require.NoError(t, err)
@@ -87,8 +89,10 @@ func TestUpdate(t *testing.T) {
 	op := optest.NewTesting(t)
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
-	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	metadata, err := getMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	require.NoError(t, err)
+	require.NotEmpty(t, metadata.JwksUri)
+	jwksUri := metadata.JwksUri
 
 	rateLimit := uint(10)
 	keyHandler, err := newKeyHandler(http.DefaultClient, jwksUri, 10*time.Millisecond, rateLimit, false)
