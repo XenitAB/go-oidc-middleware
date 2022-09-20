@@ -25,17 +25,33 @@ type tester interface {
 	NewTestServer(opts ...options.Option) ServerTester
 }
 
+type opaqueTester interface {
+	NewHandlerFn(opts ...options.OpaqueOption[optest.TestUser]) http.Handler
+	ToHandlerFn(parseToken oidc.ParseOpaqueTokenFunc[optest.TestUser], opts ...options.OpaqueOption[optest.TestUser]) http.Handler
+	NewTestServer(opts ...options.OpaqueOption[optest.TestUser]) ServerTester
+}
+
 func RunTests(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
-	runTestNew(t, testName, tester)
+	runTestNew(t, testName, tester, nil)
 	runTestHandler(t, testName, tester)
 	runTestLazyLoad(t, testName, tester)
 	runTestRequirements(t, testName, tester)
 	runTestErrorHandler(t, testName, tester)
 }
 
-func runTestNew(t *testing.T, testName string, tester tester) {
+func RunOpaqueTests(t *testing.T, testName string, tester opaqueTester) {
+	t.Helper()
+
+	runTestNew(t, testName, nil, tester)
+	// runTestHandler(t, testName, tester)
+	// runTestLazyLoad(t, testName, tester)
+	// runTestRequirements(t, testName, tester)
+	// runTestErrorHandler(t, testName, tester)
+}
+
+func runTestNew(t *testing.T, testName string, tester tester, opaqueTester opaqueTester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_new", testName), func(t *testing.T) {
@@ -45,12 +61,16 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 		cases := []struct {
 			testDescription string
 			config          []options.Option
+			opaqueConfig    []options.OpaqueOption[optest.TestUser]
 			expectPanic     bool
 		}{
 			{
 				testDescription: "valid issuer doesn't panic",
 				config: []options.Option{
 					options.WithIssuer(op.GetURL(t)),
+				},
+				opaqueConfig: []options.OpaqueOption[optest.TestUser]{
+					options.WithOpaqueIssuer[optest.TestUser](op.GetURL(t)),
 				},
 				expectPanic: false,
 			},
@@ -59,6 +79,9 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 				config: []options.Option{
 					options.WithIssuer(op.GetURL(t)),
 					options.WithDiscoveryUri("http://foo.bar/baz"),
+				},
+				opaqueConfig: []options.OpaqueOption[optest.TestUser]{
+					options.WithOpaqueDiscoveryUri[optest.TestUser](op.GetURL(t)),
 				},
 				expectPanic: true,
 			},
@@ -79,6 +102,9 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 				testDescription: "fake issuer panics",
 				config: []options.Option{
 					options.WithIssuer("http://foo.bar/baz"),
+				},
+				opaqueConfig: []options.OpaqueOption[optest.TestUser]{
+					options.WithOpaqueDiscoveryUri[optest.TestUser]("http://foo.bar/baz"),
 				},
 				expectPanic: true,
 			},
@@ -111,10 +137,23 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 		for i := range cases {
 			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
+			if tester != nil && opaqueTester != nil {
+				t.Fatal("at least one of tester or opaqueTester should be set")
+			}
 			if c.expectPanic {
-				require.Panics(t, func() { tester.NewHandlerFn(c.config...) })
+				if tester != nil {
+					require.Panics(t, func() { tester.NewHandlerFn(c.config...) })
+				}
+				if opaqueTester != nil && c.opaqueConfig != nil {
+					require.Panics(t, func() { opaqueTester.NewHandlerFn(c.opaqueConfig...) })
+				}
 			} else {
-				require.NotPanics(t, func() { tester.NewHandlerFn(c.config...) })
+				if tester != nil {
+					require.NotPanics(t, func() { tester.NewHandlerFn(c.config...) })
+				}
+				if opaqueTester != nil && c.opaqueConfig != nil {
+					require.NotPanics(t, func() { opaqueTester.NewHandlerFn(c.opaqueConfig...) })
+				}
 			}
 		}
 	})

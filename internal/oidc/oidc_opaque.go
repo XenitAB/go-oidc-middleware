@@ -12,13 +12,14 @@ import (
 )
 
 type opaqueHandler[T any] struct {
-	userinfoUri    string
-	tokenTTL       time.Duration
-	requiredClaims map[string]interface{}
-	httpClient     *http.Client
+	userinfoUri          string
+	userinfoFetchTimeout time.Duration
+	httpClient           *http.Client
+	claimsCache          *claimsCache[T]
+	claimsValidator      func(ctx context.Context, claims T) error
 }
 
-func NewOpaqueHandler[T any](setters ...options.OpaqueOption) (*opaqueHandler[T], error) {
+func NewOpaqueHandler[T any](setters ...options.OpaqueOption[T]) (*opaqueHandler[T], error) {
 	opts := options.NewOpaque(setters...)
 
 	var (
@@ -27,10 +28,11 @@ func NewOpaqueHandler[T any](setters ...options.OpaqueOption) (*opaqueHandler[T]
 	)
 
 	h := &opaqueHandler[T]{
-		userinfoUri:    opts.UserinfoUri,
-		tokenTTL:       opts.TokenTTL,
-		requiredClaims: opts.RequiredClaims,
-		httpClient:     opts.HttpClient,
+		userinfoUri:          opts.UserinfoUri,
+		userinfoFetchTimeout: opts.UserinfoFetchTimeout,
+		httpClient:           opts.HttpClient,
+		claimsCache:          newClaimsCache[T](opts.TokenTTL),
+		claimsValidator:      opts.ClaimsValidator,
 	}
 
 	if h.userinfoUri == "" {
@@ -54,54 +56,62 @@ func NewOpaqueHandler[T any](setters ...options.OpaqueOption) (*opaqueHandler[T]
 	return h, nil
 }
 
+type ParseOpaqueTokenFunc[T any] func(ctx context.Context, tokenString string) (T, error)
+
 func (h *opaqueHandler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
-	claims, err := h.getClaims(ctx, tokenString)
-	if err != nil {
-		return h.emptyT(), err
+	cachedToken, cachedErr, ok := h.claimsCache.get(tokenString)
+	if ok {
+		return cachedToken, cachedErr
 	}
 
-	if h.requiredClaims != nil {
-		claimsMap, err := h.getClaimsMap(claims)
-		if err != nil {
-			return h.emptyT(), err
-		}
+	claims, err := h.parseToken(ctx, tokenString)
+	h.claimsCache.set(tokenString, claims, err)
 
-		err = isRequiredClaimsValid(h.requiredClaims, claimsMap)
+	return claims, err
+}
+
+func (h *opaqueHandler[T]) parseToken(ctx context.Context, tokenString string) (T, error) {
+	claims, err := h.fetchClaims(ctx, tokenString)
+	if err != nil {
+		return *new(T), err
+	}
+
+	if h.claimsValidator != nil {
+		err := h.claimsValidator(ctx, claims)
 		if err != nil {
-			return h.emptyT(), fmt.Errorf("unable to validate required claims: %w", err)
+			return *new(T), err
 		}
 	}
 
 	return claims, nil
 }
 
-func (h *opaqueHandler[T]) emptyT() T {
-	return *new(T)
-}
+func (h *opaqueHandler[T]) fetchClaims(ctx context.Context, tokenString string) (T, error) {
+	ctx, cancel := context.WithTimeout(ctx, h.userinfoFetchTimeout)
+	defer cancel()
 
-func (h *opaqueHandler[T]) getClaims(ctx context.Context, tokenString string) (T, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.userinfoUri, http.NoBody)
 	if err != nil {
-		return h.emptyT(), err
+		return *new(T), err
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", tokenString))
 
 	res, err := h.httpClient.Do(req)
 	if err != nil {
-		return h.emptyT(), err
+		return *new(T), err
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return h.emptyT(), err
+		return *new(T), err
 	}
 	defer res.Body.Close()
 
 	var userinfo T
 	err = json.Unmarshal(body, &userinfo)
 	if err != nil {
-		return h.emptyT(), err
+		return *new(T), err
 	}
 
 	return userinfo, nil
