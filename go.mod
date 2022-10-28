@@ -6,7 +6,7 @@ require (
 	github.com/lestrrat-go/jwx v1.2.25
 	github.com/stretchr/testify v1.8.0
 	github.com/xenitab/dispans v0.0.10
-	github.com/zclconf/go-cty v1.10.0
+	github.com/zclconf/go-cty v1.12.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 )
