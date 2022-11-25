@@ -327,7 +327,7 @@ func (op *OPTest) userInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := op.getUserInfoFromToken(tokenString)
+	userInfo, err := op.getUserInfoFromToken(tokenString)
 	if err != nil {
 		w.Header().Set("WWW-Authenticate", fmt.Sprintf("error=\"invalid_token\", error_description=\"%v\"", err))
 		w.WriteHeader(http.StatusUnauthorized)
@@ -338,70 +338,70 @@ func (op *OPTest) userInfoHandler(w http.ResponseWriter, r *http.Request) {
 	e.SetIndent("", "  ")
 
 	//nolint: errcheck // false positive
-	e.Encode(user)
+	e.Encode(userInfo)
 }
 
-func (op *OPTest) getUserInfoFromJwtToken(tokenString string) (TestUser, error) {
+func (op *OPTest) getUserInfoFromJwtToken(tokenString string) (map[string]interface{}, error) {
 	msg, err := jws.ParseString(tokenString)
 	if err != nil {
-		return TestUser{}, fmt.Errorf("unable to parse jws")
+		return nil, fmt.Errorf("unable to parse jws")
 	}
 
 	signatures := msg.Signatures()
 	if len(signatures) != 1 {
-		return TestUser{}, fmt.Errorf("more than one signature")
+		return nil, fmt.Errorf("more than one signature")
 	}
 
 	headers := signatures[0].ProtectedHeaders()
 	jwtTypeRaw, ok := headers.Get("jwt_typ")
 	if !ok {
-		return TestUser{}, fmt.Errorf("unable to extract 'jwt_typ' from signature header")
+		return nil, fmt.Errorf("unable to extract 'jwt_typ' from signature header")
 	}
 
 	jwtType, ok := jwtTypeRaw.(string)
 	if !ok {
-		return TestUser{}, fmt.Errorf("unable to typecast 'jwt_typ' to string")
+		return nil, fmt.Errorf("unable to typecast 'jwt_typ' to string")
 	}
 
 	if jwtType != "access_token" {
-		return TestUser{}, fmt.Errorf("'jwt_typ' does not equal 'access_token': %s", jwtType)
+		return nil, fmt.Errorf("'jwt_typ' does not equal 'access_token': %s", jwtType)
 	}
 
 	token, err := jwt.Parse([]byte(tokenString), jwt.WithKeySet(op.jwks.getPublicKeySet()), jwt.WithValidate(true))
 	if err != nil {
-		return TestUser{}, fmt.Errorf("unable to parse token: %w", err)
+		return nil, fmt.Errorf("unable to parse token: %w", err)
 	}
 
 	idRaw, ok := token.Get("id")
 	if !ok {
-		return TestUser{}, fmt.Errorf("unable to get 'id' claim from token")
+		return nil, fmt.Errorf("unable to get 'id' claim from token")
 	}
 
 	id, ok := idRaw.(string)
 	if !ok {
-		return TestUser{}, fmt.Errorf("unable to typecast 'id' to string")
+		return nil, fmt.Errorf("unable to typecast 'id' to string")
 	}
 
-	user, ok := op.options.TestUsers[id]
-	if !ok {
-		return TestUser{}, fmt.Errorf("unable to find test user: %s", id)
+	userInfo, err := op.newUserinfoClaims(id)
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate user info claims: %w", err)
 	}
 
-	return user, nil
+	return userInfo, nil
 }
 
-func (op *OPTest) getUserInfoFromToken(tokenString string) (TestUser, error) {
+func (op *OPTest) getUserInfoFromToken(tokenString string) (map[string]interface{}, error) {
 	switch op.options.AccessTokenType {
 	case JwtAccessTokenType:
 		return op.getUserInfoFromJwtToken(tokenString)
 	case OpaqueAccessTokenType:
 		jwtAccessToken, ok := op.opaqueTokens.get(tokenString)
 		if !ok {
-			return TestUser{}, fmt.Errorf("unable to find opaque token in store")
+			return nil, fmt.Errorf("unable to find opaque token in store")
 		}
 		return op.getUserInfoFromJwtToken(jwtAccessToken)
 	default:
-		return TestUser{}, fmt.Errorf("unknown AccessTokenType defined: %d", op.options.AccessTokenType)
+		return nil, fmt.Errorf("unknown AccessTokenType defined: %d", op.options.AccessTokenType)
 	}
 }
 
