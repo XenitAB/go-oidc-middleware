@@ -4,6 +4,7 @@ github.com/go-playground/validator/v10 v10.10.0/go.mod h1:74x4gJWsvQexRdW8Pn3dXS
 github.com/pelletier/go-toml/v2 v2.0.1/go.mod h1:r9LEWfGN8R5k0VXJ+0BkIe7MYkRdwZOjgMj2KwnJFUo=
 github.com/ugorji/go v1.2.7 h1:qYhyWUUd6WbiM+C6JZAUkIJt/1WrjzNHY9+KCIjVqTo=
 github.com/xenitab/go-oidc-middleware v0.0.28/go.mod h1:TSn3/nWnymRRFTLJ5GVJ88001QgqTRFr5wcd8kOJ/kY=
+github.com/xenitab/go-oidc-middleware v0.0.32/go.mod h1:0TK8rKoVii+Z7iRdDvL1s2aN2EL7rZ3S7veae1vJzK8=
 github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.28/go.mod h1:SzCZBr0zP5VJGt2AgHyYtdgQdN+rce0ImUIUgwCx2gk=
 github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.28/go.mod h1:gAZ4aymsh5I/A+vkapv5G3fnHyy51DKmOPZplFHWSw0=
 github.com/xenitab/go-oidc-middleware/oidcgin v0.0.28/go.mod h1:N9aQNc16SAdLpb20MjzXzgo9TNuuyCuTUKXGkD1kXBI=
