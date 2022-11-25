@@ -79,8 +79,8 @@ github.com/valyala/fasttemplate v1.2.1/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+
 github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
 github.com/xenitab/dispans v0.0.10 h1:S+gSUM14rDJWK7MYNrjb8JbjeQPip6mlNJyLX+g7Agc=
-github.com/xenitab/go-oidc-middleware v0.0.35 h1:9u1rQ/MqYXg4IpeJcOKyCSA2Xo8Pji3IiIZ+ZbAoqFI=
-github.com/xenitab/go-oidc-middleware v0.0.35/go.mod h1:a8lpsTfdmiEsbclX4oIQE2gXj+8cYLLGRKUtgccwR94=
+github.com/xenitab/go-oidc-middleware v0.0.36 h1:iBm+8usJZg9mCWrZWliHpzNatWn6g31AAcbb1q4M6go=
+github.com/xenitab/go-oidc-middleware v0.0.36/go.mod h1:dUakIYup0Grr7Bn/88xTTKtlS6MWoWZtrrnzdt/SUZU=
 github.com/zclconf/go-cty v1.12.1 h1:PcupnljUm9EIvbgSHQnHhUr3fO6oFmkOrvs2BAFNXXY=
 github.com/zclconf/go-cty v1.12.1/go.mod h1:s9IfD1LK5ccNMSWCVFCE2rJfHiZgi7JijgeWIMfhLvA=
 go.uber.org/atomic v1.7.0 h1:ADUqmZGgLDDfbSL9ZmPxKTybcoEYHgpYfELNoN+7hsw=
