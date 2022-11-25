@@ -7,16 +7,21 @@ import (
 	"github.com/xenitab/go-oidc-middleware/oidcfiber"
 	"github.com/xenitab/go-oidc-middleware/oidcgin"
 	"github.com/xenitab/go-oidc-middleware/oidchttp"
-	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type testClaims map[string]interface{}
+
+func (c *testClaims) Validate() error {
+	return nil
+}
+
 func main() {
 	f := &foo{}
-	_ = oidcechojwt.New[*optest.TestUser]()
-	_ = oidcfiber.New[*optest.TestUser]()
-	_ = oidcgin.New[*optest.TestUser]()
-	_ = oidchttp.New[*optest.TestUser](f)
+	_ = oidcechojwt.New[*testClaims]()
+	_ = oidcfiber.New[*testClaims]()
+	_ = oidcgin.New[*testClaims]()
+	_ = oidchttp.New[*testClaims](f)
 	_ = options.New()
 }
 

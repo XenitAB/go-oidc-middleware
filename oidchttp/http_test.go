@@ -8,7 +8,6 @@ import (
 
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
-	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
@@ -32,7 +31,7 @@ func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Req
 	tb.Helper()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(*optest.TestUser)
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(*oidctesting.TestClaims)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -91,10 +90,10 @@ func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return New[*optest.TestUser](handler, opts...)
+	return New[*oidctesting.TestClaims](handler, opts...)
 }
 
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*optest.TestUser], opts ...options.Option) http.Handler {
+func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
@@ -105,5 +104,5 @@ func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.Serv
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return newTestServer(h.tb, New[*optest.TestUser](handler, opts...))
+	return newTestServer(h.tb, New[*oidctesting.TestClaims](handler, opts...))
 }

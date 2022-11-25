@@ -14,6 +14,12 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type TestClaims map[string]interface{}
+
+func (c *TestClaims) Validate() error {
+	return nil
+}
+
 type ServerTester interface {
 	Close()
 	URL() string
@@ -21,7 +27,7 @@ type ServerTester interface {
 
 type tester interface {
 	NewHandlerFn(opts ...options.Option) http.Handler
-	ToHandlerFn(parseToken oidc.ParseTokenFunc[*optest.TestUser], opts ...options.Option) http.Handler
+	ToHandlerFn(parseToken oidc.ParseTokenFunc[*TestClaims], opts ...options.Option) http.Handler
 	NewTestServer(opts ...options.Option) ServerTester
 }
 
@@ -163,7 +169,7 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 		op := optest.NewTesting(t)
 		defer op.Close(t)
 
-		oidcHandler, err := oidc.NewHandler[*optest.TestUser](
+		oidcHandler, err := oidc.NewHandler[*TestClaims](
 			options.WithIssuer("http://foo.bar/baz"),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
@@ -298,7 +304,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			options.WithErrorHandler(errorHandler),
 		}
 
-		oidcHandler, err := oidc.NewHandler[*optest.TestUser](opts...)
+		oidcHandler, err := oidc.NewHandler[*TestClaims](opts...)
 		require.NoError(t, err)
 
 		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)

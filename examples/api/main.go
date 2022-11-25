@@ -9,7 +9,6 @@ import (
 	"github.com/xenitab/go-oidc-middleware/oidcfiber"
 	"github.com/xenitab/go-oidc-middleware/oidcgin"
 	"github.com/xenitab/go-oidc-middleware/oidchttp"
-	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
@@ -121,19 +120,19 @@ func run(cfg shared.RuntimeConfig) error {
 	switch cfg.Server {
 	case shared.HttpServer:
 		h := shared.NewHttpClaimsHandler()
-		oidcHandler := oidchttp.New[*optest.TestUser](h, opts...)
+		oidcHandler := oidchttp.New[*shared.Claims](h, opts...)
 
 		return shared.RunHttp(oidcHandler, cfg.Address, cfg.Port)
 	case shared.GinServer:
-		oidcHandler := oidcgin.New[*optest.TestUser](opts...)
+		oidcHandler := oidcgin.New[*shared.Claims](opts...)
 
 		return shared.RunGin(oidcHandler, cfg.Address, cfg.Port)
 	case shared.EchoJwtServer:
-		parseToken := oidcechojwt.New[*optest.TestUser](opts...)
+		parseToken := oidcechojwt.New[*shared.Claims](opts...)
 
 		return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
 	case shared.FiberServer:
-		oidcHandler := oidcfiber.New[*optest.TestUser](opts...)
+		oidcHandler := oidcfiber.New[*shared.Claims](opts...)
 
 		return shared.RunFiber(oidcHandler, cfg.Address, cfg.Port)
 	default:

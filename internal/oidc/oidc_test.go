@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -21,6 +20,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/dispans/server"
 )
+
+type testClaims map[string]interface{}
+
+func (c *testClaims) Validate() error {
+	return nil
+}
 
 func TestGetHeadersFromTokenString(t *testing.T) {
 	key, _ := testNewKey(t)
@@ -654,7 +659,7 @@ func TestParseToken(t *testing.T) {
 
 		keySets.setKeys(testNewKeySet(t, c.numKeys, opts.DisableKeyID))
 
-		h, err := NewHandler[*optest.TestUser](c.options...)
+		h, err := NewHandler[*testClaims](c.options...)
 		require.NoError(t, err)
 
 		parseTokenFunc := h.ParseToken
@@ -705,7 +710,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler[*optest.TestUser](opts...)
+	h, err := NewHandler[*testClaims](opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken
@@ -792,7 +797,7 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler[*optest.TestUser](opts...)
+	h, err := NewHandler[*testClaims](opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken

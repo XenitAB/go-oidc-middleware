@@ -83,3 +83,9 @@ func NewRuntimeConfig() (RuntimeConfig, error) {
 
 	return cfg, nil
 }
+
+type Claims map[string]interface{}
+
+func (c *Claims) Validate() error {
+	return nil
+}

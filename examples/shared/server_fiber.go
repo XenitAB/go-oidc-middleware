@@ -9,13 +9,12 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/xenitab/go-oidc-middleware/optest"
 	"golang.org/x/sync/errgroup"
 )
 
 func newFiberClaimsHandler() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("claims").(*optest.TestUser)
+		claims, ok := c.Locals("claims").(*Claims)
 		if !ok {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
