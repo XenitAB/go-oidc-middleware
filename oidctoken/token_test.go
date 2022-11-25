@@ -10,6 +10,7 @@ import (
 
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
@@ -122,7 +123,7 @@ func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.Erro
 func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Handler {
 	tb.Helper()
 
-	tokenHandler, err := New(setters...)
+	tokenHandler, err := New[optest.TestUser](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

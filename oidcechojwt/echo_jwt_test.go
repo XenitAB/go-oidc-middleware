@@ -10,6 +10,7 @@ import (
 
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/labstack/echo/v4"
@@ -108,7 +109,7 @@ func newTestHandler(tb testing.TB) *testHandler {
 func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	echoParseToken := New(opts...)
+	echoParseToken := New[optest.TestUser](opts...)
 	return testGetEchoRouter(h.tb, echoParseToken)
 }
 
@@ -122,6 +123,6 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...option
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	echoParseToken := New(opts...)
+	echoParseToken := New[optest.TestUser](opts...)
 	return newTestServer(h.tb, testGetEchoRouter(h.tb, echoParseToken))
 }

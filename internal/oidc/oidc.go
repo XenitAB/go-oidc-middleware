@@ -22,7 +22,7 @@ var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
 )
 
-type handler struct {
+type handler[T any] struct {
 	issuer                     string
 	discoveryUri               string
 	discoveryFetchTimeout      time.Duration
@@ -33,17 +33,16 @@ type handler struct {
 	allowedTokenDrift          time.Duration
 	requiredAudience           string
 	requiredTokenType          string
-	requiredClaims             map[string]interface{}
 	disableKeyID               bool
 	httpClient                 *http.Client
 
 	keyHandler *keyHandler
 }
 
-func NewHandler(setters ...options.Option) (*handler, error) {
+func NewHandler[T any](setters ...options.Option) (*handler[T], error) {
 	opts := options.New(setters...)
 
-	h := &handler{
+	h := &handler[T]{
 		issuer:                opts.Issuer,
 		discoveryUri:          opts.DiscoveryUri,
 		discoveryFetchTimeout: opts.DiscoveryFetchTimeout,
@@ -53,7 +52,6 @@ func NewHandler(setters ...options.Option) (*handler, error) {
 		allowedTokenDrift:     opts.AllowedTokenDrift,
 		requiredTokenType:     opts.RequiredTokenType,
 		requiredAudience:      opts.RequiredAudience,
-		requiredClaims:        opts.RequiredClaims,
 		disableKeyID:          opts.DisableKeyID,
 		httpClient:            opts.HttpClient,
 	}
@@ -82,7 +80,7 @@ func NewHandler(setters ...options.Option) (*handler, error) {
 	return h, nil
 }
 
-func (h *handler) loadJwks() error {
+func (h *handler[T]) loadJwks() error {
 	if h.jwksUri == "" {
 		jwksUri, err := getJwksUriFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 		if err != nil {
@@ -101,17 +99,17 @@ func (h *handler) loadJwks() error {
 	return nil
 }
 
-func (h *handler) SetIssuer(issuer string) {
+func (h *handler[T]) SetIssuer(issuer string) {
 	h.issuer = issuer
 }
 
-func (h *handler) SetDiscoveryUri(discoveryUri string) {
+func (h *handler[T]) SetDiscoveryUri(discoveryUri string) {
 	h.discoveryUri = discoveryUri
 }
 
 type ParseTokenFunc func(ctx context.Context, tokenString string) (jwt.Token, error)
 
-func (h *handler) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
+func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
 	if h.keyHandler == nil {
 		err := h.loadJwks()
 		if err != nil {
@@ -180,17 +178,7 @@ func (h *handler) ParseToken(ctx context.Context, tokenString string) (jwt.Token
 		return nil, fmt.Errorf("required audience %q was not found, received: %v", h.requiredAudience, token.Audience())
 	}
 
-	if h.requiredClaims != nil {
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get token claims: %w", err)
-		}
-
-		err = isRequiredClaimsValid(h.requiredClaims, tokenClaims)
-		if err != nil {
-			return nil, fmt.Errorf("unable to validate required claims: %w", err)
-		}
-	}
+	// FIXME: Add token validation func
 
 	return token, nil
 }

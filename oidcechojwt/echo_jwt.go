@@ -10,8 +10,8 @@ import (
 
 // New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
 // to be used with the the echo `JWT` middleware.
-func New(setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
-	h, err := oidc.NewHandler(setters...)
+func New[T any](setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
+	h, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

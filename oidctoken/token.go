@@ -16,8 +16,8 @@ type TokenHandler struct {
 
 // New returns an OpenID Connect (OIDC) discovery token handler.
 // Can be used to create your own middleware.
-func New(setters ...options.Option) (*TokenHandler, error) {
-	oidcHandler, err := oidc.NewHandler(setters...)
+func New[T any](setters ...options.Option) (*TokenHandler, error) {
+	oidcHandler, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		return nil, err
 	}

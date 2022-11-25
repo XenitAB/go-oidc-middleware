@@ -10,8 +10,8 @@ import (
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `fiber`.
-func New(setters ...options.Option) fiber.Handler {
-	oidcHandler, err := oidc.NewHandler(setters...)
+func New[T any](setters ...options.Option) fiber.Handler {
+	oidcHandler, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

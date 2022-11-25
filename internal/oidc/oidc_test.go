@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -684,7 +685,7 @@ func TestParseToken(t *testing.T) {
 
 		keySets.setKeys(testNewKeySet(t, c.numKeys, opts.DisableKeyID))
 
-		h, err := NewHandler(c.options...)
+		h, err := NewHandler[optest.TestUser](c.options...)
 		require.NoError(t, err)
 
 		parseTokenFunc := h.ParseToken
@@ -735,7 +736,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler(opts...)
+	h, err := NewHandler[optest.TestUser](opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken
@@ -822,7 +823,7 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler(opts...)
+	h, err := NewHandler[optest.TestUser](opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken
