@@ -181,7 +181,17 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		return *new(T), fmt.Errorf("required audience %q was not found, received: %v", h.requiredAudience, token.Audience())
 	}
 
-	return h.jwtTokenToClaims(ctx, token)
+	claims, err := h.jwtTokenToClaims(ctx, token)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to convert jwt.Token to claims: %w", err)
+	}
+
+	err = claims.Validate()
+	if err != nil {
+		return *new(T), fmt.Errorf("claims validation returned an error: %w", err)
+	}
+
+	return claims, nil
 }
 
 func (h *handler[T]) jwtTokenToClaims(ctx context.Context, token jwt.Token) (T, error) {
