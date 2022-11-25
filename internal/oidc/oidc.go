@@ -321,27 +321,6 @@ func isTokenTypeValid(requiredTokenType string, tokenString string) bool {
 	return true
 }
 
-func isRequiredClaimsValid(requiredClaims map[string]interface{}, tokenClaims map[string]interface{}) error {
-	for requiredKey, requiredValue := range requiredClaims {
-		tokenValue, ok := tokenClaims[requiredKey]
-		if !ok {
-			return fmt.Errorf("token does not have the claim: %s", requiredKey)
-		}
-
-		required, received, err := getCtyValues(requiredValue, tokenValue)
-		if err != nil {
-			return err
-		}
-
-		err = isCtyValueValid(required, received)
-		if err != nil {
-			return fmt.Errorf("claim %q not valid: %w", requiredKey, err)
-		}
-	}
-
-	return nil
-}
-
 func getAndValidateTokenFromString(tokenString string, key jwk.Key, alg jwa.SignatureAlgorithm) (jwt.Token, error) {
 	token, err := jwt.ParseString(tokenString, jwt.WithVerify(alg, key))
 	if err != nil {
