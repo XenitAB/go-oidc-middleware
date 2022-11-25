@@ -2,6 +2,7 @@ package shared
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cristalhq/aconfig"
 )
@@ -43,15 +44,14 @@ func (p Provider) Validate() error {
 }
 
 type RuntimeConfig struct {
-	Server                     Server            `flag:"server" env:"server" usage:"what server to use" required:"true"`
-	Provider                   Provider          `flag:"provider" env:"PROVIDER" usage:"what provider to use" required:"true"`
-	Address                    string            `flag:"address" env:"ADDRESS" default:"127.0.0.1" usage:"address webserver will listen to"`
-	Port                       int               `flag:"port" env:"PORT" default:"8080" usage:"port webserver will listen to"`
-	Issuer                     string            `flag:"token-issuer" env:"TOKEN_ISSUER" usage:"the oidc issuer url for tokens"`
-	Audience                   string            `flag:"token-audience" env:"TOKEN_AUDIENCE" usage:"the audience that tokens need to contain"`
-	ClientID                   string            `flag:"client-id" env:"CLIENT_ID" usage:"the client id that tokens need to contain"`
-	FallbackSignatureAlgorithm string            `flag:"fallback-signature-algorithm" env:"FALLBACK_SIGNATURE_ALGORITHM" default:"RS256" usage:"if the issue jwks doesn't contain key alg, use the following signature algorithm to verify the signature of the tokens"`
-	RequiredClaims             map[string]string `flag:"required-claims" env:"REQUIRED_CLAIMS" usage:"adds required claims"`
+	Server                     Server   `flag:"server" env:"server" usage:"what server to use" required:"true"`
+	Provider                   Provider `flag:"provider" env:"PROVIDER" usage:"what provider to use" required:"true"`
+	Address                    string   `flag:"address" env:"ADDRESS" default:"127.0.0.1" usage:"address webserver will listen to"`
+	Port                       int      `flag:"port" env:"PORT" default:"8080" usage:"port webserver will listen to"`
+	Issuer                     string   `flag:"token-issuer" env:"TOKEN_ISSUER" usage:"the oidc issuer url for tokens"`
+	Audience                   string   `flag:"token-audience" env:"TOKEN_AUDIENCE" usage:"the audience that tokens need to contain"`
+	ClientID                   string   `flag:"client-id" env:"CLIENT_ID" usage:"the client id that tokens need to contain"`
+	FallbackSignatureAlgorithm string   `flag:"fallback-signature-algorithm" env:"FALLBACK_SIGNATURE_ALGORITHM" default:"RS256" usage:"if the issue jwks doesn't contain key alg, use the following signature algorithm to verify the signature of the tokens"`
 }
 
 func NewRuntimeConfig() (RuntimeConfig, error) {
@@ -82,6 +82,28 @@ func NewRuntimeConfig() (RuntimeConfig, error) {
 	}
 
 	return cfg, nil
+}
+
+type Auth0Claims struct {
+	Audience  []string  `json:"aud"`
+	Azp       string    `json:"azp"`
+	ExpiresAt time.Time `json:"exp"`
+	IssuedAt  time.Time `json:"iat"`
+	Issuer    string    `json:"iss"`
+	Scope     string    `json:"scope"`
+	Subject   string    `json:"sub"`
+}
+
+var GlobalRequiredAuth0AzpClaim = ""
+
+// --required-claims azp:${CLIENT_ID}
+func (c *Auth0Claims) Validate() error {
+	fmt.Println(GlobalRequiredAuth0AzpClaim)
+	if GlobalRequiredAuth0AzpClaim != "" && c.Azp != GlobalRequiredAuth0AzpClaim {
+		return fmt.Errorf("azp claim is required to be: %s", GlobalRequiredAuth0AzpClaim)
+	}
+
+	return nil
 }
 
 type Claims map[string]interface{}

@@ -12,9 +12,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func newFiberClaimsHandler() fiber.Handler {
+func newFiberClaimsHandler[T any]() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("claims").(*Claims)
+		claims, ok := c.Locals("claims").(T)
 		if !ok {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
@@ -23,7 +23,7 @@ func newFiberClaimsHandler() fiber.Handler {
 	}
 }
 
-func RunFiber(oidcHandler fiber.Handler, address string, port int) error {
+func RunFiber[T any](oidcHandler fiber.Handler, address string, port int) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -39,7 +39,7 @@ func RunFiber(oidcHandler fiber.Handler, address string, port int) error {
 
 	app.Use(oidcHandler)
 
-	claimsHandler := newFiberClaimsHandler()
+	claimsHandler := newFiberClaimsHandler[T]()
 	app.Get("/", claimsHandler)
 
 	g.Go(func() error {

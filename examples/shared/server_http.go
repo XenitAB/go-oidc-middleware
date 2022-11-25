@@ -16,9 +16,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func NewHttpClaimsHandler() http.HandlerFunc {
+func NewHttpClaimsHandler[T any]() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(*Claims)
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(T)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return

@@ -11,8 +11,8 @@ import (
 
 type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
 
-func newEchoJWTClaimsHandler(c echo.Context) error {
-	claims, ok := c.Get("user").(*Claims)
+func newEchoJWTClaimsHandler[T any](c echo.Context) error {
+	claims, ok := c.Get("user").(T)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 	}
@@ -20,7 +20,7 @@ func newEchoJWTClaimsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, claims)
 }
 
-func RunEchoJWT(parseToken echoJWTParseTokenFunc, address string, port int) error {
+func RunEchoJWT[T any](parseToken echoJWTParseTokenFunc, address string, port int) error {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -32,7 +32,7 @@ func RunEchoJWT(parseToken echoJWTParseTokenFunc, address string, port int) erro
 		ParseTokenFunc: parseToken,
 	}))
 
-	handler := newEchoJWTClaimsHandler
+	handler := newEchoJWTClaimsHandler[T]
 
 	e.GET("/", handler)
 
