@@ -50,6 +50,9 @@ func (c *authorizationCacheContainer) get(code string) (string, string, bool) {
 		}
 	}
 	v, ok := c.values[code]
+	if ok {
+		delete(c.values, code)
+	}
 	c.mu.Unlock()
 	return v.loginHint, v.nonce, ok
 }

@@ -68,22 +68,44 @@ func TestE2E(t *testing.T) {
 		},
 	}
 
-	td := &testData{
+	td1 := &testData{
 		baseURL:     op.GetURL(),
 		redirectUrl: "http://foobar.baz/callback",
 		clientID:    "test-client",
 		httpClient:  httpClient,
 	}
 
-	td.testMetadata(t)
-	td.testAuthorization(t, "")
-	td.testJwks(t)
-	tr1 := td.testToken(t, "")
-	tr2 := td.testToken(t, testDefaultUser)
-	tr3 := td.testToken(t, testSecondaryUser)
-	td.testValidateTokenResponse(t, tr1, testUsers[testDefaultUser])
-	td.testValidateTokenResponse(t, tr2, testUsers[testDefaultUser])
-	td.testValidateTokenResponse(t, tr3, testUsers[testSecondaryUser])
+	td2 := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td3 := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td1.testMetadata(t)
+	td1.testAuthorization(t, "")
+	td1.testJwks(t)
+	tr1 := td1.testToken(t, "")
+	td1.testValidateOpaqueTokenResponse(t, tr1, testUsers[testDefaultUser])
+
+	td2.testMetadata(t)
+	td2.testAuthorization(t, "")
+	td2.testJwks(t)
+	tr2 := td2.testToken(t, testDefaultUser)
+	td2.testValidateOpaqueTokenResponse(t, tr2, testUsers[testDefaultUser])
+
+	td3.testMetadata(t)
+	td3.testAuthorization(t, "")
+	td3.testJwks(t)
+	tr3 := td3.testToken(t, testSecondaryUser)
+	td3.testValidateOpaqueTokenResponse(t, tr3, testUsers[testSecondaryUser])
 }
 
 func TestE2EOpaque(t *testing.T) {
@@ -97,22 +119,44 @@ func TestE2EOpaque(t *testing.T) {
 		},
 	}
 
-	td := &testData{
+	td1 := &testData{
 		baseURL:     op.GetURL(),
 		redirectUrl: "http://foobar.baz/callback",
 		clientID:    "test-client",
 		httpClient:  httpClient,
 	}
 
-	td.testMetadata(t)
-	td.testAuthorization(t, "")
-	td.testJwks(t)
-	tr1 := td.testToken(t, "")
-	tr2 := td.testToken(t, testDefaultUser)
-	tr3 := td.testToken(t, testSecondaryUser)
-	td.testValidateOpaqueTokenResponse(t, tr1, testUsers[testDefaultUser])
-	td.testValidateOpaqueTokenResponse(t, tr2, testUsers[testDefaultUser])
-	td.testValidateOpaqueTokenResponse(t, tr3, testUsers[testSecondaryUser])
+	td2 := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td3 := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td1.testMetadata(t)
+	td1.testAuthorization(t, "")
+	td1.testJwks(t)
+	tr1 := td1.testToken(t, "")
+	td1.testValidateOpaqueTokenResponse(t, tr1, testUsers[testDefaultUser])
+
+	td2.testMetadata(t)
+	td2.testAuthorization(t, "")
+	td2.testJwks(t)
+	tr2 := td2.testToken(t, testDefaultUser)
+	td2.testValidateOpaqueTokenResponse(t, tr2, testUsers[testDefaultUser])
+
+	td3.testMetadata(t)
+	td3.testAuthorization(t, "")
+	td3.testJwks(t)
+	tr3 := td3.testToken(t, testSecondaryUser)
+	td3.testValidateOpaqueTokenResponse(t, tr3, testUsers[testSecondaryUser])
 }
 
 func TestE2EOtherUser(t *testing.T) {
@@ -208,8 +252,6 @@ func (td *testData) testMetadata(t *testing.T) {
 
 func (td *testData) testToken(t *testing.T, user string) *TokenResponse {
 	t.Helper()
-
-	t.Logf("Code: %s", td.code)
 
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
