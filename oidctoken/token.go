@@ -8,6 +8,10 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type TokenValidator interface {
+	oidc.TokenValidator
+}
+
 // TokenHandler is used to parse tokens.
 type TokenHandler struct {
 	parseTokenFunc oidc.ParseTokenFunc
@@ -16,7 +20,7 @@ type TokenHandler struct {
 
 // New returns an OpenID Connect (OIDC) discovery token handler.
 // Can be used to create your own middleware.
-func New[T any](setters ...options.Option) (*TokenHandler, error) {
+func New[T TokenValidator](setters ...options.Option) (*TokenHandler, error) {
 	oidcHandler, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		return nil, err

@@ -25,6 +25,10 @@ type TestUser struct {
 	ExtraAccessTokenClaims map[string]interface{}
 }
 
+func (u *TestUser) Validate() error {
+	return nil
+}
+
 func (op *OPTest) newAccessToken(id string, user TestUser, nonce string, now time.Time) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 

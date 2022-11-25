@@ -163,7 +163,7 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 		op := optest.NewTesting(t)
 		defer op.Close(t)
 
-		oidcHandler, err := oidc.NewHandler[optest.TestUser](
+		oidcHandler, err := oidc.NewHandler[*optest.TestUser](
 			options.WithIssuer("http://foo.bar/baz"),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
@@ -318,7 +318,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			options.WithErrorHandler(errorHandler),
 		}
 
-		oidcHandler, err := oidc.NewHandler[optest.TestUser](opts...)
+		oidcHandler, err := oidc.NewHandler[*optest.TestUser](opts...)
 		require.NoError(t, err)
 
 		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)

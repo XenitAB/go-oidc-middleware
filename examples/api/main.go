@@ -117,19 +117,19 @@ func run(cfg shared.RuntimeConfig) error {
 	switch cfg.Server {
 	case shared.HttpServer:
 		h := shared.NewHttpClaimsHandler()
-		oidcHandler := oidchttp.New[optest.TestUser](h, opts...)
+		oidcHandler := oidchttp.New[*optest.TestUser](h, opts...)
 
 		return shared.RunHttp(oidcHandler, cfg.Address, cfg.Port)
 	case shared.GinServer:
-		oidcHandler := oidcgin.New[optest.TestUser](opts...)
+		oidcHandler := oidcgin.New[*optest.TestUser](opts...)
 
 		return shared.RunGin(oidcHandler, cfg.Address, cfg.Port)
 	case shared.EchoJwtServer:
-		parseToken := oidcechojwt.New[optest.TestUser](opts...)
+		parseToken := oidcechojwt.New[*optest.TestUser](opts...)
 
 		return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
 	case shared.FiberServer:
-		oidcHandler := oidcfiber.New[optest.TestUser](opts...)
+		oidcHandler := oidcfiber.New[*optest.TestUser](opts...)
 
 		return shared.RunFiber(oidcHandler, cfg.Address, cfg.Port)
 	default:

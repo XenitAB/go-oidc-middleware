@@ -123,7 +123,7 @@ func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.Erro
 func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Handler {
 	tb.Helper()
 
-	tokenHandler, err := New[optest.TestUser](setters...)
+	tokenHandler, err := New[*optest.TestUser](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}

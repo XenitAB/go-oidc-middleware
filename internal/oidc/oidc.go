@@ -22,7 +22,11 @@ var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
 )
 
-type handler[T any] struct {
+type TokenValidator interface {
+	Validate() error
+}
+
+type handler[T TokenValidator] struct {
 	issuer                     string
 	discoveryUri               string
 	discoveryFetchTimeout      time.Duration
@@ -35,11 +39,10 @@ type handler[T any] struct {
 	requiredTokenType          string
 	disableKeyID               bool
 	httpClient                 *http.Client
-
-	keyHandler *keyHandler
+	keyHandler                 *keyHandler
 }
 
-func NewHandler[T any](setters ...options.Option) (*handler[T], error) {
+func NewHandler[T TokenValidator](setters ...options.Option) (*handler[T], error) {
 	opts := options.New(setters...)
 
 	h := &handler[T]{

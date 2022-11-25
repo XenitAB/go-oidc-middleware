@@ -8,9 +8,13 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type TokenValidator interface {
+	oidc.TokenValidator
+}
+
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `fiber`.
-func New[T any](setters ...options.Option) fiber.Handler {
+func New[T TokenValidator](setters ...options.Option) fiber.Handler {
 	oidcHandler, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))

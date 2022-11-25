@@ -98,7 +98,7 @@ func newTestHandler(tb testing.TB) *testHandler {
 func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := New[optest.TestUser](opts...)
+	middleware := New[*optest.TestUser](opts...)
 	return testGetGinRouter(h.tb, middleware)
 }
 
@@ -112,6 +112,6 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...option
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	middleware := New[optest.TestUser](opts...)
+	middleware := New[*optest.TestUser](opts...)
 	return newTestServer(h.tb, testGetGinRouter(h.tb, middleware))
 }

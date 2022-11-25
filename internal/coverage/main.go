@@ -13,10 +13,10 @@ import (
 
 func main() {
 	f := &foo{}
-	_ = oidcechojwt.New[optest.TestUser]()
-	_ = oidcfiber.New[optest.TestUser]()
-	_ = oidcgin.New[optest.TestUser]()
-	_ = oidchttp.New[optest.TestUser](f)
+	_ = oidcechojwt.New[*optest.TestUser]()
+	_ = oidcfiber.New[*optest.TestUser]()
+	_ = oidcgin.New[*optest.TestUser]()
+	_ = oidchttp.New[*optest.TestUser](f)
 	_ = options.New()
 }
 

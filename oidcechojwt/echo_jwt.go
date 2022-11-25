@@ -8,9 +8,13 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type TokenValidator interface {
+	oidc.TokenValidator
+}
+
 // New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
 // to be used with the the echo `JWT` middleware.
-func New[T any](setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
+func New[T TokenValidator](setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
 	h, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
