@@ -76,7 +76,7 @@ func TestE2E(t *testing.T) {
 	}
 
 	td.testMetadata(t)
-	td.testAuthorization(t)
+	td.testAuthorization(t, "")
 	td.testJwks(t)
 	tr1 := td.testToken(t, "")
 	tr2 := td.testToken(t, testDefaultUser)
@@ -105,7 +105,7 @@ func TestE2EOpaque(t *testing.T) {
 	}
 
 	td.testMetadata(t)
-	td.testAuthorization(t)
+	td.testAuthorization(t, "")
 	td.testJwks(t)
 	tr1 := td.testToken(t, "")
 	tr2 := td.testToken(t, testDefaultUser)
@@ -115,7 +115,32 @@ func TestE2EOpaque(t *testing.T) {
 	td.testValidateOpaqueTokenResponse(t, tr3, testUsers[testSecondaryUser])
 }
 
-func (td *testData) testAuthorization(t *testing.T) {
+func TestE2EOtherUser(t *testing.T) {
+	op, err := New(WithTestUsers(testUsers), WithDefaultTestUser(testDefaultUser))
+	require.NoError(t, err)
+	defer op.Close()
+
+	httpClient := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	td := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td.testMetadata(t)
+	td.testAuthorization(t, testSecondaryUser)
+	td.testJwks(t)
+	tr := td.testToken(t, testSecondaryUser)
+	td.testValidateTokenResponse(t, tr, testUsers[testSecondaryUser])
+}
+
+func (td *testData) testAuthorization(t *testing.T, loginHint string) {
 	t.Helper()
 
 	remoteUrl, err := url.Parse(td.metadata.AuthorizationEndpoint)
@@ -134,6 +159,10 @@ func (td *testData) testAuthorization(t *testing.T) {
 	query.Add("response_type", "code")
 	query.Add("scope", "all")
 	query.Add("state", state)
+
+	if loginHint != "" {
+		query.Add("login_hint", loginHint)
+	}
 
 	remoteUrl.RawQuery = query.Encode()
 
@@ -179,6 +208,8 @@ func (td *testData) testMetadata(t *testing.T) {
 
 func (td *testData) testToken(t *testing.T, user string) *TokenResponse {
 	t.Helper()
+
+	t.Logf("Code: %s", td.code)
 
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")

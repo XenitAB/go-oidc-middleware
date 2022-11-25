@@ -17,11 +17,12 @@ import (
 
 // OPTest is the struct used for the test OpenID Provider.
 type OPTest struct {
-	server       *httptest.Server
-	router       *http.ServeMux
-	options      Options
-	jwks         *jwksHandler
-	opaqueTokens *opaqueAccessTokenContainer
+	server         *httptest.Server
+	router         *http.ServeMux
+	options        Options
+	jwks           *jwksHandler
+	opaqueTokens   *opaqueAccessTokenContainer
+	authorizations *authorizationCacheContainer
 }
 
 // New sets up a new test OpenID Provider.
@@ -32,8 +33,9 @@ func New(setters ...Option) (*OPTest, error) {
 	}
 
 	op := &OPTest{
-		jwks:         jwks,
-		opaqueTokens: newOpaqueAccessTokenContainer(),
+		jwks:           jwks,
+		opaqueTokens:   newOpaqueAccessTokenContainer(),
+		authorizations: newAuthorizationCacheContainer(),
 	}
 
 	router := op.routeHandler()
@@ -126,11 +128,11 @@ func (op *OPTest) RotateKeys() error {
 
 // GetToken returns a TokenResponse with an id_token and an access_token for the default test user.
 func (op *OPTest) GetToken() (*TokenResponse, error) {
-	return op.GetTokenByUser(op.options.DefaultTestUser)
+	return op.GetTokenByUser(op.options.DefaultTestUser, "")
 }
 
 // GetTokenByUser returns a TokenResponse with an id_token and an access_token for the specified user.
-func (op *OPTest) GetTokenByUser(id string) (*TokenResponse, error) {
+func (op *OPTest) GetTokenByUser(id string, nonce string) (*TokenResponse, error) {
 	testUser, ok := op.options.TestUsers[id]
 	if !ok {
 		return nil, fmt.Errorf("unable to find test user: %s", id)
@@ -142,12 +144,12 @@ func (op *OPTest) GetTokenByUser(id string) (*TokenResponse, error) {
 	var err error
 	switch op.options.AccessTokenType {
 	case JwtAccessTokenType:
-		accessToken, err = op.newAccessToken(id, testUser, now)
+		accessToken, err = op.newAccessToken(id, testUser, nonce, now)
 		if err != nil {
 			return nil, err
 		}
 	case OpaqueAccessTokenType:
-		accessToken, err = op.newOpaqueAccessToken(id, testUser)
+		accessToken, err = op.newOpaqueAccessToken(id, testUser, nonce)
 		if err != nil {
 			return nil, err
 		}
@@ -155,7 +157,7 @@ func (op *OPTest) GetTokenByUser(id string) (*TokenResponse, error) {
 		return nil, fmt.Errorf("unknown access token type: %T", op.options.AccessTokenType)
 	}
 
-	idToken, err := op.newIdToken(id, testUser, now)
+	idToken, err := op.newIdToken(id, testUser, nonce, now)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +252,11 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	loginHint := r.URL.Query().Get("login_hint")
+	nonce := r.URL.Query().Get("nonce")
+
+	op.authorizations.set(code, loginHint, nonce)
+
 	state := r.URL.Query().Get("state")
 	query := url.Values{}
 	query.Set("code", code)
@@ -262,12 +269,28 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {
-	userString := r.URL.Query().Get("test_user")
-	if userString == "" {
-		userString = op.options.DefaultTestUser
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	tokenResponse, err := op.GetTokenByUser(userString)
+	code := r.FormValue("code")
+	loginHint, nonce, ok := op.authorizations.get(code)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user := loginHint
+	if user == "" {
+		user = r.URL.Query().Get("test_user")
+	}
+	if user == "" {
+		user = op.options.DefaultTestUser
+	}
+
+	tokenResponse, err := op.GetTokenByUser(user, nonce)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
