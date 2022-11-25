@@ -74,7 +74,7 @@ func (o *OPTesting) GetToken(tb testing.TB) *TokenResponse {
 func (o *OPTesting) GetTokenByUser(tb testing.TB, userString string) *TokenResponse {
 	tb.Helper()
 
-	tokenResponse, err := o.op.GetTokenByUser(userString)
+	tokenResponse, err := o.op.GetTokenByUser(userString, "")
 	require.NoError(tb, err)
 
 	return tokenResponse

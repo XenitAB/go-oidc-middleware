@@ -24,7 +24,7 @@ type TestUser struct {
 	ExtraAccessTokenClaims map[string]interface{}
 }
 
-func (op *OPTest) newAccessToken(id string, user TestUser, now time.Time) (string, error) {
+func (op *OPTest) newAccessToken(id string, user TestUser, nonce string, now time.Time) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 
 	c := map[string]interface{}{
@@ -35,6 +35,10 @@ func (op *OPTest) newAccessToken(id string, user TestUser, now time.Time) (strin
 		jwt.NotBeforeKey:  now.Unix(),
 		jwt.IssuedAtKey:   now.Unix(),
 		"id":              id,
+	}
+
+	if nonce != "" {
+		c["nonce"] = nonce
 	}
 
 	token := jwt.New()
@@ -76,7 +80,7 @@ func (op *OPTest) newAccessToken(id string, user TestUser, now time.Time) (strin
 	return access, nil
 }
 
-func (op *OPTest) newIdToken(id string, user TestUser, now time.Time) (string, error) {
+func (op *OPTest) newIdToken(id string, user TestUser, nonce string, now time.Time) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 	c := map[string]interface{}{
 		jwt.IssuerKey:     op.options.Issuer,
@@ -91,6 +95,10 @@ func (op *OPTest) newIdToken(id string, user TestUser, now time.Time) (string, e
 		"locale":          user.Locale,
 		"email":           user.Email,
 		"id":              id,
+	}
+
+	if nonce != "" {
+		c["nonce"] = nonce
 	}
 
 	token := jwt.New()
@@ -130,7 +138,7 @@ func (op *OPTest) newIdToken(id string, user TestUser, now time.Time) (string, e
 	return string(signedToken), nil
 }
 
-func (op *OPTest) newOpaqueAccessToken(id string, user TestUser) (string, error) {
+func (op *OPTest) newOpaqueAccessToken(id string, user TestUser, nonce string) (string, error) {
 	opaqueTokenBytes := make([]byte, 64)
 	_, err := rand.Read(opaqueTokenBytes)
 	if err != nil {
@@ -139,7 +147,7 @@ func (op *OPTest) newOpaqueAccessToken(id string, user TestUser) (string, error)
 
 	opaqueTokenB64 := base64.RawURLEncoding.EncodeToString(opaqueTokenBytes)
 
-	jwtAccessToken, err := op.newAccessToken(id, user, time.Now())
+	jwtAccessToken, err := op.newAccessToken(id, user, nonce, time.Now())
 	if err != nil {
 		return "", err
 	}
