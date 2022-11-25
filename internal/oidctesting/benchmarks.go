@@ -50,9 +50,6 @@ func runBenchmarkRequirements(b *testing.B, testName string, tester tester) {
 			options.WithIssuer(op.GetURL(b)),
 			options.WithRequiredTokenType("JWT+AT"),
 			options.WithRequiredAudience("test-client"),
-			options.WithRequiredClaims(map[string]interface{}{
-				"sub": "test",
-			}),
 		)
 
 		fn := func(token *optest.TokenResponse) {

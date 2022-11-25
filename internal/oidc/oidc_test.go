@@ -641,37 +641,6 @@ func TestParseToken(t *testing.T) {
 			customExpirationMinutes: -1,
 			expectedErrorContains:   "token has expired",
 		},
-		{
-			testDescription: "correct requiredClaim",
-			options: []options.Option{
-				options.WithIssuer("http://foo.bar"),
-				options.WithDiscoveryUri("http://foo.bar"),
-				options.WithJwksUri(testServer.URL),
-				options.WithRequiredClaims(map[string]interface{}{
-					"foo": "bar",
-				}),
-				options.WithDisableKeyID(false),
-			},
-			numKeys:               1,
-			expectedErrorContains: "",
-		},
-		{
-			testDescription: "correct requiredClaim",
-			options: []options.Option{
-				options.WithIssuer("http://foo.bar"),
-				options.WithDiscoveryUri("http://foo.bar"),
-				options.WithJwksUri(testServer.URL),
-				options.WithRequiredClaims(map[string]interface{}{
-					"foo": "bar",
-				}),
-				options.WithDisableKeyID(false),
-			},
-			numKeys: 1,
-			customClaims: map[string]string{
-				"foo": "baz",
-			},
-			expectedErrorContains: "unable to validate required claims",
-		},
 	}
 
 	for i, c := range cases {

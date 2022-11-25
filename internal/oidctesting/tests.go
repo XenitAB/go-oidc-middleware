@@ -242,26 +242,6 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 				},
 				succeeds: false,
 			},
-			{
-				testDescription: "required sub matches",
-				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
-					options.WithRequiredClaims(map[string]interface{}{
-						"sub": "test",
-					}),
-				},
-				succeeds: true,
-			},
-			{
-				testDescription: "required sub doesn't match",
-				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
-					options.WithRequiredClaims(map[string]interface{}{
-						"sub": "foo",
-					}),
-				},
-				succeeds: false,
-			},
 		}
 
 		for i := range cases {

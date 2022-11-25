@@ -54,7 +54,8 @@ func run(cfg shared.RuntimeConfig) error {
 			options.WithRequiredTokenType("JWT"),
 			options.WithRequiredAudience(cfg.Audience),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
+			// FIXME: Add required claims
+			// options.WithRequiredClaims(requiredClaims),
 		}
 	case shared.AzureADProvider:
 		inputs := map[string]string{
@@ -74,7 +75,8 @@ func run(cfg shared.RuntimeConfig) error {
 			options.WithRequiredTokenType("JWT"),
 			options.WithRequiredAudience(cfg.Audience),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
+			// FIXME: Remove when token validation is added
+			// options.WithRequiredClaims(requiredClaims),
 		}
 	case shared.CognitoProvider:
 		inputs := map[string]string{
@@ -91,7 +93,8 @@ func run(cfg shared.RuntimeConfig) error {
 		opts = []options.Option{
 			options.WithIssuer(cfg.Issuer),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
+			// FIXME: Remove when token validation is added
+			// options.WithRequiredClaims(requiredClaims),
 		}
 	case shared.OktaProvider:
 		inputs := map[string]string{
@@ -108,7 +111,8 @@ func run(cfg shared.RuntimeConfig) error {
 		opts = []options.Option{
 			options.WithIssuer(cfg.Issuer),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
+			// FIXME: Remove when token validation is added
+			// options.WithRequiredClaims(requiredClaims),
 		}
 	default:
 		return fmt.Errorf("unknown provider: %s", cfg.Provider)

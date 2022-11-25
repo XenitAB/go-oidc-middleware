@@ -21,10 +21,7 @@ func TestOptions(t *testing.T) {
 		LazyLoadJwks:               true,
 		RequiredTokenType:          "foo",
 		RequiredAudience:           "foo",
-		RequiredClaims: map[string]interface{}{
-			"foo": "bar",
-		},
-		DisableKeyID: true,
+		DisableKeyID:               true,
 		HttpClient: &http.Client{
 			Timeout: 1234 * time.Second,
 		},
@@ -57,9 +54,6 @@ func TestOptions(t *testing.T) {
 		WithLazyLoadJwks(true),
 		WithRequiredTokenType("foo"),
 		WithRequiredAudience("foo"),
-		WithRequiredClaims(map[string]interface{}{
-			"foo": "bar",
-		}),
 		WithDisableKeyID(true),
 		WithHttpClient(&http.Client{
 			Timeout: 1234 * time.Second,
