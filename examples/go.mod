@@ -14,7 +14,7 @@ require (
 	github.com/cristalhq/aconfig v0.18.3
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gofiber/fiber/v2 v2.40.1
-	github.com/labstack/echo/v4 v4.7.2
+	github.com/labstack/echo/v4 v4.9.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 )
@@ -31,7 +31,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
-	github.com/labstack/gommon v0.3.1 // indirect
+	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/lestrrat-go/backoff/v2 v2.0.8 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
