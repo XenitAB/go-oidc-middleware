@@ -350,12 +350,12 @@ func (td *testData) testValidateOpaqueTokenResponse(t *testing.T, tr *TokenRespo
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	var userInfoResponse TestUser
+	var userInfoResponse map[string]interface{}
 	err = json.Unmarshal(bodyBytes, &userInfoResponse)
 	require.NoError(t, err)
 
-	require.Equal(t, user.Audience, userInfoResponse.Audience)
-	require.Equal(t, user.Subject, userInfoResponse.Subject)
+	require.Equal(t, user.Audience, userInfoResponse["aud"])
+	require.Equal(t, user.Subject, userInfoResponse["sub"])
 
 	idToken, err := jwt.Parse([]byte(tr.IdToken), jwt.WithKeySet(td.publicKey))
 	require.NoError(t, err)

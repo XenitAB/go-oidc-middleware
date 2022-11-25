@@ -3,6 +3,7 @@ package optest
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"time"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -136,6 +137,31 @@ func (op *OPTest) newIdToken(id string, user TestUser, nonce string, now time.Ti
 	}
 
 	return string(signedToken), nil
+}
+
+func (op *OPTest) newUserinfoClaims(id string) (map[string]interface{}, error) {
+	user, ok := op.options.TestUsers[id]
+	if !ok {
+		return nil, fmt.Errorf("unable to find id")
+	}
+
+	c := map[string]interface{}{
+		jwt.IssuerKey:   op.options.Issuer,
+		jwt.AudienceKey: user.Audience,
+		jwt.SubjectKey:  user.Subject,
+		"name":          user.Name,
+		"given_name":    user.GivenName,
+		"family_name":   user.FamilyName,
+		"locale":        user.Locale,
+		"email":         user.Email,
+		"id":            id,
+	}
+
+	for k, v := range user.ExtraIdTokenClaims {
+		c[k] = v
+	}
+
+	return c, nil
 }
 
 func (op *OPTest) newOpaqueAccessToken(id string, user TestUser, nonce string) (string, error) {
