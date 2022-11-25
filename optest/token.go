@@ -24,15 +24,16 @@ type TestUser struct {
 	ExtraAccessTokenClaims map[string]interface{}
 }
 
-func (op *OPTest) newAccessToken(id string, user TestUser) (string, error) {
+func (op *OPTest) newAccessToken(id string, user TestUser, now time.Time) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 
 	c := map[string]interface{}{
 		jwt.IssuerKey:     op.options.Issuer,
 		jwt.AudienceKey:   user.Audience,
 		jwt.SubjectKey:    user.Subject,
-		jwt.ExpirationKey: time.Now().Add(op.options.TokenExpiration).Unix(),
-		jwt.NotBeforeKey:  time.Now().Unix(),
+		jwt.ExpirationKey: now.Add(op.options.TokenExpiration).Unix(),
+		jwt.NotBeforeKey:  now.Unix(),
+		jwt.IssuedAtKey:   now.Unix(),
 		"id":              id,
 	}
 
@@ -75,14 +76,15 @@ func (op *OPTest) newAccessToken(id string, user TestUser) (string, error) {
 	return access, nil
 }
 
-func (op *OPTest) newIdToken(id string, user TestUser) (string, error) {
+func (op *OPTest) newIdToken(id string, user TestUser, now time.Time) (string, error) {
 	privKey := op.jwks.getPrivateKey()
 	c := map[string]interface{}{
 		jwt.IssuerKey:     op.options.Issuer,
 		jwt.AudienceKey:   user.Audience,
 		jwt.SubjectKey:    user.Subject,
-		jwt.ExpirationKey: time.Now().Add(op.options.TokenExpiration).Unix(),
-		jwt.NotBeforeKey:  time.Now().Unix(),
+		jwt.ExpirationKey: now.Add(op.options.TokenExpiration).Unix(),
+		jwt.NotBeforeKey:  now.Unix(),
+		jwt.IssuedAtKey:   now.Unix(),
 		"name":            user.Name,
 		"given_name":      user.GivenName,
 		"family_name":     user.FamilyName,
@@ -137,7 +139,7 @@ func (op *OPTest) newOpaqueAccessToken(id string, user TestUser) (string, error)
 
 	opaqueTokenB64 := base64.RawURLEncoding.EncodeToString(opaqueTokenBytes)
 
-	jwtAccessToken, err := op.newAccessToken(id, user)
+	jwtAccessToken, err := op.newAccessToken(id, user, time.Now())
 	if err != nil {
 		return "", err
 	}

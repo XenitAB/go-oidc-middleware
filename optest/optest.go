@@ -136,11 +136,13 @@ func (op *OPTest) GetTokenByUser(id string) (*TokenResponse, error) {
 		return nil, fmt.Errorf("unable to find test user: %s", id)
 	}
 
+	now := time.Now()
+
 	var accessToken string
 	var err error
 	switch op.options.AccessTokenType {
 	case JwtAccessTokenType:
-		accessToken, err = op.newAccessToken(id, testUser)
+		accessToken, err = op.newAccessToken(id, testUser, now)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +155,7 @@ func (op *OPTest) GetTokenByUser(id string) (*TokenResponse, error) {
 		return nil, fmt.Errorf("unknown access token type: %T", op.options.AccessTokenType)
 	}
 
-	idToken, err := op.newIdToken(id, testUser)
+	idToken, err := op.newIdToken(id, testUser, now)
 	if err != nil {
 		return nil, err
 	}
