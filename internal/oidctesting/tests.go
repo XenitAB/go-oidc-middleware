@@ -21,7 +21,7 @@ type ServerTester interface {
 
 type tester interface {
 	NewHandlerFn(opts ...options.Option) http.Handler
-	ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler
+	ToHandlerFn(parseToken oidc.ParseTokenFunc[*optest.TestUser], opts ...options.Option) http.Handler
 	NewTestServer(opts ...options.Option) ServerTester
 }
 

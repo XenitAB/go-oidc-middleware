@@ -3,24 +3,23 @@ package oidctoken
 import (
 	"context"
 
-	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type TokenValidator interface {
-	oidc.TokenValidator
+type ClaimsValidator interface {
+	oidc.ClaimsValidator
 }
 
 // TokenHandler is used to parse tokens.
-type TokenHandler struct {
-	parseTokenFunc oidc.ParseTokenFunc
+type TokenHandler[T ClaimsValidator] struct {
+	parseTokenFunc oidc.ParseTokenFunc[T]
 	tokenOptions   *options.Options
 }
 
 // New returns an OpenID Connect (OIDC) discovery token handler.
 // Can be used to create your own middleware.
-func New[T TokenValidator](setters ...options.Option) (*TokenHandler, error) {
+func New[T ClaimsValidator](setters ...options.Option) (*TokenHandler[T], error) {
 	oidcHandler, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		return nil, err
@@ -28,7 +27,7 @@ func New[T TokenValidator](setters ...options.Option) (*TokenHandler, error) {
 
 	tokenOpts := options.New(setters...)
 
-	return &TokenHandler{
+	return &TokenHandler[T]{
 		parseTokenFunc: oidcHandler.ParseToken,
 		tokenOptions:   tokenOpts,
 	}, nil
@@ -36,13 +35,13 @@ func New[T TokenValidator](setters ...options.Option) (*TokenHandler, error) {
 
 // ParseToken takes a context and a string and returns a jwt.Token or an error.
 // jwt.Token is from `github.com/lestrrat-go/jwx/jwt`.
-func (t *TokenHandler) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
-	token, err := t.parseTokenFunc(ctx, tokenString)
+func (t *TokenHandler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
+	claims, err := t.parseTokenFunc(ctx, tokenString)
 	if err != nil {
-		return nil, err
+		return *new(T), err
 	}
 
-	return token, nil
+	return claims, nil
 }
 
 // GetTokenString takes a GetHeaderFn `func(key string) string` and [][]options.TokenStringOption and

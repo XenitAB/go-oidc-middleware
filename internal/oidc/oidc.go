@@ -22,11 +22,11 @@ var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
 )
 
-type TokenValidator interface {
+type ClaimsValidator interface {
 	Validate() error
 }
 
-type handler[T TokenValidator] struct {
+type handler[T ClaimsValidator] struct {
 	issuer                     string
 	discoveryUri               string
 	discoveryFetchTimeout      time.Duration
@@ -42,7 +42,7 @@ type handler[T TokenValidator] struct {
 	keyHandler                 *keyHandler
 }
 
-func NewHandler[T TokenValidator](setters ...options.Option) (*handler[T], error) {
+func NewHandler[T ClaimsValidator](setters ...options.Option) (*handler[T], error) {
 	opts := options.New(setters...)
 
 	h := &handler[T]{
@@ -110,19 +110,19 @@ func (h *handler[T]) SetDiscoveryUri(discoveryUri string) {
 	h.discoveryUri = discoveryUri
 }
 
-type ParseTokenFunc func(ctx context.Context, tokenString string) (jwt.Token, error)
+type ParseTokenFunc[T ClaimsValidator] func(ctx context.Context, tokenString string) (T, error)
 
-func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
+func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
 	if h.keyHandler == nil {
 		err := h.loadJwks()
 		if err != nil {
-			return nil, fmt.Errorf("unable to load jwks: %w", err)
+			return *new(T), fmt.Errorf("unable to load jwks: %w", err)
 		}
 	}
 
 	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, tokenString)
 	if !tokenTypeValid {
-		return nil, fmt.Errorf("token type %q required", h.requiredTokenType)
+		return *new(T), fmt.Errorf("token type %q required", h.requiredTokenType)
 	}
 
 	keyID := ""
@@ -130,18 +130,18 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (jwt.To
 		var err error
 		keyID, err = getKeyIDFromTokenString(tokenString)
 		if err != nil {
-			return nil, err
+			return *new(T), err
 		}
 	}
 
 	key, err := h.keyHandler.getKey(ctx, keyID)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get public key: %w", err)
+		return *new(T), fmt.Errorf("unable to get public key: %w", err)
 	}
 
 	alg, err := getSignatureAlgorithm(key.KeyType(), key.Algorithm(), h.fallbackSignatureAlgorithm)
 	if err != nil {
-		return nil, err
+		return *new(T), err
 	}
 
 	token, err := getAndValidateTokenFromString(tokenString, key, alg)
@@ -149,41 +149,56 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (jwt.To
 		if h.disableKeyID && errors.Is(err, errSignatureVerification) {
 			updatedKey, err := h.keyHandler.waitForUpdateKeySetAndGetKey(ctx)
 			if err != nil {
-				return nil, err
+				return *new(T), err
 			}
 
 			alg, err := getSignatureAlgorithm(key.KeyType(), key.Algorithm(), h.fallbackSignatureAlgorithm)
 			if err != nil {
-				return nil, err
+				return *new(T), err
 			}
 
 			token, err = getAndValidateTokenFromString(tokenString, updatedKey, alg)
 			if err != nil {
-				return nil, err
+				return *new(T), err
 			}
 		} else {
-			return nil, err
+			return *new(T), err
 		}
 	}
 
 	validExpiration := isTokenExpirationValid(token.Expiration(), h.allowedTokenDrift)
 	if !validExpiration {
-		return nil, fmt.Errorf("token has expired: %s", token.Expiration())
+		return *new(T), fmt.Errorf("token has expired: %s", token.Expiration())
 	}
 
 	validIssuer := isTokenIssuerValid(h.issuer, token.Issuer())
 	if !validIssuer {
-		return nil, fmt.Errorf("required issuer %q was not found, received: %s", h.issuer, token.Issuer())
+		return *new(T), fmt.Errorf("required issuer %q was not found, received: %s", h.issuer, token.Issuer())
 	}
 
 	validAudience := isTokenAudienceValid(h.requiredAudience, token.Audience())
 	if !validAudience {
-		return nil, fmt.Errorf("required audience %q was not found, received: %v", h.requiredAudience, token.Audience())
+		return *new(T), fmt.Errorf("required audience %q was not found, received: %v", h.requiredAudience, token.Audience())
 	}
 
-	// FIXME: Add token validation func
+	return h.jwtTokenToClaims(ctx, token)
+}
 
-	return token, nil
+func (h *handler[T]) jwtTokenToClaims(ctx context.Context, token jwt.Token) (T, error) {
+	rawClaims, err := token.AsMap(ctx)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to convert token to claims: %w", err)
+	}
+	claimsBytes, err := json.Marshal(rawClaims)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to marshal raw claims to json: %w", err)
+	}
+	claims := *new(T)
+	err = json.Unmarshal(claimsBytes, &claims)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to unmarshal claims from json: %w", err)
+	}
+	return claims, nil
 }
 
 func GetDiscoveryUriFromIssuer(issuer string) string {

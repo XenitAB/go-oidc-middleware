@@ -32,7 +32,7 @@ func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Req
 	tb.Helper()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(*optest.TestUser)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -94,7 +94,7 @@ func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return New[*optest.TestUser](handler, opts...)
 }
 
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*optest.TestUser], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)

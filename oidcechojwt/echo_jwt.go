@@ -8,13 +8,13 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type TokenValidator interface {
-	oidc.TokenValidator
+type ClaimsValidator interface {
+	oidc.ClaimsValidator
 }
 
 // New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
 // to be used with the the echo `JWT` middleware.
-func New[T TokenValidator](setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
+func New[T ClaimsValidator](setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
 	h, err := oidc.NewHandler[T](setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
@@ -31,25 +31,19 @@ func onError(errorHandler options.ErrorHandler, description options.ErrorDescrip
 	}
 }
 
-func toEchoJWTParseTokenFunc(parseToken oidc.ParseTokenFunc, setters ...options.Option) echoJWTParseTokenFunc {
+func toEchoJWTParseTokenFunc[T ClaimsValidator](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) echoJWTParseTokenFunc {
 	opts := options.New(setters...)
 
 	echoJWTParseTokenFunc := func(auth string, c echo.Context) (interface{}, error) {
 		ctx := c.Request().Context()
 
-		token, err := parseToken(ctx, auth)
+		claims, err := parseToken(ctx, auth)
 		if err != nil {
 			onError(opts.ErrorHandler, options.ParseTokenErrorDescription, err)
 			return nil, err
 		}
 
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			onError(opts.ErrorHandler, options.ConvertTokenErrorDescription, err)
-			return nil, err
-		}
-
-		return tokenClaims, nil
+		return claims, nil
 	}
 
 	return echoJWTParseTokenFunc

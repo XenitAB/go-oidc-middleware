@@ -34,7 +34,7 @@ func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Req
 	tb.Helper()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(*optest.TestUser)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -96,7 +96,7 @@ func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return testNew(h.tb, handler, opts...)
 }
 
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*optest.TestUser], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
@@ -131,7 +131,7 @@ func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Hand
 	return testToHttpHandler(tb, h, tokenHandler.ParseToken, setters...)
 }
 
-func testToHttpHandler(tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc, setters ...options.Option) http.Handler {
+func testToHttpHandler[T ClaimsValidator](tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
 	tb.Helper()
 
 	opts := options.New(setters...)
@@ -145,19 +145,13 @@ func testToHttpHandler(tb testing.TB, h http.Handler, parseToken oidc.ParseToken
 			return
 		}
 
-		token, err := parseToken(ctx, tokenString)
+		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
 			testOnError(tb, w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			testOnError(tb, w, opts.ErrorHandler, http.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
-			return
-		}
-
-		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, tokenClaims)
+		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, claims)
 		reqWithClaims := r.WithContext(ctxWithClaims)
 
 		h.ServeHTTP(w, reqWithClaims)

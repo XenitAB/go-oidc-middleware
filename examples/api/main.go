@@ -30,7 +30,7 @@ func main() {
 func run(cfg shared.RuntimeConfig) error {
 	var opts []options.Option
 
-	requiredClaims := make(map[string]interface{})
+	requiredClaims := make(*optest.TestUser)
 	for k, v := range cfg.RequiredClaims {
 		requiredClaims[k] = v
 	}

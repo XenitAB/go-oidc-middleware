@@ -7,12 +7,13 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/xenitab/go-oidc-middleware/optest"
 )
 
 type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
 
 func newEchoJWTClaimsHandler(c echo.Context) error {
-	claims, ok := c.Get("user").(map[string]interface{})
+	claims, ok := c.Get("user").(*optest.TestUser)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 	}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/xenitab/go-oidc-middleware/optest"
 )
 
 func newGinClaimsHandler() gin.HandlerFunc {
@@ -16,7 +17,7 @@ func newGinClaimsHandler() gin.HandlerFunc {
 			return
 		}
 
-		claims, ok := claimsValue.(map[string]interface{})
+		claims, ok := claimsValue.(*optest.TestUser)
 		if !ok {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return

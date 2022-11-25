@@ -35,7 +35,7 @@ func testGetFiberRouter(tb testing.TB, middleware fiber.Handler) *fiber.App {
 	app.Use(middleware)
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("claims").(map[string]interface{})
+		claims, ok := c.Locals("claims").(*optest.TestUser)
 		if !ok {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
@@ -104,7 +104,7 @@ func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	return newTestFiberHandler(h.tb, app)
 }
 
-func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*optest.TestUser], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	middleware := toFiberHandler(parseToken, opts...)
