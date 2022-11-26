@@ -6,6 +6,14 @@
 
 This is a middleware for http to make it easy to use OpenID Connect.
 
+## Changelog
+
+Below, large (breaking) changes will be documented:
+
+### v0.0.37
+
+From `v0.0.37` and forward, the `options.WithRequiredClaims()` has been deprecated and generics are used to provide the claims type. A new validation function can be provided instead of `options.WithRequiredClaims()`. If you don't need claims validation, you can pass `nil` instead of a `ClaimsValidationFn`.
+
 ## Stability notice
 
 This library is under active development and the api will have breaking changes until `v0.1.0` - after that only breaking changes will be introduced between minor versions (`v0.1.0` -> `v0.2.0`).
@@ -29,6 +37,43 @@ This library is under active development and the api will have breaking changes 
 
 Import: `"github.com/xenitab/go-oidc-middleware/options"`
 
+### Claims validation example
+
+From `v0.0.37` and forward, claim validation is done using a `ClaimsValidationFn`. The below examples will use the following claims type and validation function:
+
+```go
+type AzureADClaims struct {
+	Aio               string    `json:"aio"`
+	Audience          []string  `json:"aud"`
+	Azp               string    `json:"azp"`
+	Azpacr            string    `json:"azpacr"`
+	ExpiresAt         time.Time `json:"exp"`
+	IssuedAt          time.Time `json:"iat"`
+	Idp               string    `json:"idp"`
+	Issuer            string    `json:"iss"`
+	Name              string    `json:"name"`
+	NotBefore         time.Time `json:"nbf"`
+	Oid               string    `json:"oid"`
+	PreferredUsername string    `json:"preferred_username"`
+	Rh                string    `json:"rh"`
+	Scope             string    `json:"scp"`
+	Subject           string    `json:"sub"`
+	TenantId          string    `json:"tid"`
+	Uti               string    `json:"uti"`
+	TokenVersion      string    `json:"ver"`
+}
+
+func GetAzureADClaimsValidationFn(requiredTenantId string) options.ClaimsValidationFn[AzureADClaims] {
+	return func(claims *AzureADClaims) error {
+		if requiredTenantId != "" && claims.TenantId != requiredTenantId {
+			return fmt.Errorf("tid claim is required to be %q but was: %s", requiredTenantId, claims.TenantId)
+		}
+
+		return nil
+	}
+}
+```
+
 ### net/http, mux & chi
 
 **Import**
@@ -39,13 +84,11 @@ Import: `"github.com/xenitab/go-oidc-middleware/options"`
 
 ```go
 oidcHandler := oidchttp.New(h,
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithRequiredTokenType("JWT"),
 	options.WithRequiredAudience(cfg.Audience),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"tid": cfg.TenantID,
-	}),
 )
 ```
 
@@ -54,7 +97,7 @@ oidcHandler := oidchttp.New(h,
 ```go
 func newClaimsHandler() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(AzureADClaims)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -82,13 +125,11 @@ func newClaimsHandler() http.HandlerFunc {
 
 ```go
 oidcHandler := oidcgin.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithRequiredTokenType("JWT"),
 	options.WithRequiredAudience(cfg.Audience),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"tid": cfg.TenantID,
-	}),
 )
 ```
 
@@ -103,7 +144,7 @@ func newClaimsHandler() gin.HandlerFunc {
 			return
 		}
 
-		claims, ok := claimsValue.(map[string]interface{})
+		claims, ok := claimsValue.(AzureADClaims)
 		if !ok {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
@@ -124,13 +165,11 @@ func newClaimsHandler() gin.HandlerFunc {
 
 ```go
 oidcHandler := oidcfiber.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithRequiredTokenType("JWT"),
 	options.WithRequiredAudience(cfg.Audience),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"tid": cfg.TenantID,
-	}),
 )
 ```
 
@@ -139,7 +178,7 @@ oidcHandler := oidcfiber.New(
 ```go
 func newClaimsHandler() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("claims").(map[string]interface{})
+		claims, ok := c.Locals("claims").(AzureADClaims)
 		if !ok {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
@@ -160,13 +199,11 @@ func newClaimsHandler() fiber.Handler {
 ```go
 e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
     ParseTokenFunc: oidcechojwt.New(
+		GetAzureADClaimsValidationFn(cfg.TenantID),
 		options.WithIssuer(cfg.Issuer),
 		options.WithRequiredTokenType("JWT"),
 		options.WithRequiredAudience(cfg.Audience),
 		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-		options.WithRequiredClaims(map[string]interface{}{
-			"tid": cfg.TenantID,
-		}),
 	),
 }))
 ```
@@ -175,7 +212,7 @@ e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 
 ```go
 func newClaimsHandler(c echo.Context) error {
-	claims, ok := c.Get("user").(map[string]interface{})
+	claims, ok := c.Get("user").(AzureADClaims)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 	}
@@ -194,13 +231,11 @@ func newClaimsHandler(c echo.Context) error {
 
 ```go
 oidcTokenHandler := oidctoken.New(h,
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithRequiredTokenType("JWT"),
 	options.WithRequiredAudience(cfg.Audience),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"tid": cfg.TenantID,
-	}),
 )
 
 // oidctoken.GetTokenString is optional, but you will need the JWT token as a string
@@ -216,43 +251,6 @@ if err != nil {
 ```
 
 ## Other options
-
-### Deeply nested required claims
-
-If you want to use `options.WithRequiredClaims()` with nested values, you need to specify the actual type when configuring it and not an interface and the middleware will use this to infer what types the token claims are.
-
-Example claims could look like this:
-
-```json
-{
-  "foo": {
-    "bar": ["uno", "dos", "baz", "tres"]
-  }
-}
-```
-
-This would then be interpreted as the following inside the code:
-
-```go
-"foo": map[string]interface {}{
-	"bar":[]interface {}{
-		"uno",
-		"dos",
-		"baz",
-		"tres"
-	},
-}
-```
-
-If you want to require the claim `foo.bar` to contain the value `baz`, it would look like this:
-
-```go
-options.WithRequiredClaims(map[string]interface{}{
-	"foo": map[string][]string{
-		"bar": {"baz"},
-	}
-})
-```
 
 ### Extract token from multiple headers
 
