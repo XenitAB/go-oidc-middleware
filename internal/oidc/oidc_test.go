@@ -655,7 +655,7 @@ func TestParseToken(t *testing.T) {
 
 		keySets.setKeys(testNewKeySet(t, c.numKeys, opts.DisableKeyID))
 
-		h, err := NewHandler[*testClaims](nil, c.options...)
+		h, err := NewHandler[testClaims](nil, c.options...)
 		require.NoError(t, err)
 
 		parseTokenFunc := h.ParseToken
@@ -706,7 +706,7 @@ func TestParseTokenWithKeyID(t *testing.T) {
 		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler[*testClaims](nil, opts...)
+	h, err := NewHandler[testClaims](nil, opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken
@@ -793,7 +793,7 @@ func TestParseTokenWithoutKeyID(t *testing.T) {
 		options.WithJwksRateLimit(100),
 	}
 
-	h, err := NewHandler[*testClaims](nil, opts...)
+	h, err := NewHandler[testClaims](nil, opts...)
 	require.NoError(t, err)
 
 	parseTokenFunc := h.ParseToken

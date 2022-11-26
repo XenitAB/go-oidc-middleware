@@ -23,7 +23,7 @@ type ServerTester interface {
 
 type tester interface {
 	NewHandlerFn(opts ...options.Option) http.Handler
-	ToHandlerFn(parseToken oidc.ParseTokenFunc[*TestClaims], opts ...options.Option) http.Handler
+	ToHandlerFn(parseToken oidc.ParseTokenFunc[TestClaims], opts ...options.Option) http.Handler
 	NewTestServer(opts ...options.Option) ServerTester
 }
 
@@ -165,7 +165,7 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 		op := optest.NewTesting(t)
 		defer op.Close(t)
 
-		oidcHandler, err := oidc.NewHandler[*TestClaims](
+		oidcHandler, err := oidc.NewHandler[TestClaims](
 			nil,
 			options.WithIssuer("http://foo.bar/baz"),
 			options.WithRequiredAudience("test-client"),
@@ -301,7 +301,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			options.WithErrorHandler(errorHandler),
 		}
 
-		oidcHandler, err := oidc.NewHandler[*TestClaims](nil, opts...)
+		oidcHandler, err := oidc.NewHandler[TestClaims](nil, opts...)
 		require.NoError(t, err)
 
 		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)
