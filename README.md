@@ -272,11 +272,9 @@ Example for `Authorization` and `Foo` headers. If token is found in `Authorizati
 
 ```go
 oidcHandler := oidcgin.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"cid": cfg.ClientID,
-	}),
 	options.WithTokenString(
 		options.WithTokenStringHeaderName("Authorization"),
 		options.WithTokenStringTokenPrefix("Bearer "),
@@ -296,11 +294,9 @@ The following would be used by a the Kubernetes api server, where the kubernetes
 
 ```go
 oidcHandler := oidcgin.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"cid": cfg.ClientID,
-	}),
 	options.WithTokenString(
 		options.WithTokenStringHeaderName("Authorization"),
 		options.WithTokenStringTokenPrefix("Bearer "),
@@ -331,11 +327,9 @@ errorHandler := func(description options.ErrorDescription, err error) {
 }
 
 oidcHandler := oidcgin.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
 	options.WithIssuer(cfg.Issuer),
 	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	options.WithRequiredClaims(map[string]interface{}{
-		"cid": cfg.ClientID,
-	}),
 	options.WithErrorHandler(errorHandler),
 )
 ```
@@ -360,6 +354,7 @@ func TestFoobar(t *testing.T) {
 	[...]
 
 	oidcHandler := oidchttp.New(h,
+		GetAzureADClaimsValidationFn(cfg.TenantID),
 		options.WithIssuer(op.GetURL(t)),
 		options.WithRequiredTokenType("JWT+AT"),
 		options.WithRequiredAudience("test-client"),

@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+// ClaimsValidationFn is a generic function to validate calims.
+// If an error is returned, the claims failed the validation.
+// If `nil` is provided instead of a function when configuration the handler,
+// no additional validation of the claims will be done.
 type ClaimsValidationFn[T any] func(*T) error
 
 // ClaimsContextKeyName is the type for they key value used to pass claims using request context.
