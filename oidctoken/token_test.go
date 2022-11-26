@@ -122,7 +122,7 @@ func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.Erro
 func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Handler {
 	tb.Helper()
 
-	tokenHandler, err := New[*oidctesting.TestClaims](setters...)
+	tokenHandler, err := New[*oidctesting.TestClaims](nil, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -130,7 +130,7 @@ func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Hand
 	return testToHttpHandler(tb, h, tokenHandler.ParseToken, setters...)
 }
 
-func testToHttpHandler[T ClaimsValidator](tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
+func testToHttpHandler[T any](tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
 	tb.Helper()
 
 	opts := options.New(setters...)

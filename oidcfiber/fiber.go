@@ -8,14 +8,10 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type ClaimsValidator interface {
-	oidc.ClaimsValidator
-}
-
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `fiber`.
-func New[T ClaimsValidator](setters ...options.Option) fiber.Handler {
-	oidcHandler, err := oidc.NewHandler[T](setters...)
+func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) fiber.Handler {
+	oidcHandler, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -31,7 +27,7 @@ func onError(c *fiber.Ctx, errorHandler options.ErrorHandler, statusCode int, de
 	return c.SendStatus(statusCode)
 }
 
-func toFiberHandler[T ClaimsValidator](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) fiber.Handler {
+func toFiberHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) fiber.Handler {
 	opts := options.New(setters...)
 
 	return func(c *fiber.Ctx) error {

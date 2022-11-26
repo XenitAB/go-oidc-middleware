@@ -9,14 +9,10 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type ClaimsValidator interface {
-	oidc.ClaimsValidator
-}
-
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `net/http`, `mux` and `chi`.
-func New[T ClaimsValidator](h http.Handler, setters ...options.Option) http.Handler {
-	oidcHandler, err := oidc.NewHandler[T](setters...)
+func New[T any](h http.Handler, claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) http.Handler {
+	oidcHandler, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -32,7 +28,7 @@ func onError(w http.ResponseWriter, errorHandler options.ErrorHandler, statusCod
 	w.WriteHeader(statusCode)
 }
 
-func toHttpHandler[T ClaimsValidator](h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
+func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
 	opts := options.New(setters...)
 
 	fn := func(w http.ResponseWriter, r *http.Request) {

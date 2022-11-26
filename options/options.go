@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type ClaimsValidationFn[T any] func(*T) error
+
 // ClaimsContextKeyName is the type for they key value used to pass claims using request context.
 // Using separate type because of the following: https://staticcheck.io/docs/checks#SA1029
 type ClaimsContextKeyName string

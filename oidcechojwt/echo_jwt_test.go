@@ -108,7 +108,7 @@ func newTestHandler(tb testing.TB) *testHandler {
 func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	echoParseToken := New[*oidctesting.TestClaims](opts...)
+	echoParseToken := New[*oidctesting.TestClaims](nil, opts...)
 	return testGetEchoRouter(h.tb, echoParseToken)
 }
 
@@ -122,6 +122,6 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*oidctesting.Te
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	echoParseToken := New[*oidctesting.TestClaims](opts...)
+	echoParseToken := New[*oidctesting.TestClaims](nil, opts...)
 	return newTestServer(h.tb, testGetEchoRouter(h.tb, echoParseToken))
 }

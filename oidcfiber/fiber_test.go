@@ -97,7 +97,7 @@ func newTestHandler(tb testing.TB) *testHandler {
 func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := New[*oidctesting.TestClaims](opts...)
+	middleware := New[*oidctesting.TestClaims](nil, opts...)
 	app := testGetFiberRouter(h.tb, middleware)
 
 	return newTestFiberHandler(h.tb, app)
@@ -115,7 +115,7 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*oidctesting.Te
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	middleware := New[*oidctesting.TestClaims](opts...)
+	middleware := New[*oidctesting.TestClaims](nil, opts...)
 	app := testGetFiberRouter(h.tb, middleware)
 
 	return newTestServer(h.tb, app)

@@ -16,10 +16,6 @@ import (
 
 type TestClaims map[string]interface{}
 
-func (c *TestClaims) Validate() error {
-	return nil
-}
-
 type ServerTester interface {
 	Close()
 	URL() string
@@ -170,6 +166,7 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 		defer op.Close(t)
 
 		oidcHandler, err := oidc.NewHandler[*TestClaims](
+			nil,
 			options.WithIssuer("http://foo.bar/baz"),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
@@ -304,7 +301,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			options.WithErrorHandler(errorHandler),
 		}
 
-		oidcHandler, err := oidc.NewHandler[*TestClaims](opts...)
+		oidcHandler, err := oidc.NewHandler[*TestClaims](nil, opts...)
 		require.NoError(t, err)
 
 		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)

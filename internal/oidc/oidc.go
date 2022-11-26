@@ -22,11 +22,7 @@ var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
 )
 
-type ClaimsValidator interface {
-	Validate() error
-}
-
-type handler[T ClaimsValidator] struct {
+type handler[T any] struct {
 	issuer                     string
 	discoveryUri               string
 	discoveryFetchTimeout      time.Duration
@@ -40,9 +36,10 @@ type handler[T ClaimsValidator] struct {
 	disableKeyID               bool
 	httpClient                 *http.Client
 	keyHandler                 *keyHandler
+	claimsValidationFn         options.ClaimsValidationFn[T]
 }
 
-func NewHandler[T ClaimsValidator](setters ...options.Option) (*handler[T], error) {
+func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (*handler[T], error) {
 	opts := options.New(setters...)
 
 	h := &handler[T]{
@@ -57,6 +54,7 @@ func NewHandler[T ClaimsValidator](setters ...options.Option) (*handler[T], erro
 		requiredAudience:      opts.RequiredAudience,
 		disableKeyID:          opts.DisableKeyID,
 		httpClient:            opts.HttpClient,
+		claimsValidationFn:    claimsValidationFn,
 	}
 
 	if h.issuer == "" {
@@ -110,7 +108,7 @@ func (h *handler[T]) SetDiscoveryUri(discoveryUri string) {
 	h.discoveryUri = discoveryUri
 }
 
-type ParseTokenFunc[T ClaimsValidator] func(ctx context.Context, tokenString string) (T, error)
+type ParseTokenFunc[T any] func(ctx context.Context, tokenString string) (T, error)
 
 func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
 	if h.keyHandler == nil {
@@ -186,7 +184,7 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		return *new(T), fmt.Errorf("unable to convert jwt.Token to claims: %w", err)
 	}
 
-	err = claims.Validate()
+	err = h.validateClaims(&claims)
 	if err != nil {
 		return *new(T), fmt.Errorf("claims validation returned an error: %w", err)
 	}
@@ -194,20 +192,31 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 	return claims, nil
 }
 
+func (h *handler[T]) validateClaims(claims *T) error {
+	if h.claimsValidationFn == nil {
+		return nil
+	}
+
+	return h.claimsValidationFn(claims)
+}
+
 func (h *handler[T]) jwtTokenToClaims(ctx context.Context, token jwt.Token) (T, error) {
 	rawClaims, err := token.AsMap(ctx)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to convert token to claims: %w", err)
 	}
+
 	claimsBytes, err := json.Marshal(rawClaims)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to marshal raw claims to json: %w", err)
 	}
+
 	claims := *new(T)
 	err = json.Unmarshal(claimsBytes, &claims)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to unmarshal claims from json: %w", err)
 	}
+
 	return claims, nil
 }
 

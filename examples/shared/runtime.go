@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cristalhq/aconfig"
+	"github.com/xenitab/go-oidc-middleware/options"
 )
 
 type Server string
@@ -52,6 +53,10 @@ type RuntimeConfig struct {
 	Audience                   string   `flag:"token-audience" env:"TOKEN_AUDIENCE" usage:"the audience that tokens need to contain"`
 	ClientID                   string   `flag:"client-id" env:"CLIENT_ID" usage:"the client id that tokens need to contain"`
 	FallbackSignatureAlgorithm string   `flag:"fallback-signature-algorithm" env:"FALLBACK_SIGNATURE_ALGORITHM" default:"RS256" usage:"if the issue jwks doesn't contain key alg, use the following signature algorithm to verify the signature of the tokens"`
+	RequiredAuth0ClientId      string   `flag:"required-auth0-client-id" env:"REQUIRED_AUTH0_CLIENT_ID" usage:"the required Auth0 Client ID"`
+	RequiredAzureADTenantId    string   `flag:"required-azure-ad-tenant-id" env:"REQUIRED_AZURE_AD_TENANT_ID" usage:"the required Azure AD Tenant ID"`
+	RequiredCognitoClientId    string   `flag:"required-cognito-client-id" env:"REQUIRED_COGNITO_CLIENT_ID" usage:"the required Cognito Client ID"`
+	RequiredOktaClientId       string   `flag:"required-okta-client-id" env:"REQUIRED_OKTA_CLIENT_ID" usage:"the required Okta Client ID"`
 }
 
 func NewRuntimeConfig() (RuntimeConfig, error) {
@@ -86,7 +91,7 @@ func NewRuntimeConfig() (RuntimeConfig, error) {
 
 type Auth0Claims struct {
 	Audience  []string  `json:"aud"`
-	Azp       string    `json:"azp"`
+	ClientId  string    `json:"azp"`
 	ExpiresAt time.Time `json:"exp"`
 	IssuedAt  time.Time `json:"iat"`
 	Issuer    string    `json:"iss"`
@@ -94,20 +99,93 @@ type Auth0Claims struct {
 	Subject   string    `json:"sub"`
 }
 
-var GlobalRequiredAuth0AzpClaim = ""
+func GetAuth0ClaimsValidationFn(requiredClientId string) options.ClaimsValidationFn[Auth0Claims] {
+	return func(claims *Auth0Claims) error {
+		if requiredClientId != "" && claims.ClientId != requiredClientId {
+			return fmt.Errorf("azp claim is required to be %q but was: %s", requiredClientId, claims.ClientId)
+		}
 
-// --required-claims azp:${CLIENT_ID}
-func (c *Auth0Claims) Validate() error {
-	fmt.Println(GlobalRequiredAuth0AzpClaim)
-	if GlobalRequiredAuth0AzpClaim != "" && c.Azp != GlobalRequiredAuth0AzpClaim {
-		return fmt.Errorf("azp claim is required to be: %s", GlobalRequiredAuth0AzpClaim)
+		return nil
 	}
-
-	return nil
 }
 
-type Claims map[string]interface{}
+type AzureADClaims struct {
+	Aio               string    `json:"aio"`
+	Audience          []string  `json:"aud"`
+	Azp               string    `json:"azp"`
+	Azpacr            string    `json:"azpacr"`
+	ExpiresAt         time.Time `json:"exp"`
+	IssuedAt          time.Time `json:"iat"`
+	Idp               string    `json:"idp"`
+	Issuer            string    `json:"iss"`
+	Name              string    `json:"name"`
+	NotBefore         time.Time `json:"nbf"`
+	Oid               string    `json:"oid"`
+	PreferredUsername string    `json:"preferred_username"`
+	Rh                string    `json:"rh"`
+	Scope             string    `json:"scp"`
+	Subject           string    `json:"sub"`
+	TenantId          string    `json:"tid"`
+	Uti               string    `json:"uti"`
+	TokenVersion      string    `json:"ver"`
+}
 
-func (c *Claims) Validate() error {
-	return nil
+func GetAzureADClaimsValidationFn(requiredTenantId string) options.ClaimsValidationFn[AzureADClaims] {
+	return func(claims *AzureADClaims) error {
+		if requiredTenantId != "" && claims.TenantId != requiredTenantId {
+			return fmt.Errorf("tid claim is required to be %q but was: %s", requiredTenantId, claims.TenantId)
+		}
+
+		return nil
+	}
+}
+
+type CognitoClaims struct {
+	AuthTime  int64     `json:"auth_time"`
+	ClientId  string    `json:"client_id"`
+	EventId   string    `json:"event_id"`
+	ExpiresAt time.Time `json:"exp"`
+	IssuedAt  time.Time `json:"iat"`
+	Issuer    string    `json:"iss"`
+	Jti       string    `json:"jti"`
+	OriginJti string    `json:"origin_jti"`
+	Scope     string    `json:"scope"`
+	Subject   string    `json:"sub"`
+	TokenUse  string    `json:"token_use"`
+	Username  string    `json:"username"`
+	Version   int       `json:"version"`
+}
+
+func GetCognitoClaimsValidationFn(requiredClientId string) options.ClaimsValidationFn[CognitoClaims] {
+	return func(claims *CognitoClaims) error {
+		if requiredClientId != "" && claims.ClientId != requiredClientId {
+			return fmt.Errorf("client_id claim is required to be %q but was: %s", requiredClientId, claims.ClientId)
+		}
+
+		return nil
+	}
+}
+
+type OktaClaims struct {
+	Audience  []string  `json:"aud"`
+	AuthTime  int64     `json:"auth_time"`
+	ClientId  string    `json:"cid"`
+	ExpiresAt time.Time `json:"exp"`
+	IssuedAt  time.Time `json:"iat"`
+	Issuer    string    `json:"iss"`
+	Jti       string    `json:"jti"`
+	Scope     []string  `json:"scp"`
+	Subject   string    `json:"sub"`
+	Uid       string    `json:"uid"`
+	Version   int       `json:"ver"`
+}
+
+func GetOktaClaimsValidationFn(requiredClientId string) options.ClaimsValidationFn[OktaClaims] {
+	return func(claims *OktaClaims) error {
+		if requiredClientId != "" && claims.ClientId != requiredClientId {
+			return fmt.Errorf("cid claim is required to be %q but was: %s", requiredClientId, claims.ClientId)
+		}
+
+		return nil
+	}
 }

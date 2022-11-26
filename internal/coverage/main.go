@@ -12,16 +12,12 @@ import (
 
 type testClaims map[string]interface{}
 
-func (c *testClaims) Validate() error {
-	return nil
-}
-
 func main() {
 	f := &foo{}
-	_ = oidcechojwt.New[*testClaims]()
-	_ = oidcfiber.New[*testClaims]()
-	_ = oidcgin.New[*testClaims]()
-	_ = oidchttp.New[*testClaims](f)
+	_ = oidcechojwt.New[testClaims](nil)
+	_ = oidcfiber.New[testClaims](nil)
+	_ = oidcgin.New[testClaims](nil)
+	_ = oidchttp.New[testClaims](f, nil)
 	_ = options.New()
 }
 

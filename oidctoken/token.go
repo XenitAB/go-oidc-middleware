@@ -7,20 +7,16 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type ClaimsValidator interface {
-	oidc.ClaimsValidator
-}
-
 // TokenHandler is used to parse tokens.
-type TokenHandler[T ClaimsValidator] struct {
+type TokenHandler[T any] struct {
 	parseTokenFunc oidc.ParseTokenFunc[T]
 	tokenOptions   *options.Options
 }
 
 // New returns an OpenID Connect (OIDC) discovery token handler.
 // Can be used to create your own middleware.
-func New[T ClaimsValidator](setters ...options.Option) (*TokenHandler[T], error) {
-	oidcHandler, err := oidc.NewHandler[T](setters...)
+func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (*TokenHandler[T], error) {
+	oidcHandler, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		return nil, err
 	}

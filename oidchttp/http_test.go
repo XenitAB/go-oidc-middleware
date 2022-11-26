@@ -90,7 +90,7 @@ func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return New[*oidctesting.TestClaims](handler, opts...)
+	return New[*oidctesting.TestClaims](handler, nil, opts...)
 }
 
 func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[*oidctesting.TestClaims], opts ...options.Option) http.Handler {
@@ -104,5 +104,5 @@ func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.Serv
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return newTestServer(h.tb, New[*oidctesting.TestClaims](handler, opts...))
+	return newTestServer(h.tb, New[*oidctesting.TestClaims](handler, nil, opts...))
 }

@@ -8,14 +8,10 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type ClaimsValidator interface {
-	oidc.ClaimsValidator
-}
-
 // New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
 // to be used with the the echo `JWT` middleware.
-func New[T ClaimsValidator](setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
-	h, err := oidc.NewHandler[T](setters...)
+func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
+	h, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -31,7 +27,7 @@ func onError(errorHandler options.ErrorHandler, description options.ErrorDescrip
 	}
 }
 
-func toEchoJWTParseTokenFunc[T ClaimsValidator](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) echoJWTParseTokenFunc {
+func toEchoJWTParseTokenFunc[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) echoJWTParseTokenFunc {
 	opts := options.New(setters...)
 
 	echoJWTParseTokenFunc := func(auth string, c echo.Context) (interface{}, error) {
