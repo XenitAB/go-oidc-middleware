@@ -2,7 +2,7 @@ module github.com/xenitab/go-oidc-middleware/oidcgin
 
 go 1.19
 
-require github.com/xenitab/go-oidc-middleware v0.0.36
+require github.com/xenitab/go-oidc-middleware v0.0.37
 
 require github.com/gin-gonic/gin v1.8.1
 
@@ -31,7 +31,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
-	github.com/zclconf/go-cty v1.12.1 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
