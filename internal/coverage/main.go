@@ -10,12 +10,14 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type testClaims map[string]interface{}
+
 func main() {
 	f := &foo{}
-	_ = oidcechojwt.New()
-	_ = oidcfiber.New()
-	_ = oidcgin.New()
-	_ = oidchttp.New(f)
+	_ = oidcechojwt.New[testClaims](nil)
+	_ = oidcfiber.New[testClaims](nil)
+	_ = oidcgin.New[testClaims](nil)
+	_ = oidchttp.New[testClaims](f, nil)
 	_ = options.New()
 }
 

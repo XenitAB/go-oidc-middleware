@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func newGinClaimsHandler() gin.HandlerFunc {
+func newGinClaimsHandler[T any]() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		claimsValue, found := c.Get("claims")
 		if !found {
@@ -16,7 +16,7 @@ func newGinClaimsHandler() gin.HandlerFunc {
 			return
 		}
 
-		claims, ok := claimsValue.(map[string]interface{})
+		claims, ok := claimsValue.(T)
 		if !ok {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
@@ -26,7 +26,7 @@ func newGinClaimsHandler() gin.HandlerFunc {
 	}
 }
 
-func RunGin(oidcHandler gin.HandlerFunc, address string, port int) error {
+func RunGin[T any](oidcHandler gin.HandlerFunc, address string, port int) error {
 	addr := net.JoinHostPort(address, fmt.Sprintf("%d", port))
 
 	gin.SetMode(gin.ReleaseMode)
@@ -34,7 +34,7 @@ func RunGin(oidcHandler gin.HandlerFunc, address string, port int) error {
 
 	r.Use(oidcHandler)
 
-	claimsHandler := newGinClaimsHandler()
+	claimsHandler := newGinClaimsHandler[T]()
 	r.GET("/", claimsHandler)
 
 	return r.Run(addr)

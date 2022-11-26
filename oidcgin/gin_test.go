@@ -42,7 +42,7 @@ func testGetGinRouter(tb testing.TB, middleware gin.HandlerFunc) *gin.Engine {
 			return
 		}
 
-		claims, ok := claimsValue.(map[string]interface{})
+		claims, ok := claimsValue.(oidctesting.TestClaims)
 		if !ok {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
@@ -94,14 +94,14 @@ func newTestHandler(tb testing.TB) *testHandler {
 	}
 }
 
-func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := New(opts...)
+	middleware := New(claimsValidationFn, opts...)
 	return testGetGinRouter(h.tb, middleware)
 }
 
-func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	middleware := toGinHandler(parseToken, opts...)
@@ -111,6 +111,6 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...option
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	middleware := New(opts...)
+	middleware := New[oidctesting.TestClaims](nil, opts...)
 	return newTestServer(h.tb, testGetGinRouter(h.tb, middleware))
 }

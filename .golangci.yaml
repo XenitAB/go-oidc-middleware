@@ -99,6 +99,8 @@ linters-settings:
       - truncatecmp
       - ruleguard
       - nestingreduce
+    disabled-checks:
+      - newDeref
     enabled-tags:
       - performance
     disabled-tags:

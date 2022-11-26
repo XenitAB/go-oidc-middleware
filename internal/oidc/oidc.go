@@ -22,7 +22,7 @@ var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
 )
 
-type handler struct {
+type handler[T any] struct {
 	issuer                     string
 	discoveryUri               string
 	discoveryFetchTimeout      time.Duration
@@ -33,17 +33,16 @@ type handler struct {
 	allowedTokenDrift          time.Duration
 	requiredAudience           string
 	requiredTokenType          string
-	requiredClaims             map[string]interface{}
 	disableKeyID               bool
 	httpClient                 *http.Client
-
-	keyHandler *keyHandler
+	keyHandler                 *keyHandler
+	claimsValidationFn         options.ClaimsValidationFn[T]
 }
 
-func NewHandler(setters ...options.Option) (*handler, error) {
+func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (*handler[T], error) {
 	opts := options.New(setters...)
 
-	h := &handler{
+	h := &handler[T]{
 		issuer:                opts.Issuer,
 		discoveryUri:          opts.DiscoveryUri,
 		discoveryFetchTimeout: opts.DiscoveryFetchTimeout,
@@ -53,9 +52,9 @@ func NewHandler(setters ...options.Option) (*handler, error) {
 		allowedTokenDrift:     opts.AllowedTokenDrift,
 		requiredTokenType:     opts.RequiredTokenType,
 		requiredAudience:      opts.RequiredAudience,
-		requiredClaims:        opts.RequiredClaims,
 		disableKeyID:          opts.DisableKeyID,
 		httpClient:            opts.HttpClient,
+		claimsValidationFn:    claimsValidationFn,
 	}
 
 	if h.issuer == "" {
@@ -82,7 +81,7 @@ func NewHandler(setters ...options.Option) (*handler, error) {
 	return h, nil
 }
 
-func (h *handler) loadJwks() error {
+func (h *handler[T]) loadJwks() error {
 	if h.jwksUri == "" {
 		jwksUri, err := getJwksUriFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 		if err != nil {
@@ -101,27 +100,27 @@ func (h *handler) loadJwks() error {
 	return nil
 }
 
-func (h *handler) SetIssuer(issuer string) {
+func (h *handler[T]) SetIssuer(issuer string) {
 	h.issuer = issuer
 }
 
-func (h *handler) SetDiscoveryUri(discoveryUri string) {
+func (h *handler[T]) SetDiscoveryUri(discoveryUri string) {
 	h.discoveryUri = discoveryUri
 }
 
-type ParseTokenFunc func(ctx context.Context, tokenString string) (jwt.Token, error)
+type ParseTokenFunc[T any] func(ctx context.Context, tokenString string) (T, error)
 
-func (h *handler) ParseToken(ctx context.Context, tokenString string) (jwt.Token, error) {
+func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
 	if h.keyHandler == nil {
 		err := h.loadJwks()
 		if err != nil {
-			return nil, fmt.Errorf("unable to load jwks: %w", err)
+			return *new(T), fmt.Errorf("unable to load jwks: %w", err)
 		}
 	}
 
 	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, tokenString)
 	if !tokenTypeValid {
-		return nil, fmt.Errorf("token type %q required", h.requiredTokenType)
+		return *new(T), fmt.Errorf("token type %q required", h.requiredTokenType)
 	}
 
 	keyID := ""
@@ -129,18 +128,18 @@ func (h *handler) ParseToken(ctx context.Context, tokenString string) (jwt.Token
 		var err error
 		keyID, err = getKeyIDFromTokenString(tokenString)
 		if err != nil {
-			return nil, err
+			return *new(T), err
 		}
 	}
 
 	key, err := h.keyHandler.getKey(ctx, keyID)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get public key: %w", err)
+		return *new(T), fmt.Errorf("unable to get public key: %w", err)
 	}
 
 	alg, err := getSignatureAlgorithm(key.KeyType(), key.Algorithm(), h.fallbackSignatureAlgorithm)
 	if err != nil {
-		return nil, err
+		return *new(T), err
 	}
 
 	token, err := getAndValidateTokenFromString(tokenString, key, alg)
@@ -148,51 +147,77 @@ func (h *handler) ParseToken(ctx context.Context, tokenString string) (jwt.Token
 		if h.disableKeyID && errors.Is(err, errSignatureVerification) {
 			updatedKey, err := h.keyHandler.waitForUpdateKeySetAndGetKey(ctx)
 			if err != nil {
-				return nil, err
+				return *new(T), err
 			}
 
 			alg, err := getSignatureAlgorithm(key.KeyType(), key.Algorithm(), h.fallbackSignatureAlgorithm)
 			if err != nil {
-				return nil, err
+				return *new(T), err
 			}
 
 			token, err = getAndValidateTokenFromString(tokenString, updatedKey, alg)
 			if err != nil {
-				return nil, err
+				return *new(T), err
 			}
 		} else {
-			return nil, err
+			return *new(T), err
 		}
 	}
 
 	validExpiration := isTokenExpirationValid(token.Expiration(), h.allowedTokenDrift)
 	if !validExpiration {
-		return nil, fmt.Errorf("token has expired: %s", token.Expiration())
+		return *new(T), fmt.Errorf("token has expired: %s", token.Expiration())
 	}
 
 	validIssuer := isTokenIssuerValid(h.issuer, token.Issuer())
 	if !validIssuer {
-		return nil, fmt.Errorf("required issuer %q was not found, received: %s", h.issuer, token.Issuer())
+		return *new(T), fmt.Errorf("required issuer %q was not found, received: %s", h.issuer, token.Issuer())
 	}
 
 	validAudience := isTokenAudienceValid(h.requiredAudience, token.Audience())
 	if !validAudience {
-		return nil, fmt.Errorf("required audience %q was not found, received: %v", h.requiredAudience, token.Audience())
+		return *new(T), fmt.Errorf("required audience %q was not found, received: %v", h.requiredAudience, token.Audience())
 	}
 
-	if h.requiredClaims != nil {
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get token claims: %w", err)
-		}
-
-		err = isRequiredClaimsValid(h.requiredClaims, tokenClaims)
-		if err != nil {
-			return nil, fmt.Errorf("unable to validate required claims: %w", err)
-		}
+	claims, err := h.jwtTokenToClaims(ctx, token)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to convert jwt.Token to claims: %w", err)
 	}
 
-	return token, nil
+	err = h.validateClaims(&claims)
+	if err != nil {
+		return *new(T), fmt.Errorf("claims validation returned an error: %w", err)
+	}
+
+	return claims, nil
+}
+
+func (h *handler[T]) validateClaims(claims *T) error {
+	if h.claimsValidationFn == nil {
+		return nil
+	}
+
+	return h.claimsValidationFn(claims)
+}
+
+func (h *handler[T]) jwtTokenToClaims(ctx context.Context, token jwt.Token) (T, error) {
+	rawClaims, err := token.AsMap(ctx)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to convert token to claims: %w", err)
+	}
+
+	claimsBytes, err := json.Marshal(rawClaims)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to marshal raw claims to json: %w", err)
+	}
+
+	claims := *new(T)
+	err = json.Unmarshal(claimsBytes, &claims)
+	if err != nil {
+		return *new(T), fmt.Errorf("unable to unmarshal claims from json: %w", err)
+	}
+
+	return claims, nil
 }
 
 func GetDiscoveryUriFromIssuer(issuer string) string {
@@ -328,27 +353,6 @@ func isTokenTypeValid(requiredTokenType string, tokenString string) bool {
 	}
 
 	return true
-}
-
-func isRequiredClaimsValid(requiredClaims map[string]interface{}, tokenClaims map[string]interface{}) error {
-	for requiredKey, requiredValue := range requiredClaims {
-		tokenValue, ok := tokenClaims[requiredKey]
-		if !ok {
-			return fmt.Errorf("token does not have the claim: %s", requiredKey)
-		}
-
-		required, received, err := getCtyValues(requiredValue, tokenValue)
-		if err != nil {
-			return err
-		}
-
-		err = isCtyValueValid(required, received)
-		if err != nil {
-			return fmt.Errorf("claim %q not valid: %w", requiredKey, err)
-		}
-	}
-
-	return nil
 }
 
 func getAndValidateTokenFromString(tokenString string, key jwk.Key, alg jwa.SignatureAlgorithm) (jwt.Token, error) {

@@ -10,8 +10,8 @@ import (
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `fiber`.
-func New(setters ...options.Option) fiber.Handler {
-	oidcHandler, err := oidc.NewHandler(setters...)
+func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) fiber.Handler {
+	oidcHandler, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -27,7 +27,7 @@ func onError(c *fiber.Ctx, errorHandler options.ErrorHandler, statusCode int, de
 	return c.SendStatus(statusCode)
 }
 
-func toFiberHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) fiber.Handler {
+func toFiberHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) fiber.Handler {
 	opts := options.New(setters...)
 
 	return func(c *fiber.Ctx) error {
@@ -42,17 +42,12 @@ func toFiberHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) f
 			return onError(c, opts.ErrorHandler, fiber.StatusBadRequest, options.GetTokenErrorDescription, err)
 		}
 
-		token, err := parseToken(ctx, tokenString)
+		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
 			return onError(c, opts.ErrorHandler, fiber.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 		}
 
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			return onError(c, opts.ErrorHandler, fiber.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
-		}
-
-		c.Locals(string(opts.ClaimsContextKeyName), tokenClaims)
+		c.Locals(string(opts.ClaimsContextKeyName), claims)
 
 		return c.Next()
 	}

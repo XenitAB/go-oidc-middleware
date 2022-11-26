@@ -40,7 +40,7 @@ func testGetEchoRouter(tb testing.TB, parseToken echoJWTParseTokenFunc) *echo.Ec
 	}))
 
 	e.GET("/", func(c echo.Context) error {
-		claims, ok := c.Get("user").(map[string]interface{})
+		claims, ok := c.Get("user").(oidctesting.TestClaims)
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 		}
@@ -105,14 +105,14 @@ func newTestHandler(tb testing.TB) *testHandler {
 	}
 }
 
-func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	echoParseToken := New(opts...)
+	echoParseToken := New(claimsValidationFn, opts...)
 	return testGetEchoRouter(h.tb, echoParseToken)
 }
 
-func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	echoParseToken := toEchoJWTParseTokenFunc(parseToken, opts...)
@@ -122,6 +122,6 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...option
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	echoParseToken := New(opts...)
+	echoParseToken := New[oidctesting.TestClaims](nil, opts...)
 	return newTestServer(h.tb, testGetEchoRouter(h.tb, echoParseToken))
 }

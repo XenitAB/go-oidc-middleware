@@ -34,7 +34,7 @@ func testGetFiberRouter(tb testing.TB, middleware fiber.Handler) *fiber.App {
 	app.Use(middleware)
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("claims").(map[string]interface{})
+		claims, ok := c.Locals("claims").(oidctesting.TestClaims)
 		if !ok {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
@@ -94,16 +94,16 @@ func newTestHandler(tb testing.TB) *testHandler {
 	}
 }
 
-func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := New(opts...)
+	middleware := New(claimsValidationFn, opts...)
 	app := testGetFiberRouter(h.tb, middleware)
 
 	return newTestFiberHandler(h.tb, app)
 }
 
-func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	middleware := toFiberHandler(parseToken, opts...)
@@ -115,7 +115,7 @@ func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...option
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	middleware := New(opts...)
+	middleware := New[oidctesting.TestClaims](nil, opts...)
 	app := testGetFiberRouter(h.tb, middleware)
 
 	return newTestServer(h.tb, app)

@@ -14,14 +14,34 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
+type TestClaims map[string]interface{}
+
+func testClaimsValueEq(claims *TestClaims, key string, expectedValue string) error {
+	rawValue, ok := (*claims)[key]
+	if !ok {
+		return fmt.Errorf("key %s not found", key)
+	}
+
+	value, ok := rawValue.(string)
+	if !ok {
+		return fmt.Errorf("key %s not expected type %T, received: %v", key, expectedValue, rawValue)
+	}
+
+	if expectedValue != value {
+		return fmt.Errorf("key %s %v != %v", key, expectedValue, value)
+	}
+
+	return nil
+}
+
 type ServerTester interface {
 	Close()
 	URL() string
 }
 
 type tester interface {
-	NewHandlerFn(opts ...options.Option) http.Handler
-	ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler
+	NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[TestClaims], opts ...options.Option) http.Handler
+	ToHandlerFn(parseToken oidc.ParseTokenFunc[TestClaims], opts ...options.Option) http.Handler
 	NewTestServer(opts ...options.Option) ServerTester
 }
 
@@ -112,9 +132,9 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 			if c.expectPanic {
-				require.Panics(t, func() { tester.NewHandlerFn(c.config...) })
+				require.Panics(t, func() { tester.NewHandlerFn(nil, c.config...) })
 			} else {
-				require.NotPanics(t, func() { tester.NewHandlerFn(c.config...) })
+				require.NotPanics(t, func() { tester.NewHandlerFn(nil, c.config...) })
 			}
 		}
 	})
@@ -128,6 +148,7 @@ func runTestHandler(t *testing.T, testName string, tester tester) {
 		defer op.Close(t)
 
 		handler := tester.NewHandlerFn(
+			nil,
 			options.WithIssuer(op.GetURL(t)),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
@@ -163,7 +184,8 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 		op := optest.NewTesting(t)
 		defer op.Close(t)
 
-		oidcHandler, err := oidc.NewHandler(
+		oidcHandler, err := oidc.NewHandler[TestClaims](
+			nil,
 			options.WithIssuer("http://foo.bar/baz"),
 			options.WithRequiredAudience("test-client"),
 			options.WithRequiredTokenType("JWT+AT"),
@@ -199,9 +221,10 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 		defer op.Close(t)
 
 		cases := []struct {
-			testDescription string
-			options         []options.Option
-			succeeds        bool
+			testDescription    string
+			options            []options.Option
+			claimsValidationFn options.ClaimsValidationFn[TestClaims]
+			succeeds           bool
 		}{
 			{
 				testDescription: "no requirements",
@@ -246,9 +269,12 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 				testDescription: "required sub matches",
 				options: []options.Option{
 					options.WithIssuer(op.GetURL(t)),
-					options.WithRequiredClaims(map[string]interface{}{
-						"sub": "test",
-					}),
+					// options.WithRequiredClaims(map[string]interface{}{
+					// 	"sub": "test",
+					// }),
+				},
+				claimsValidationFn: func(claims *TestClaims) error {
+					return testClaimsValueEq(claims, "sub", "test")
 				},
 				succeeds: true,
 			},
@@ -256,9 +282,9 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 				testDescription: "required sub doesn't match",
 				options: []options.Option{
 					options.WithIssuer(op.GetURL(t)),
-					options.WithRequiredClaims(map[string]interface{}{
-						"sub": "foo",
-					}),
+				},
+				claimsValidationFn: func(claims *TestClaims) error {
+					return testClaimsValueEq(claims, "sub", "foo")
 				},
 				succeeds: false,
 			},
@@ -268,7 +294,7 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 			c := cases[i]
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 
-			handler := tester.NewHandlerFn(c.options...)
+			handler := tester.NewHandlerFn(c.claimsValidationFn, c.options...)
 			token := op.GetToken(t)
 
 			if c.succeeds {
@@ -318,7 +344,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			options.WithErrorHandler(errorHandler),
 		}
 
-		oidcHandler, err := oidc.NewHandler(opts...)
+		oidcHandler, err := oidc.NewHandler[TestClaims](nil, opts...)
 		require.NoError(t, err)
 
 		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)

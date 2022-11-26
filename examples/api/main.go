@@ -29,18 +29,13 @@ func main() {
 func run(cfg shared.RuntimeConfig) error {
 	var opts []options.Option
 
-	requiredClaims := make(map[string]interface{})
-	for k, v := range cfg.RequiredClaims {
-		requiredClaims[k] = v
-	}
-
 	switch cfg.Provider {
 	case shared.Auth0Provider:
 		inputs := map[string]string{
 			"issuer":                     cfg.Issuer,
 			"audience":                   cfg.Audience,
 			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
-			"requiredClaims azp":         cfg.RequiredClaims["azp"],
+			"RequiredAuth0ClientId":      cfg.RequiredAuth0ClientId,
 		}
 
 		err := stringNotEmpty(inputs)
@@ -53,14 +48,15 @@ func run(cfg shared.RuntimeConfig) error {
 			options.WithRequiredTokenType("JWT"),
 			options.WithRequiredAudience(cfg.Audience),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
 		}
+		claimsValidationFn := shared.GetAuth0ClaimsValidationFn(cfg.RequiredAuth0ClientId)
+		return getHandler(cfg, claimsValidationFn, opts...)
 	case shared.AzureADProvider:
 		inputs := map[string]string{
 			"issuer":                     cfg.Issuer,
 			"audience":                   cfg.Audience,
 			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
-			"requiredClaims tid":         cfg.RequiredClaims["tid"],
+			"RequiredAzureADTenantId":    cfg.RequiredAzureADTenantId,
 		}
 
 		err := stringNotEmpty(inputs)
@@ -73,13 +69,14 @@ func run(cfg shared.RuntimeConfig) error {
 			options.WithRequiredTokenType("JWT"),
 			options.WithRequiredAudience(cfg.Audience),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
 		}
+		claimsValidationFn := shared.GetAzureADClaimsValidationFn(cfg.RequiredAzureADTenantId)
+		return getHandler(cfg, claimsValidationFn, opts...)
 	case shared.CognitoProvider:
 		inputs := map[string]string{
 			"issuer":                     cfg.Issuer,
 			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
-			"requiredClaims client_id":   cfg.RequiredClaims["client_id"],
+			"RequiredCognitoClientId":    cfg.RequiredCognitoClientId,
 		}
 
 		err := stringNotEmpty(inputs)
@@ -90,13 +87,14 @@ func run(cfg shared.RuntimeConfig) error {
 		opts = []options.Option{
 			options.WithIssuer(cfg.Issuer),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
 		}
+		claimsValidationFn := shared.GetCognitoClaimsValidationFn(cfg.RequiredCognitoClientId)
+		return getHandler(cfg, claimsValidationFn, opts...)
 	case shared.OktaProvider:
 		inputs := map[string]string{
 			"issuer":                     cfg.Issuer,
 			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
-			"requiredClaims cid":         cfg.RequiredClaims["cid"],
+			"RequiredOktaClientId":       cfg.RequiredOktaClientId,
 		}
 
 		err := stringNotEmpty(inputs)
@@ -107,30 +105,33 @@ func run(cfg shared.RuntimeConfig) error {
 		opts = []options.Option{
 			options.WithIssuer(cfg.Issuer),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-			options.WithRequiredClaims(requiredClaims),
 		}
+		claimsValidationFn := shared.GetOktaClaimsValidationFn(cfg.RequiredOktaClientId)
+		return getHandler(cfg, claimsValidationFn, opts...)
 	default:
 		return fmt.Errorf("unknown provider: %s", cfg.Provider)
 	}
+}
 
+func getHandler[T any](cfg shared.RuntimeConfig, claimsValidationFn options.ClaimsValidationFn[T], opts ...options.Option) error {
 	switch cfg.Server {
 	case shared.HttpServer:
-		h := shared.NewHttpClaimsHandler()
-		oidcHandler := oidchttp.New(h, opts...)
+		h := shared.NewHttpClaimsHandler[T]()
+		oidcHandler := oidchttp.New(h, claimsValidationFn, opts...)
 
 		return shared.RunHttp(oidcHandler, cfg.Address, cfg.Port)
 	case shared.GinServer:
-		oidcHandler := oidcgin.New(opts...)
+		oidcHandler := oidcgin.New(claimsValidationFn, opts...)
 
-		return shared.RunGin(oidcHandler, cfg.Address, cfg.Port)
+		return shared.RunGin[T](oidcHandler, cfg.Address, cfg.Port)
 	case shared.EchoJwtServer:
-		parseToken := oidcechojwt.New(opts...)
+		parseToken := oidcechojwt.New(claimsValidationFn, opts...)
 
-		return shared.RunEchoJWT(parseToken, cfg.Address, cfg.Port)
+		return shared.RunEchoJWT[T](parseToken, cfg.Address, cfg.Port)
 	case shared.FiberServer:
-		oidcHandler := oidcfiber.New(opts...)
+		oidcHandler := oidcfiber.New(claimsValidationFn, opts...)
 
-		return shared.RunFiber(oidcHandler, cfg.Address, cfg.Port)
+		return shared.RunFiber[T](oidcHandler, cfg.Address, cfg.Port)
 	default:
 		return fmt.Errorf("unknown server: %s", cfg.Server)
 	}

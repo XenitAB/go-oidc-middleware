@@ -33,7 +33,7 @@ func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Req
 	tb.Helper()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(oidctesting.TestClaims)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -88,14 +88,14 @@ func newTestHttpHandler(tb testing.TB) *testHttpHandler {
 	}
 }
 
-func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHttpHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return testNew(h.tb, handler, opts...)
+	return testNew(h.tb, handler, claimsValidationFn, opts...)
 }
 
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
@@ -106,7 +106,7 @@ func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.Serv
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return newTestServer(h.tb, testNew(h.tb, handler, opts...))
+	return newTestServer(h.tb, testNew(h.tb, handler, nil, opts...))
 }
 
 func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
@@ -119,10 +119,10 @@ func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.Erro
 	w.WriteHeader(statusCode)
 }
 
-func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Handler {
+func testNew(tb testing.TB, h http.Handler, claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], setters ...options.Option) http.Handler {
 	tb.Helper()
 
-	tokenHandler, err := New(setters...)
+	tokenHandler, err := New(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -130,7 +130,7 @@ func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Hand
 	return testToHttpHandler(tb, h, tokenHandler.ParseToken, setters...)
 }
 
-func testToHttpHandler(tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc, setters ...options.Option) http.Handler {
+func testToHttpHandler[T any](tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
 	tb.Helper()
 
 	opts := options.New(setters...)
@@ -144,19 +144,13 @@ func testToHttpHandler(tb testing.TB, h http.Handler, parseToken oidc.ParseToken
 			return
 		}
 
-		token, err := parseToken(ctx, tokenString)
+		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
 			testOnError(tb, w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			testOnError(tb, w, opts.ErrorHandler, http.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
-			return
-		}
-
-		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, tokenClaims)
+		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, claims)
 		reqWithClaims := r.WithContext(ctxWithClaims)
 
 		h.ServeHTTP(w, reqWithClaims)

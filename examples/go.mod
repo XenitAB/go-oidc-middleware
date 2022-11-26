@@ -3,11 +3,11 @@ module examples
 go 1.19
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.35
-	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.35
-	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.35
-	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.35
-	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.35
+	github.com/xenitab/go-oidc-middleware v0.0.36
+	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.36
+	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.36
+	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.36
+	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.36
 )
 
 require (

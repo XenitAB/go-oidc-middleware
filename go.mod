@@ -6,7 +6,6 @@ require (
 	github.com/lestrrat-go/jwx v1.2.25
 	github.com/stretchr/testify v1.8.1
 	github.com/xenitab/dispans v0.0.10
-	github.com/zclconf/go-cty v1.12.1
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/sync v0.1.0
 )
@@ -44,7 +43,6 @@ require (
 	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

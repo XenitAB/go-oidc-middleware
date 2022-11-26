@@ -11,8 +11,8 @@ import (
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `gin`.
-func New(setters ...options.Option) gin.HandlerFunc {
-	oidcHandler, err := oidc.NewHandler(setters...)
+func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) gin.HandlerFunc {
+	oidcHandler, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -29,7 +29,7 @@ func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, 
 	c.AbortWithError(statusCode, err)
 }
 
-func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin.HandlerFunc {
+func toGinHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) gin.HandlerFunc {
 	opts := options.New(setters...)
 
 	return func(c *gin.Context) {
@@ -41,19 +41,13 @@ func toGinHandler(parseToken oidc.ParseTokenFunc, setters ...options.Option) gin
 			return
 		}
 
-		token, err := parseToken(ctx, tokenString)
+		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
 			onError(c, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			onError(c, opts.ErrorHandler, http.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
-			return
-		}
-
-		c.Set(string(opts.ClaimsContextKeyName), tokenClaims)
+		c.Set(string(opts.ClaimsContextKeyName), claims)
 
 		c.Next()
 	}

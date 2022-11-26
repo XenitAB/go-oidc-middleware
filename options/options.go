@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+// ClaimsValidationFn is a generic function to validate calims.
+// If an error is returned, the claims failed the validation.
+// If `nil` is provided instead of a function when configuration the handler,
+// no additional validation of the claims will be done.
+type ClaimsValidationFn[T any] func(*T) error
+
 // ClaimsContextKeyName is the type for they key value used to pass claims using request context.
 // Using separate type because of the following: https://staticcheck.io/docs/checks#SA1029
 type ClaimsContextKeyName string
@@ -40,7 +46,6 @@ type Options struct {
 	LazyLoadJwks               bool
 	RequiredTokenType          string
 	RequiredAudience           string
-	RequiredClaims             map[string]interface{}
 	DisableKeyID               bool
 	HttpClient                 *http.Client
 	TokenString                [][]TokenStringOption
@@ -181,34 +186,6 @@ func WithRequiredTokenType(opt string) Option {
 func WithRequiredAudience(opt string) Option {
 	return func(opts *Options) {
 		opts.RequiredAudience = opt
-	}
-}
-
-// WithRequiredClaims sets the RequiredClaims parameter for an Options pointer.
-// RequiredClaims is used to require specific claims in the token
-// Defaults to empty map (nil) and won't check for anything else
-// Works with primitive types, slices and maps.
-// Please observe: slices and strings checks that the token contains it, but more is allowed.
-// Required claim []string{"bar"} matches token []string{"foo", "bar", "baz"}
-// Required claim map[string]string{{"foo": "bar"}} matches token map[string]string{{"a": "b"},{"foo": "bar"},{"c": "d"}}
-//
-// Example:
-//
-// ```go
-//
-//	map[string]interface{}{
-//		"foo": "bar",
-//		"bar": 1337,
-//		"baz": []string{"bar"},
-//		"oof": []map[string]string{
-//			{"bar": "baz"},
-//		},
-//	},
-//
-// ```
-func WithRequiredClaims(opt map[string]interface{}) Option {
-	return func(opts *Options) {
-		opts.RequiredClaims = opt
 	}
 }
 

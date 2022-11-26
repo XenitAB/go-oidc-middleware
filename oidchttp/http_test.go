@@ -31,7 +31,7 @@ func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Req
 	tb.Helper()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(map[string]interface{})
+		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(oidctesting.TestClaims)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -86,14 +86,14 @@ func newTestHttpHandler(tb testing.TB) *testHttpHandler {
 	}
 }
 
-func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHttpHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return New(handler, opts...)
+	return New(handler, claimsValidationFn, opts...)
 }
 
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc, opts ...options.Option) http.Handler {
+func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
@@ -104,5 +104,5 @@ func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.Serv
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return newTestServer(h.tb, New(handler, opts...))
+	return newTestServer(h.tb, New[oidctesting.TestClaims](handler, nil, opts...))
 }

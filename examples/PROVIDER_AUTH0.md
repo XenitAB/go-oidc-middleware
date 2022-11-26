@@ -8,7 +8,7 @@ Create an Auth0 account and an api as well as a native app.
 TOKEN_ISSUER="https://<domain>.auth0.com/"
 TOKEN_AUDIENCE="https://localhost:8081"
 CLIENT_ID="Auth0NativeAppClientID"
-go run ./api/main.go --server [server] --provider auth0 --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --required-claims azp:${CLIENT_ID} --port 8081
+go run ./api/main.go --server [server] --provider auth0 --token-issuer ${TOKEN_ISSUER} --token-audience ${TOKEN_AUDIENCE} --required-auth0-client-id ${CLIENT_ID} --port 8081
 ```
 
 ## Test with curl

@@ -11,8 +11,8 @@ import (
 
 // New returns an OpenID Connect (OIDC) discovery handler (middleware)
 // to be used with `net/http`, `mux` and `chi`.
-func New(h http.Handler, setters ...options.Option) http.Handler {
-	oidcHandler, err := oidc.NewHandler(setters...)
+func New[T any](h http.Handler, claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) http.Handler {
+	oidcHandler, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
@@ -28,7 +28,7 @@ func onError(w http.ResponseWriter, errorHandler options.ErrorHandler, statusCod
 	w.WriteHeader(statusCode)
 }
 
-func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, setters ...options.Option) http.Handler {
+func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
 	opts := options.New(setters...)
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
@@ -40,19 +40,13 @@ func toHttpHandler(h http.Handler, parseToken oidc.ParseTokenFunc, setters ...op
 			return
 		}
 
-		token, err := parseToken(ctx, tokenString)
+		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
 			onError(w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
-		tokenClaims, err := token.AsMap(ctx)
-		if err != nil {
-			onError(w, opts.ErrorHandler, http.StatusUnauthorized, options.ConvertTokenErrorDescription, err)
-			return
-		}
-
-		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, tokenClaims)
+		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, claims)
 		reqWithClaims := r.WithContext(ctxWithClaims)
 
 		h.ServeHTTP(w, reqWithClaims)

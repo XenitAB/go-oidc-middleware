@@ -7,7 +7,7 @@ Create a Cognito user pool, app client and configure the callback for the app cl
 ```shell
 TOKEN_ISSUER="https://cognito-idp.{region}.amazonaws.com/{userPoolId}"
 CLIENT_ID="CognitoClientID"
-go run ./api/main.go --server [server] --provider cognito --token-issuer ${TOKEN_ISSUER} --required-claims client_id:${CLIENT_ID} --port 8081
+go run ./api/main.go --server [server] --provider cognito --token-issuer ${TOKEN_ISSUER} --required-cognito-client-id ${CLIENT_ID} --port 8081
 ```
 
 ## Test with curl
