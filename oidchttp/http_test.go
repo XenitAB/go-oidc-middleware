@@ -86,11 +86,11 @@ func newTestHttpHandler(tb testing.TB) *testHttpHandler {
 	}
 }
 
-func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHttpHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return New[oidctesting.TestClaims](handler, nil, opts...)
+	return New(handler, claimsValidationFn, opts...)
 }
 
 func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {

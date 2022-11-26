@@ -94,10 +94,10 @@ func newTestHandler(tb testing.TB) *testHandler {
 	}
 }
 
-func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	middleware := New[oidctesting.TestClaims](nil, opts...)
+	middleware := New(claimsValidationFn, opts...)
 	app := testGetFiberRouter(h.tb, middleware)
 
 	return newTestFiberHandler(h.tb, app)

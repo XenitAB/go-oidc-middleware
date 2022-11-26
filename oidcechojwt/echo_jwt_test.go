@@ -105,10 +105,10 @@ func newTestHandler(tb testing.TB) *testHandler {
 	}
 }
 
-func (h *testHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	echoParseToken := New[oidctesting.TestClaims](nil, opts...)
+	echoParseToken := New(claimsValidationFn, opts...)
 	return testGetEchoRouter(h.tb, echoParseToken)
 }
 

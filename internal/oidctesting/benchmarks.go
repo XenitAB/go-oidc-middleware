@@ -28,6 +28,7 @@ func runBenchmarkHandler(b *testing.B, testName string, tester tester) {
 		defer op.Close(b)
 
 		handler := tester.NewHandlerFn(
+			nil,
 			options.WithIssuer(op.GetURL(b)),
 		)
 
@@ -47,6 +48,9 @@ func runBenchmarkRequirements(b *testing.B, testName string, tester tester) {
 		defer op.Close(b)
 
 		handler := tester.NewHandlerFn(
+			func(claims *TestClaims) error {
+				return testClaimsValueEq(claims, "sub", "test")
+			},
 			options.WithIssuer(op.GetURL(b)),
 			options.WithRequiredTokenType("JWT+AT"),
 			options.WithRequiredAudience("test-client"),

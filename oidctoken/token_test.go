@@ -88,11 +88,11 @@ func newTestHttpHandler(tb testing.TB) *testHttpHandler {
 	}
 }
 
-func (h *testHttpHandler) NewHandlerFn(opts ...options.Option) http.Handler {
+func (h *testHttpHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return testNew(h.tb, handler, opts...)
+	return testNew(h.tb, handler, claimsValidationFn, opts...)
 }
 
 func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
@@ -106,7 +106,7 @@ func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.Serv
 	h.tb.Helper()
 
 	handler := testGetHttpHandler(h.tb)
-	return newTestServer(h.tb, testNew(h.tb, handler, opts...))
+	return newTestServer(h.tb, testNew(h.tb, handler, nil, opts...))
 }
 
 func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
@@ -119,10 +119,10 @@ func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.Erro
 	w.WriteHeader(statusCode)
 }
 
-func testNew(tb testing.TB, h http.Handler, setters ...options.Option) http.Handler {
+func testNew(tb testing.TB, h http.Handler, claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], setters ...options.Option) http.Handler {
 	tb.Helper()
 
-	tokenHandler, err := New[oidctesting.TestClaims](nil, setters...)
+	tokenHandler, err := New(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
