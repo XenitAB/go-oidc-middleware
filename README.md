@@ -74,6 +74,20 @@ func GetAzureADClaimsValidationFn(requiredTenantId string) options.ClaimsValidat
 }
 ```
 
+If you don't want typed claims, use `type Claims map[string]interface{}` and provide it. If you don't want to use a `ClaimsValidationFn` (as it will provide the type) the handlers will need to be configured as below:
+
+```go
+type Claims map[string]interface{}
+
+oidcHandler := oidchttp.New[Claims](h, nil, opts...)
+```
+
+or
+
+```go
+oidcHandler := oidchttp.New[map[string]interface{}](h, nil, opts...)
+```
+
 ### net/http, mux & chi
 
 **Import**
