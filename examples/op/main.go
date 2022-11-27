@@ -32,6 +32,23 @@ func main() {
 					"client_id": "pkce-cli",
 				},
 			},
+			"foo": {
+				Audience:           "https://localhost:8081",
+				Subject:            "foo",
+				Name:               "Foo Bar",
+				GivenName:          "Foo",
+				FamilyName:         "Bar",
+				Locale:             "sv-SE",
+				Email:              "asdfs@foo.se",
+				AccessTokenKeyType: "at+jwt",
+				IdTokenKeyType:     "jwt",
+				ExtraIdTokenClaims: map[string]interface{}{
+					"client_id": "pkce-cli",
+				},
+				ExtraAccessTokenClaims: map[string]interface{}{
+					"client_id": "pkce-cli",
+				},
+			},
 		}),
 	)
 	if err != nil {
@@ -46,6 +63,7 @@ func main() {
 	r.Any("/authorization", gin.WrapH(opRouter))
 	r.Any("/token", gin.WrapH(opRouter))
 	r.Any("/jwks", gin.WrapH(opRouter))
+	r.Any("/login", gin.WrapH(opRouter))
 
 	r.GET("/get_test_token", func(c *gin.Context) {
 		token, err := op.GetToken()

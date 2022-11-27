@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -217,6 +219,7 @@ func (op *OPTest) routeHandler() *http.ServeMux {
 	router.HandleFunc("/token", op.tokenHandler)
 	router.HandleFunc("/jwks", op.jwksHandler)
 	router.HandleFunc("/userinfo", op.userInfoHandler)
+	router.HandleFunc("/login", op.loginHandler)
 
 	return router
 }
@@ -266,6 +269,45 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", redirectUrl.String())
 	w.WriteHeader(http.StatusFound)
+}
+
+type LoginData struct {
+	PageTitle string
+	Users     []TestUser
+}
+
+var loginTemplate = `
+<h1>{{.PageTitle}}</h1>
+<ul>
+    {{range .Users}}
+            <li class="user">{{.Name}}</li>
+    {{end}}
+</ul>
+`
+
+func (op *OPTest) loginHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.New("login").Parse(loginTemplate)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	userkeys := []string{}
+	for k := range op.options.TestUsers {
+		userkeys = append(userkeys, k)
+	}
+	sort.Strings(userkeys)
+	users := []TestUser{}
+	for _, k := range userkeys {
+		users = append(users, op.options.TestUsers[k])
+	}
+
+	data := LoginData{
+		PageTitle: "User list",
+		Users:     users,
+	}
+
+	tmpl.Execute(w, data)
 }
 
 func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {
