@@ -31,3 +31,7 @@ When starting the api for one of the providers, change `[server]` to one of: `ht
 ### Cognito
 
 [Cognito Readme](PROVIDER_COGNITO.md)
+
+### OPTest
+
+[OPTest Readme](PROVIDER_OPTEST.md)

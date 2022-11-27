@@ -108,6 +108,24 @@ func run(cfg shared.RuntimeConfig) error {
 		}
 		claimsValidationFn := shared.GetOktaClaimsValidationFn(cfg.RequiredOktaClientId)
 		return getHandler(cfg, claimsValidationFn, opts...)
+	case shared.OPTestProvider:
+		inputs := map[string]string{
+			"issuer":                     cfg.Issuer,
+			"fallbackSignatureAlgorithm": cfg.FallbackSignatureAlgorithm,
+			"RequiredOPTestClientId":     cfg.RequiredOPTestClientId,
+		}
+
+		err := stringNotEmpty(inputs)
+		if err != nil {
+			return err
+		}
+
+		opts = []options.Option{
+			options.WithIssuer(cfg.Issuer),
+			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+		}
+		claimsValidationFn := shared.GetOPTestClaimsValidationFn(cfg.RequiredOPTestClientId)
+		return getHandler(cfg, claimsValidationFn, opts...)
 	default:
 		return fmt.Errorf("unknown provider: %s", cfg.Provider)
 	}

@@ -33,14 +33,15 @@ const (
 	AzureADProvider Provider = "azuread"
 	CognitoProvider Provider = "cognito"
 	OktaProvider    Provider = "okta"
+	OPTestProvider  Provider = "optest"
 )
 
 func (p Provider) Validate() error {
 	switch p {
-	case Auth0Provider, AzureADProvider, CognitoProvider, OktaProvider:
+	case Auth0Provider, AzureADProvider, CognitoProvider, OktaProvider, OPTestProvider:
 		return nil
 	default:
-		return fmt.Errorf("not a supported provider (%s), use one of: auth0, azuread, cognito, okta", p)
+		return fmt.Errorf("not a supported provider (%s), use one of: auth0, azuread, cognito, okta, optest", p)
 	}
 }
 
@@ -57,6 +58,7 @@ type RuntimeConfig struct {
 	RequiredAzureADTenantId    string   `flag:"required-azure-ad-tenant-id" env:"REQUIRED_AZURE_AD_TENANT_ID" usage:"the required Azure AD Tenant ID"`
 	RequiredCognitoClientId    string   `flag:"required-cognito-client-id" env:"REQUIRED_COGNITO_CLIENT_ID" usage:"the required Cognito Client ID"`
 	RequiredOktaClientId       string   `flag:"required-okta-client-id" env:"REQUIRED_OKTA_CLIENT_ID" usage:"the required Okta Client ID"`
+	RequiredOPTestClientId     string   `flag:"required-optest-client-id" env:"REQUIRED_OPTEST_CLIENT_ID" usage:"the required OPTest Client ID"`
 }
 
 func NewRuntimeConfig() (RuntimeConfig, error) {
@@ -184,6 +186,27 @@ func GetOktaClaimsValidationFn(requiredClientId string) options.ClaimsValidation
 	return func(claims *OktaClaims) error {
 		if requiredClientId != "" && claims.ClientId != requiredClientId {
 			return fmt.Errorf("cid claim is required to be %q but was: %s", requiredClientId, claims.ClientId)
+		}
+
+		return nil
+	}
+}
+
+type OPTestClaims struct {
+	Audience  []string  `json:"aud"`
+	ExpiresAt time.Time `json:"exp"`
+	IssuedAt  time.Time `json:"iat"`
+	Id        string    `json:"id"`
+	Issuer    string    `json:"iss"`
+	NotBefore time.Time `json:"nbf"`
+	Subject   string    `json:"sub"`
+	ClientId  string    `json:"client_id"`
+}
+
+func GetOPTestClaimsValidationFn(requiredClientId string) options.ClaimsValidationFn[OPTestClaims] {
+	return func(claims *OPTestClaims) error {
+		if requiredClientId != "" && claims.ClientId != requiredClientId {
+			return fmt.Errorf("client_id claim is required to be %q but was: %s", requiredClientId, claims.ClientId)
 		}
 
 		return nil
