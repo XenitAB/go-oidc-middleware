@@ -4,12 +4,13 @@ import "time"
 
 // Options is the configuration object for OPTest.
 type Options struct {
-	Issuer          string
-	DefaultTestUser string
-	TestUsers       map[string]TestUser
-	TokenExpiration time.Duration
-	AutoStart       bool
-	AccessTokenType AccessTokenType
+	Issuer             string
+	DefaultTestUser    string
+	TestUsers          map[string]TestUser
+	TokenExpiration    time.Duration
+	AutoStart          bool
+	AccessTokenType    AccessTokenType
+	LoginPromptEnabled bool
 }
 
 // AccessTokenType defines the type of token to be used.
@@ -70,5 +71,13 @@ func WithoutAutoStart() Option {
 func WithOpaqueAccessTokens() Option {
 	return func(opts *Options) {
 		opts.AccessTokenType = OpaqueAccessTokenType
+	}
+}
+
+// WithLoginPrompt enables login prompt if there are more than one Test User.
+// Default is login prompt disabled.
+func WithLoginPrompt() Option {
+	return func(opts *Options) {
+		opts.LoginPromptEnabled = true
 	}
 }

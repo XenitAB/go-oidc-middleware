@@ -219,7 +219,6 @@ func (op *OPTest) routeHandler() *http.ServeMux {
 	router.HandleFunc("/token", op.tokenHandler)
 	router.HandleFunc("/jwks", op.jwksHandler)
 	router.HandleFunc("/userinfo", op.userInfoHandler)
-	router.HandleFunc("/login", op.loginHandler)
 
 	return router
 }
@@ -243,6 +242,13 @@ func (op *OPTest) metadataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
+	loginHint := r.URL.Query().Get("login_hint")
+	showLoginPrompt := loginHint == "" && len(op.options.TestUsers) > 1 && op.options.LoginPromptEnabled
+	if showLoginPrompt {
+		op.loginHandler(w, r)
+		return
+	}
+
 	redirectUrl, err := url.Parse(r.URL.Query().Get("redirect_uri"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -255,7 +261,6 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginHint := r.URL.Query().Get("login_hint")
 	nonce := r.URL.Query().Get("nonce")
 
 	op.authorizations.set(code, loginHint, nonce)
@@ -271,21 +276,22 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound)
 }
 
-type LoginData struct {
-	PageTitle string
-	Users     []TestUser
-}
-
-var loginTemplate = `
-<h1>{{.PageTitle}}</h1>
-<ul>
-    {{range .Users}}
-            <li class="user">{{.Name}}</li>
-    {{end}}
-</ul>
-`
-
 func (op *OPTest) loginHandler(w http.ResponseWriter, r *http.Request) {
+	type loginData struct {
+		Path string
+		Name string
+		ID   string
+	}
+
+	loginTemplate := `
+	<h1>Login</h1>
+	<ul>
+		{{range .}}
+				<li class="user"><a href="{{.Path}}">{{.Name}}</a></li>
+		{{end}}
+	</ul>
+	`
+
 	tmpl, err := template.New("login").Parse(loginTemplate)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -297,14 +303,18 @@ func (op *OPTest) loginHandler(w http.ResponseWriter, r *http.Request) {
 		userkeys = append(userkeys, k)
 	}
 	sort.Strings(userkeys)
-	users := []TestUser{}
-	for _, k := range userkeys {
-		users = append(users, op.options.TestUsers[k])
-	}
+	data := []loginData{}
+	for _, id := range userkeys {
+		reqUrl := *r.URL
+		values := reqUrl.Query()
+		values.Set("login_hint", id)
+		reqUrl.RawQuery = values.Encode()
 
-	data := LoginData{
-		PageTitle: "User list",
-		Users:     users,
+		data = append(data, loginData{
+			Path: reqUrl.String(),
+			Name: op.options.TestUsers[id].Name,
+			ID:   id,
+		})
 	}
 
 	tmpl.Execute(w, data)

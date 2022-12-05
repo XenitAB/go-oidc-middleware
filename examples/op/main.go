@@ -14,6 +14,7 @@ func main() {
 		optest.WithIssuer("http://localhost:8082"),
 		optest.WithoutAutoStart(),
 		optest.WithDefaultTestUser("test"),
+		optest.WithLoginPrompt(),
 		optest.WithTestUsers(map[string]optest.TestUser{
 			"test": {
 				Audience:           "https://localhost:8081",
