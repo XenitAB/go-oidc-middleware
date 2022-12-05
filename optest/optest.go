@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -240,6 +242,13 @@ func (op *OPTest) metadataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
+	loginHint := r.URL.Query().Get("login_hint")
+	showLoginPrompt := loginHint == "" && len(op.options.TestUsers) > 1 && op.options.LoginPromptEnabled
+	if showLoginPrompt {
+		op.loginHandler(w, r)
+		return
+	}
+
 	redirectUrl, err := url.Parse(r.URL.Query().Get("redirect_uri"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -252,7 +261,6 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginHint := r.URL.Query().Get("login_hint")
 	nonce := r.URL.Query().Get("nonce")
 
 	op.authorizations.set(code, loginHint, nonce)
@@ -266,6 +274,54 @@ func (op *OPTest) authorizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", redirectUrl.String())
 	w.WriteHeader(http.StatusFound)
+}
+
+func (op *OPTest) loginHandler(w http.ResponseWriter, r *http.Request) {
+	type loginData struct {
+		Path string
+		Name string
+		ID   string
+	}
+
+	loginTemplate := `
+	<h1>Login</h1>
+	<ul>
+		{{range .}}
+				<li class="user"><a href="{{.Path}}">{{.Name}}</a></li>
+		{{end}}
+	</ul>
+	`
+
+	tmpl, err := template.New("login").Parse(loginTemplate)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	userkeys := []string{}
+	for k := range op.options.TestUsers {
+		userkeys = append(userkeys, k)
+	}
+	sort.Strings(userkeys)
+	data := []loginData{}
+	for _, id := range userkeys {
+		reqUrl := *r.URL
+		values := reqUrl.Query()
+		values.Set("login_hint", id)
+		reqUrl.RawQuery = values.Encode()
+
+		data = append(data, loginData{
+			Path: reqUrl.String(),
+			Name: op.options.TestUsers[id].Name,
+			ID:   id,
+		})
+	}
+
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {

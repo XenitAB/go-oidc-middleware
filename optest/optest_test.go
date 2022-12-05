@@ -184,6 +184,51 @@ func TestE2EOtherUser(t *testing.T) {
 	td.testValidateTokenResponse(t, tr, testUsers[testSecondaryUser])
 }
 
+func TestE2ELoginPrompt(t *testing.T) {
+	op, err := New(WithTestUsers(testUsers), WithDefaultTestUser(testDefaultUser), WithLoginPrompt())
+	require.NoError(t, err)
+	defer op.Close()
+
+	httpClient := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	td := &testData{
+		baseURL:     op.GetURL(),
+		redirectUrl: "http://foobar.baz/callback",
+		clientID:    "test-client",
+		httpClient:  httpClient,
+	}
+
+	td.testMetadata(t)
+
+	remoteUrl, err := url.Parse(td.metadata.AuthorizationEndpoint)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("GET", remoteUrl.String(), nil)
+	require.NoError(t, err)
+
+	res, err := td.httpClient.Do(req)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	for id, user := range testUsers {
+		require.Contains(t, string(body), fmt.Sprintf("login_hint=%s", id))
+		require.Contains(t, string(body), fmt.Sprintf(">%s</a>", user.Name))
+	}
+
+	td.testAuthorization(t, testDefaultUser)
+	td.testJwks(t)
+	tr := td.testToken(t, testDefaultUser)
+	td.testValidateTokenResponse(t, tr, testUsers[testDefaultUser])
+}
+
 func (td *testData) testAuthorization(t *testing.T, loginHint string) {
 	t.Helper()
 
