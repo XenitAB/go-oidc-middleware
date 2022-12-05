@@ -2,7 +2,7 @@ module github.com/xenitab/go-oidc-middleware/oidcgin
 
 go 1.19
 
-require github.com/xenitab/go-oidc-middleware v0.0.37
+require github.com/xenitab/go-oidc-middleware v0.0.38
 
 require github.com/gin-gonic/gin v1.8.1
 
