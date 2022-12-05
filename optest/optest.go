@@ -317,7 +317,11 @@ func (op *OPTest) loginHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	tmpl.Execute(w, data)
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (op *OPTest) tokenHandler(w http.ResponseWriter, r *http.Request) {

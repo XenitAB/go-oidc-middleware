@@ -215,6 +215,7 @@ func TestE2ELoginPrompt(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
 	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
 	defer res.Body.Close()
 
 	for id, user := range testUsers {
