@@ -36,13 +36,16 @@ func TestNewKeyHandler(t *testing.T) {
 	keyID1, err := getKeyIDFromTokenString(token1.AccessToken)
 	require.NoError(t, err)
 
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenString(token1.AccessToken)
+	require.NoError(t, err)
+
 	// Test valid key id
-	key1, err := keyHandler.getKeyFromID(ctx, keyID1)
+	key1, err := keyHandler.getKeyFromID(ctx, keyID1, tokenAlgorithm)
 	require.NoError(t, err)
 	require.Equal(t, expectedKey1, key1)
 
 	// Test invalid key id
-	_, err = keyHandler.getKeyFromID(ctx, "foo")
+	_, err = keyHandler.getKeyFromID(ctx, "foo", tokenAlgorithm)
 	require.Error(t, err)
 
 	// Test with rotated keys
@@ -52,7 +55,10 @@ func TestNewKeyHandler(t *testing.T) {
 	keyID2, err := getKeyIDFromTokenString(token2.AccessToken)
 	require.NoError(t, err)
 
-	key2, err := keyHandler.getKeyFromID(ctx, keyID2)
+	tokenAlgorithm2, err := getTokenAlgorithmFromTokenString(token2.AccessToken)
+	require.NoError(t, err)
+
+	key2, err := keyHandler.getKeyFromID(ctx, keyID2, tokenAlgorithm2)
 	require.NoError(t, err)
 
 	keySet2 := keyHandler.getKeySet()
@@ -77,7 +83,7 @@ func TestNewKeyHandler(t *testing.T) {
 	keyID3, err := getKeyIDFromTokenString(token3.AccessToken)
 	require.NoError(t, err)
 	op.Close(t)
-	_, err = keyHandler.getKeyFromID(ctx, keyID3)
+	_, err = keyHandler.getKeyFromID(ctx, keyID3, "")
 	require.Error(t, err)
 }
 

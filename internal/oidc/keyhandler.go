@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"fmt"
+	"github.com/lestrrat-go/jwx/jwa"
 	"net/http"
 	"sync"
 	"time"
@@ -118,13 +119,12 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKey(ctx context.Context) (jwk.Key,
 
 	return key, nil
 }
-
-func (h *keyHandler) getKey(ctx context.Context, keyID string) (jwk.Key, error) {
+func (h *keyHandler) getKey(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	if h.disableKeyID {
 		return h.getKeyWithoutKeyID()
 	}
 
-	return h.getKeyFromID(ctx, keyID)
+	return h.getKeyFromID(ctx, keyID, algorithm)
 }
 
 func (h *keyHandler) getKeySet() jwk.Set {
@@ -133,26 +133,39 @@ func (h *keyHandler) getKeySet() jwk.Set {
 	return h.keySet
 }
 
-func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string) (jwk.Key, error) {
+func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	keySet := h.getKeySet()
 
-	key, found := keySet.LookupKeyID(keyID)
-
-	if !found {
-		updatedKeySet, err := h.waitForUpdateKeySetAndGetKeySet(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("unable to update key set for key %q: %w", keyID, err)
-		}
-
-		updatedKey, found := updatedKeySet.LookupKeyID(keyID)
-		if !found {
-			return nil, fmt.Errorf("unable to find key %q", keyID)
-		}
-
-		return updatedKey, nil
+	key, err := findKey(ctx, keyID, algorithm, keySet)
+	if err == nil {
+		return key, err
 	}
 
-	return key, nil
+	updatedKeySet, err := h.waitForUpdateKeySetAndGetKeySet(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to update key set for key %q: %w", keyID, err)
+	}
+	return findKey(ctx, keyID, algorithm, updatedKeySet)
+}
+
+func findKey(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm, keySet jwk.Set) (jwk.Key, error) {
+	key, found := keySet.LookupKeyID(keyID)
+	// when algorithm matches we immediatly can return otherwise we iterate and find the
+	if found && key.Algorithm() == algorithm.String() {
+		return key, nil
+	}
+
+	for iter := keySet.Iterate(ctx); iter.Next(ctx); {
+		pair := iter.Pair()
+		key, ok := pair.Value.(jwk.Key)
+		if !ok {
+			continue
+		}
+		if key.KeyID() == keyID && key.Algorithm() == algorithm.String() {
+			return key, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find key %q", keyID)
 }
 
 func (h *keyHandler) getKeyWithoutKeyID() (jwk.Key, error) {

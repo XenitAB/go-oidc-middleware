@@ -853,7 +853,10 @@ func TestGetAndValidateTokenFromStringWithKeyID(t *testing.T) {
 	keyID, err := getKeyIDFromTokenString(token1)
 	require.NoError(t, err)
 
-	pubKey, err := keyHandler.getKey(context.Background(), keyID)
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenString(token1)
+	require.NoError(t, err)
+
+	pubKey, err := keyHandler.getKey(context.Background(), keyID, tokenAlgorithm)
 	require.NoError(t, err)
 
 	alg, err := getSignatureAlgorithm(pubKey.KeyType(), pubKey.Algorithm(), jwa.ES384)
@@ -882,7 +885,10 @@ func TestGetAndValidateTokenFromStringWithoutKeyID(t *testing.T) {
 
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	pubKey, err := keyHandler.getKey(context.Background(), "")
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenString(token1)
+	require.NoError(t, err)
+
+	pubKey, err := keyHandler.getKey(context.Background(), "", tokenAlgorithm)
 	require.NoError(t, err)
 
 	alg, err := getSignatureAlgorithm(pubKey.KeyType(), pubKey.Algorithm(), jwa.ES384)

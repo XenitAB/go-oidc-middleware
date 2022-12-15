@@ -132,7 +132,12 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		}
 	}
 
-	key, err := h.keyHandler.getKey(ctx, keyID)
+	algorithm, err := getTokenAlgorithmFromTokenString(tokenString)
+	if err != nil {
+		return *new(T), fmt.Errorf("algorithm required: %w", err)
+	}
+
+	key, err := h.keyHandler.getKey(ctx, keyID, algorithm)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to get public key: %w", err)
 	}
@@ -278,6 +283,20 @@ func getKeyIDFromTokenString(tokenString string) (string, error) {
 	}
 
 	return keyID, nil
+}
+
+func getTokenAlgorithmFromTokenString(tokenString string) (jwa.SignatureAlgorithm, error) {
+	headers, err := getHeadersFromTokenString(tokenString)
+	if err != nil {
+		return "", err
+	}
+
+	algorithm := headers.Algorithm()
+	if algorithm == "" {
+		return "", fmt.Errorf("token header does not contain type (typ)")
+	}
+
+	return algorithm, nil
 }
 
 func getTokenTypeFromTokenString(tokenString string) (string, error) {
