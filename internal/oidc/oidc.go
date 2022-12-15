@@ -132,7 +132,7 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		}
 	}
 
-	algorithm, err := getTokenAlgorithmFromTokenString(tokenString)
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenString(tokenString)
 	if err != nil {
 		return *new(T), fmt.Errorf("algorithm required: %w", err)
 	}
