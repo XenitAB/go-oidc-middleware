@@ -3,11 +3,11 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"github.com/lestrrat-go/jwx/jwa"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"go.uber.org/ratelimit"
 	"golang.org/x/sync/semaphore"
@@ -138,7 +138,7 @@ func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm j
 
 	key, err := findKey(ctx, keyID, algorithm, keySet)
 	if err == nil {
-		return key, err
+		return key, nil
 	}
 
 	updatedKeySet, err := h.waitForUpdateKeySetAndGetKeySet(ctx)
@@ -148,10 +148,10 @@ func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm j
 	return findKey(ctx, keyID, algorithm, updatedKeySet)
 }
 
-func findKey(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm, keySet jwk.Set) (jwk.Key, error) {
+func findKey(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm, keySet jwk.Set) (jwk.Key, error) {
 	key, found := keySet.LookupKeyID(keyID)
-	// when algorithm matches we immediatly can return otherwise we iterate and find the
-	if found && key.Algorithm() == algorithm.String() {
+	// when tokenAlgorithm matches we immediatly can return otherwise we iterate and find the
+	if found && key.Algorithm() == tokenAlgorithm.String() {
 		return key, nil
 	}
 
@@ -161,7 +161,7 @@ func findKey(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm
 		if !ok {
 			continue
 		}
-		if key.KeyID() == keyID && key.Algorithm() == algorithm.String() {
+		if key.KeyID() == keyID && key.Algorithm() == tokenAlgorithm.String() {
 			return key, nil
 		}
 	}

@@ -118,7 +118,12 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		}
 	}
 
-	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, tokenString)
+	headers, err := getHeadersFromTokenHeader(tokenString)
+	if err != nil {
+		return *new(T), err
+	}
+
+	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, headers)
 	if !tokenTypeValid {
 		return *new(T), fmt.Errorf("token type %q required", h.requiredTokenType)
 	}
@@ -126,18 +131,18 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 	keyID := ""
 	if !h.disableKeyID {
 		var err error
-		keyID, err = getKeyIDFromTokenString(tokenString)
+		keyID, err = getKeyIDFromTokenHeader(headers)
 		if err != nil {
 			return *new(T), err
 		}
 	}
 
-	tokenAlgorithm, err := getTokenAlgorithmFromTokenString(tokenString)
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(headers)
 	if err != nil {
-		return *new(T), fmt.Errorf("algorithm required: %w", err)
+		return *new(T), fmt.Errorf("tokenAlgorithm required: %w", err)
 	}
 
-	key, err := h.keyHandler.getKey(ctx, keyID, algorithm)
+	key, err := h.keyHandler.getKey(ctx, keyID, tokenAlgorithm)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to get public key: %w", err)
 	}
@@ -271,12 +276,7 @@ func getJwksUriFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fe
 	return discoveryData.JwksUri, nil
 }
 
-func getKeyIDFromTokenString(tokenString string) (string, error) {
-	headers, err := getHeadersFromTokenString(tokenString)
-	if err != nil {
-		return "", err
-	}
-
+func getKeyIDFromTokenHeader(headers jws.Headers) (string, error) {
 	keyID := headers.KeyID()
 	if keyID == "" {
 		return "", fmt.Errorf("token header does not contain key id (kid)")
@@ -285,26 +285,17 @@ func getKeyIDFromTokenString(tokenString string) (string, error) {
 	return keyID, nil
 }
 
-func getTokenAlgorithmFromTokenString(tokenString string) (jwa.SignatureAlgorithm, error) {
-	headers, err := getHeadersFromTokenString(tokenString)
-	if err != nil {
-		return "", err
-	}
-
+func getTokenAlgorithmFromTokenHeader(headers jws.Headers) (jwa.SignatureAlgorithm, error) {
+	// algorithm is a required field for a jwt see: https://www.rfc-editor.org/rfc/rfc7515#section-4.1.1
 	algorithm := headers.Algorithm()
 	if algorithm == "" {
-		return "", fmt.Errorf("token header does not contain type (typ)")
+		return "", fmt.Errorf("token header does not contain algorithm (alg)")
 	}
 
 	return algorithm, nil
 }
 
-func getTokenTypeFromTokenString(tokenString string) (string, error) {
-	headers, err := getHeadersFromTokenString(tokenString)
-	if err != nil {
-		return "", err
-	}
-
+func getTokenTypeFromTokenHeader(headers jws.Headers) (string, error) {
 	tokenType := headers.Type()
 	if tokenType == "" {
 		return "", fmt.Errorf("token header does not contain type (typ)")
@@ -313,7 +304,7 @@ func getTokenTypeFromTokenString(tokenString string) (string, error) {
 	return tokenType, nil
 }
 
-func getHeadersFromTokenString(tokenString string) (jws.Headers, error) {
+func getHeadersFromTokenHeader(tokenString string) (jws.Headers, error) {
 	msg, err := jws.ParseString(tokenString)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse tokenString: %w", err)
@@ -357,12 +348,12 @@ func isTokenIssuerValid(requiredIssuer string, tokenIssuer string) bool {
 	return tokenIssuer == requiredIssuer
 }
 
-func isTokenTypeValid(requiredTokenType string, tokenString string) bool {
+func isTokenTypeValid(requiredTokenType string, tokenHeaders jws.Headers) bool {
 	if requiredTokenType == "" {
 		return true
 	}
 
-	tokenType, err := getTokenTypeFromTokenString(tokenString)
+	tokenType, err := getTokenTypeFromTokenHeader(tokenHeaders)
 	if err != nil {
 		return false
 	}

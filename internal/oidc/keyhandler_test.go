@@ -33,10 +33,14 @@ func TestNewKeyHandler(t *testing.T) {
 	require.True(t, ok)
 
 	token1 := op.GetToken(t)
-	keyID1, err := getKeyIDFromTokenString(token1.AccessToken)
+
+	headers1, err := getHeadersFromTokenHeader(token1.AccessToken)
 	require.NoError(t, err)
 
-	tokenAlgorithm, err := getTokenAlgorithmFromTokenString(token1.AccessToken)
+	keyID1, err := getKeyIDFromTokenHeader(headers1)
+	require.NoError(t, err)
+
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(headers1)
 	require.NoError(t, err)
 
 	// Test valid key id
@@ -52,10 +56,14 @@ func TestNewKeyHandler(t *testing.T) {
 	op.RotateKeys(t)
 
 	token2 := op.GetToken(t)
-	keyID2, err := getKeyIDFromTokenString(token2.AccessToken)
+
+	headers2, err := getHeadersFromTokenHeader(token2.AccessToken)
 	require.NoError(t, err)
 
-	tokenAlgorithm2, err := getTokenAlgorithmFromTokenString(token2.AccessToken)
+	keyID2, err := getKeyIDFromTokenHeader(headers2)
+	require.NoError(t, err)
+
+	tokenAlgorithm2, err := getTokenAlgorithmFromTokenHeader(headers2)
 	require.NoError(t, err)
 
 	key2, err := keyHandler.getKeyFromID(ctx, keyID2, tokenAlgorithm2)
@@ -80,7 +88,11 @@ func TestNewKeyHandler(t *testing.T) {
 	// new token with new key and jwks uri isn't accessible
 	op.RotateKeys(t)
 	token3 := op.GetToken(t)
-	keyID3, err := getKeyIDFromTokenString(token3.AccessToken)
+
+	headers3, err := getHeadersFromTokenHeader(token3.AccessToken)
+	require.NoError(t, err)
+
+	keyID3, err := getKeyIDFromTokenHeader(headers3)
 	require.NoError(t, err)
 	op.Close(t)
 	_, err = keyHandler.getKeyFromID(ctx, keyID3, "")
