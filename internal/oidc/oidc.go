@@ -118,12 +118,12 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		}
 	}
 
-	headers, err := getHeadersFromTokenString(tokenString)
+	tokenHeaders, err := getHeadersFromTokenString(tokenString)
 	if err != nil {
 		return *new(T), err
 	}
 
-	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, headers)
+	tokenTypeValid := isTokenTypeValid(h.requiredTokenType, tokenHeaders)
 	if !tokenTypeValid {
 		return *new(T), fmt.Errorf("token type %q required", h.requiredTokenType)
 	}
@@ -131,13 +131,13 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 	keyID := ""
 	if !h.disableKeyID {
 		var err error
-		keyID, err = getKeyIDFromTokenHeader(headers)
+		keyID, err = getKeyIDFromTokenHeader(tokenHeaders)
 		if err != nil {
 			return *new(T), err
 		}
 	}
 
-	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(headers)
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(tokenHeaders)
 	if err != nil {
 		return *new(T), fmt.Errorf("tokenAlgorithm required: %w", err)
 	}
