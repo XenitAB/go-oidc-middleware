@@ -118,7 +118,7 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		}
 	}
 
-	headers, err := getHeadersFromTokenHeader(tokenString)
+	headers, err := getHeadersFromTokenString(tokenString)
 	if err != nil {
 		return *new(T), err
 	}
@@ -304,7 +304,7 @@ func getTokenTypeFromTokenHeader(headers jws.Headers) (string, error) {
 	return tokenType, nil
 }
 
-func getHeadersFromTokenHeader(tokenString string) (jws.Headers, error) {
+func getHeadersFromTokenString(tokenString string) (jws.Headers, error) {
 	msg, err := jws.ParseString(tokenString)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse tokenString: %w", err)

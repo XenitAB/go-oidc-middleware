@@ -35,7 +35,7 @@ func TestNewKeyHandler(t *testing.T) {
 
 	token1 := op.GetToken(t)
 
-	headers1, err := getHeadersFromTokenHeader(token1.AccessToken)
+	headers1, err := getHeadersFromTokenString(token1.AccessToken)
 	require.NoError(t, err)
 
 	keyID1, err := getKeyIDFromTokenHeader(headers1)
@@ -58,7 +58,7 @@ func TestNewKeyHandler(t *testing.T) {
 
 	token2 := op.GetToken(t)
 
-	headers2, err := getHeadersFromTokenHeader(token2.AccessToken)
+	headers2, err := getHeadersFromTokenString(token2.AccessToken)
 	require.NoError(t, err)
 
 	keyID2, err := getKeyIDFromTokenHeader(headers2)
@@ -90,7 +90,7 @@ func TestNewKeyHandler(t *testing.T) {
 	op.RotateKeys(t)
 	token3 := op.GetToken(t)
 
-	headers3, err := getHeadersFromTokenHeader(token3.AccessToken)
+	headers3, err := getHeadersFromTokenString(token3.AccessToken)
 	require.NoError(t, err)
 
 	keyID3, err := getKeyIDFromTokenHeader(headers3)

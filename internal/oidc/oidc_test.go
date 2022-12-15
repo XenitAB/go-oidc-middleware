@@ -40,7 +40,7 @@ func TestGetHeadersFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	signedToken1 := string(signedTokenBytes1)
-	parsedHeaders1, err := getHeadersFromTokenHeader(signedToken1)
+	parsedHeaders1, err := getHeadersFromTokenString(signedToken1)
 	require.NoError(t, err)
 
 	require.Equal(t, key.KeyID(), parsedHeaders1.KeyID())
@@ -55,7 +55,7 @@ func TestGetHeadersFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	signedToken2 := string(signedTokenBytes2)
-	parsedHeaders2, err := getHeadersFromTokenHeader(signedToken2)
+	parsedHeaders2, err := getHeadersFromTokenString(signedToken2)
 	require.NoError(t, err)
 
 	require.Empty(t, parsedHeaders2.Type())
@@ -73,12 +73,12 @@ func TestGetHeadersFromTokenString(t *testing.T) {
 
 	signedToken3 := string(signedTokenBytes3)
 
-	_, err = getHeadersFromTokenHeader(signedToken3)
+	_, err = getHeadersFromTokenString(signedToken3)
 	require.Error(t, err)
 	require.Equal(t, "more than one signature in token", err.Error())
 
 	// Test with non-token string
-	_, err = getHeadersFromTokenHeader("foo")
+	_, err = getHeadersFromTokenString("foo")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unable to parse tokenString")
 }
@@ -98,7 +98,7 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 
 	signedToken1 := string(signedTokenBytes1)
 
-	parsedHeaders1, err := getHeadersFromTokenHeader(signedToken1)
+	parsedHeaders1, err := getHeadersFromTokenString(signedToken1)
 	require.NoError(t, err)
 
 	keyID, err := getKeyIDFromTokenHeader(parsedHeaders1)
@@ -122,7 +122,7 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 
 	signedToken2 := string(signedTokenBytes2)
 
-	parsedHeaders2, err := getHeadersFromTokenHeader(signedToken2)
+	parsedHeaders2, err := getHeadersFromTokenString(signedToken2)
 	require.NoError(t, err)
 
 	_, err = getKeyIDFromTokenHeader(parsedHeaders2)
@@ -130,7 +130,7 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 	require.Equal(t, "token header does not contain key id (kid)", err.Error())
 
 	// Test with non-token string
-	_, err = getHeadersFromTokenHeader("foo")
+	_, err = getHeadersFromTokenString("foo")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unable to parse tokenString")
 }
@@ -152,7 +152,7 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 
 	signedToken1 := string(signedTokenBytes1)
 
-	parsedHeaders1, err := getHeadersFromTokenHeader(signedToken1)
+	parsedHeaders1, err := getHeadersFromTokenString(signedToken1)
 	require.NoError(t, err)
 
 	tokenType, err := getTokenTypeFromTokenHeader(parsedHeaders1)
@@ -171,7 +171,7 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 
 	signedToken2 := string(signedTokenBytes2)
 
-	parsedHeaders2, err := getHeadersFromTokenHeader(signedToken2)
+	parsedHeaders2, err := getHeadersFromTokenString(signedToken2)
 	require.NoError(t, err)
 
 	_, err = getTokenTypeFromTokenHeader(parsedHeaders2)
@@ -179,7 +179,7 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 	require.Equal(t, "token header does not contain type (typ)", err.Error())
 
 	// Test with non-token string
-	_, err = getHeadersFromTokenHeader("foo")
+	_, err = getHeadersFromTokenString("foo")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unable to parse tokenString")
 }
@@ -445,7 +445,7 @@ func TestIsTokenTypeValid(t *testing.T) {
 
 		token := string(signedTokenBytes)
 
-		parsedHeader, err := getHeadersFromTokenHeader(token)
+		parsedHeader, err := getHeadersFromTokenString(token)
 		require.NoError(t, err)
 
 		result := isTokenTypeValid(c.requiredTokenType, parsedHeader)
@@ -870,7 +870,7 @@ func TestGetAndValidateTokenFromStringWithKeyID(t *testing.T) {
 
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	parsedHeaders1, err := getHeadersFromTokenHeader(token1)
+	parsedHeaders1, err := getHeadersFromTokenString(token1)
 	require.NoError(t, err)
 
 	keyID, err := getKeyIDFromTokenHeader(parsedHeaders1)
@@ -908,7 +908,7 @@ func TestGetAndValidateTokenFromStringWithoutKeyID(t *testing.T) {
 
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	parsedHeaders1, err := getHeadersFromTokenHeader(token1)
+	parsedHeaders1, err := getHeadersFromTokenString(token1)
 	require.NoError(t, err)
 
 	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(parsedHeaders1)
