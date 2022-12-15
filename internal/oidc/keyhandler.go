@@ -119,12 +119,12 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKey(ctx context.Context) (jwk.Key,
 
 	return key, nil
 }
-func (h *keyHandler) getKey(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
+func (h *keyHandler) getKey(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	if h.disableKeyID {
 		return h.getKeyWithoutKeyID()
 	}
 
-	return h.getKeyFromID(ctx, keyID, algorithm)
+	return h.getKeyFromID(ctx, keyID, tokenAlgorithm)
 }
 
 func (h *keyHandler) getKeySet() jwk.Set {
@@ -133,10 +133,10 @@ func (h *keyHandler) getKeySet() jwk.Set {
 	return h.keySet
 }
 
-func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
+func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	keySet := h.getKeySet()
 
-	key, err := findKey(keySet, keyID, algorithm)
+	key, err := findKey(keySet, keyID, tokenAlgorithm)
 	if err == nil {
 		return key, nil
 	}
@@ -145,7 +145,7 @@ func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm j
 	if err != nil {
 		return nil, fmt.Errorf("unable to update key set for key %q: %w", keyID, err)
 	}
-	return findKey(updatedKeySet, keyID, algorithm)
+	return findKey(updatedKeySet, keyID, tokenAlgorithm)
 }
 
 func findKey(keySet jwk.Set, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
