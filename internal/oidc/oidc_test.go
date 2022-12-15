@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"testing"
@@ -1042,6 +1043,43 @@ func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
 	require.NoError(tb, err)
 
 	return key, pubKey
+}
+
+func testDuplicateKey(tb testing.TB) (jwk.Key, jwk.Key, jwk.Key) {
+	tb.Helper()
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	require.NoError(tb, err)
+
+	key, err := jwk.New(rsaKey)
+	require.NoError(tb, err)
+
+	thumbprint, err := key.Thumbprint(crypto.SHA256)
+	require.NoError(tb, err)
+
+	keyID := fmt.Sprintf("%x", thumbprint)
+	err = key.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	pubKey256, err := jwk.New(rsaKey.PublicKey)
+	require.NoError(tb, err)
+
+	err = pubKey256.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	err = pubKey256.Set(jwk.AlgorithmKey, jwa.RS256)
+	require.NoError(tb, err)
+
+	pubKey512, err := jwk.New(rsaKey.PublicKey)
+	require.NoError(tb, err)
+
+	err = pubKey512.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	err = pubKey512.Set(jwk.AlgorithmKey, jwa.RS512)
+	require.NoError(tb, err)
+
+	return key, pubKey256, pubKey512
 }
 
 func testNewTokenString(t *testing.T, privKeySet jwk.Set) string {

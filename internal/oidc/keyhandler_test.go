@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"encoding/json"
+	"github.com/lestrrat-go/jwx/jwa"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -305,6 +306,32 @@ func TestWaitForUpdateKeySetWithKeyIDEnabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestKeySetWithDuplicateKeyID(t *testing.T) {
+	ctx := context.Background()
+
+	keySets := testNewTestKeySet(t)
+	keySets.setKeys(testNewDuplicateKeySet(t))
+
+	testServer := testNewJwksServer(t, keySets)
+	defer testServer.Close()
+
+	keyHandler, err := newKeyHandler(http.DefaultClient, testServer.URL, 100*time.Millisecond, 100, false)
+	require.NoError(t, err)
+
+	genKey, _ := keySets.publicKeySet.Get(0)
+
+	key256, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS256)
+	require.NoError(t, err)
+	require.Equal(t, "RS256", key256.Algorithm())
+
+	key512, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS512)
+	require.NoError(t, err)
+	require.Equal(t, "RS512", key512.Algorithm())
+
+	_, err = keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS384)
+	require.ErrorContains(t, err, "unable to find key")
+}
+
 func testNewJwksServer(t *testing.T, keySets *testKeySets) *httptest.Server {
 	t.Helper()
 
@@ -352,6 +379,22 @@ func testNewKeySet(t *testing.T, numKeys int, disableKeyID bool) (jwk.Set, jwk.S
 		privKeySet.Add(privKey)
 		pubKeySet.Add(pubKey)
 	}
+
+	return privKeySet, pubKeySet
+}
+
+func testNewDuplicateKeySet(t *testing.T) (jwk.Set, jwk.Set) {
+	t.Helper()
+
+	privKeySet := jwk.NewSet()
+	pubKeySet := jwk.NewSet()
+
+	privKey, pubKeyA, pubKeyB := testDuplicateKey(t)
+
+	privKeySet.Add(privKey)
+	pubKeySet.Add(pubKeyA)
+	privKeySet.Add(privKey)
+	pubKeySet.Add(pubKeyB)
 
 	return privKeySet, pubKeySet
 }
