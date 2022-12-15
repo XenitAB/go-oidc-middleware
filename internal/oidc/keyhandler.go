@@ -136,7 +136,7 @@ func (h *keyHandler) getKeySet() jwk.Set {
 func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	keySet := h.getKeySet()
 
-	key, err := findKey(ctx, keyID, algorithm, keySet)
+	key, err := findKey(keySet, keyID, algorithm)
 	if err == nil {
 		return key, nil
 	}
@@ -145,23 +145,27 @@ func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, algorithm j
 	if err != nil {
 		return nil, fmt.Errorf("unable to update key set for key %q: %w", keyID, err)
 	}
-	return findKey(ctx, keyID, algorithm, updatedKeySet)
+	return findKey(updatedKeySet, keyID, algorithm)
 }
 
-func findKey(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm, keySet jwk.Set) (jwk.Key, error) {
-	key, found := keySet.LookupKeyID(keyID)
-	// when tokenAlgorithm matches we immediatly can return otherwise we iterate and find the
-	if found && key.Algorithm() == tokenAlgorithm.String() {
-		return key, nil
-	}
-
-	for iter := keySet.Iterate(ctx); iter.Next(ctx); {
-		pair := iter.Pair()
-		key, ok := pair.Value.(jwk.Key)
+func findKey(keySet jwk.Set, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
+	for i := 0; i < keySet.Len(); i++ {
+		key, ok := keySet.Get(i)
 		if !ok {
 			continue
 		}
-		if key.KeyID() == keyID && key.Algorithm() == tokenAlgorithm.String() {
+
+		if key.KeyID() != keyID {
+			continue
+		}
+
+		// `alg` is optional on key: https://www.rfc-editor.org/rfc/rfc7517#section-4.4
+		if key.Algorithm() == "" {
+			return key, nil
+		}
+
+		// if `alg` on key is defined, only return it if it matches tokenAlgorithm
+		if key.Algorithm() == tokenAlgorithm.String() {
 			return key, nil
 		}
 	}
