@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"encoding/json"
+	"github.com/lestrrat-go/jwx/jwa"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -33,26 +34,40 @@ func TestNewKeyHandler(t *testing.T) {
 	require.True(t, ok)
 
 	token1 := op.GetToken(t)
-	keyID1, err := getKeyIDFromTokenString(token1.AccessToken)
+
+	headers1, err := getHeadersFromTokenString(token1.AccessToken)
+	require.NoError(t, err)
+
+	keyID1, err := getKeyIDFromTokenHeader(headers1)
+	require.NoError(t, err)
+
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(headers1)
 	require.NoError(t, err)
 
 	// Test valid key id
-	key1, err := keyHandler.getKeyFromID(ctx, keyID1)
+	key1, err := keyHandler.getKeyFromID(ctx, keyID1, tokenAlgorithm)
 	require.NoError(t, err)
 	require.Equal(t, expectedKey1, key1)
 
 	// Test invalid key id
-	_, err = keyHandler.getKeyFromID(ctx, "foo")
+	_, err = keyHandler.getKeyFromID(ctx, "foo", tokenAlgorithm)
 	require.Error(t, err)
 
 	// Test with rotated keys
 	op.RotateKeys(t)
 
 	token2 := op.GetToken(t)
-	keyID2, err := getKeyIDFromTokenString(token2.AccessToken)
+
+	headers2, err := getHeadersFromTokenString(token2.AccessToken)
 	require.NoError(t, err)
 
-	key2, err := keyHandler.getKeyFromID(ctx, keyID2)
+	keyID2, err := getKeyIDFromTokenHeader(headers2)
+	require.NoError(t, err)
+
+	tokenAlgorithm2, err := getTokenAlgorithmFromTokenHeader(headers2)
+	require.NoError(t, err)
+
+	key2, err := keyHandler.getKeyFromID(ctx, keyID2, tokenAlgorithm2)
 	require.NoError(t, err)
 
 	keySet2 := keyHandler.getKeySet()
@@ -74,10 +89,14 @@ func TestNewKeyHandler(t *testing.T) {
 	// new token with new key and jwks uri isn't accessible
 	op.RotateKeys(t)
 	token3 := op.GetToken(t)
-	keyID3, err := getKeyIDFromTokenString(token3.AccessToken)
+
+	headers3, err := getHeadersFromTokenString(token3.AccessToken)
+	require.NoError(t, err)
+
+	keyID3, err := getKeyIDFromTokenHeader(headers3)
 	require.NoError(t, err)
 	op.Close(t)
-	_, err = keyHandler.getKeyFromID(ctx, keyID3)
+	_, err = keyHandler.getKeyFromID(ctx, keyID3, "")
 	require.Error(t, err)
 }
 
@@ -287,6 +306,32 @@ func TestWaitForUpdateKeySetWithKeyIDEnabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestKeySetWithDuplicateKeyID(t *testing.T) {
+	ctx := context.Background()
+
+	keySets := testNewTestKeySet(t)
+	keySets.setKeys(testNewDuplicateKeySet(t))
+
+	testServer := testNewJwksServer(t, keySets)
+	defer testServer.Close()
+
+	keyHandler, err := newKeyHandler(http.DefaultClient, testServer.URL, 100*time.Millisecond, 100, false)
+	require.NoError(t, err)
+
+	genKey, _ := keySets.publicKeySet.Get(0)
+
+	key256, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS256)
+	require.NoError(t, err)
+	require.Equal(t, "RS256", key256.Algorithm())
+
+	key512, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS512)
+	require.NoError(t, err)
+	require.Equal(t, "RS512", key512.Algorithm())
+
+	_, err = keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS384)
+	require.ErrorContains(t, err, "unable to find key")
+}
+
 func testNewJwksServer(t *testing.T, keySets *testKeySets) *httptest.Server {
 	t.Helper()
 
@@ -334,6 +379,22 @@ func testNewKeySet(t *testing.T, numKeys int, disableKeyID bool) (jwk.Set, jwk.S
 		privKeySet.Add(privKey)
 		pubKeySet.Add(pubKey)
 	}
+
+	return privKeySet, pubKeySet
+}
+
+func testNewDuplicateKeySet(t *testing.T) (jwk.Set, jwk.Set) {
+	t.Helper()
+
+	privKeySet := jwk.NewSet()
+	pubKeySet := jwk.NewSet()
+
+	privKey, pubKeyA, pubKeyB := testDuplicateKey(t)
+
+	privKeySet.Add(privKey)
+	pubKeySet.Add(pubKeyA)
+	privKeySet.Add(privKey)
+	pubKeySet.Add(pubKeyB)
 
 	return privKeySet, pubKeySet
 }

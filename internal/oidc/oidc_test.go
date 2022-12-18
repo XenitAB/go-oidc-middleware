@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"testing"
@@ -96,7 +97,11 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	signedToken1 := string(signedTokenBytes1)
-	keyID, err := getKeyIDFromTokenString(signedToken1)
+
+	parsedHeaders1, err := getHeadersFromTokenString(signedToken1)
+	require.NoError(t, err)
+
+	keyID, err := getKeyIDFromTokenHeader(parsedHeaders1)
 	require.NoError(t, err)
 
 	require.Equal(t, key.KeyID(), keyID)
@@ -116,12 +121,16 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	signedToken2 := string(signedTokenBytes2)
-	_, err = getKeyIDFromTokenString(signedToken2)
+
+	parsedHeaders2, err := getHeadersFromTokenString(signedToken2)
+	require.NoError(t, err)
+
+	_, err = getKeyIDFromTokenHeader(parsedHeaders2)
 	require.Error(t, err)
 	require.Equal(t, "token header does not contain key id (kid)", err.Error())
 
 	// Test with non-token string
-	_, err = getKeyIDFromTokenString("foo")
+	_, err = getHeadersFromTokenString("foo")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unable to parse tokenString")
 }
@@ -142,7 +151,11 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	signedToken1 := string(signedTokenBytes1)
-	tokenType, err := getTokenTypeFromTokenString(signedToken1)
+
+	parsedHeaders1, err := getHeadersFromTokenString(signedToken1)
+	require.NoError(t, err)
+
+	tokenType, err := getTokenTypeFromTokenHeader(parsedHeaders1)
 	require.NoError(t, err)
 
 	require.Equal(t, headers1.Type(), tokenType)
@@ -157,12 +170,16 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	signedToken2 := string(signedTokenBytes2)
-	_, err = getTokenTypeFromTokenString(signedToken2)
+
+	parsedHeaders2, err := getHeadersFromTokenString(signedToken2)
+	require.NoError(t, err)
+
+	_, err = getTokenTypeFromTokenHeader(parsedHeaders2)
 	require.Error(t, err)
 	require.Equal(t, "token header does not contain type (typ)", err.Error())
 
 	// Test with non-token string
-	_, err = getTokenTypeFromTokenString("foo")
+	_, err = getHeadersFromTokenString("foo")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unable to parse tokenString")
 }
@@ -428,7 +445,10 @@ func TestIsTokenTypeValid(t *testing.T) {
 
 		token := string(signedTokenBytes)
 
-		result := isTokenTypeValid(c.requiredTokenType, token)
+		parsedHeader, err := getHeadersFromTokenString(token)
+		require.NoError(t, err)
+
+		result := isTokenTypeValid(c.requiredTokenType, parsedHeader)
 		require.Equal(t, c.expectedResult, result)
 	}
 }
@@ -850,10 +870,16 @@ func TestGetAndValidateTokenFromStringWithKeyID(t *testing.T) {
 
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	keyID, err := getKeyIDFromTokenString(token1)
+	parsedHeaders1, err := getHeadersFromTokenString(token1)
 	require.NoError(t, err)
 
-	pubKey, err := keyHandler.getKey(context.Background(), keyID)
+	keyID, err := getKeyIDFromTokenHeader(parsedHeaders1)
+	require.NoError(t, err)
+
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(parsedHeaders1)
+	require.NoError(t, err)
+
+	pubKey, err := keyHandler.getKey(context.Background(), keyID, tokenAlgorithm)
 	require.NoError(t, err)
 
 	alg, err := getSignatureAlgorithm(pubKey.KeyType(), pubKey.Algorithm(), jwa.ES384)
@@ -882,7 +908,13 @@ func TestGetAndValidateTokenFromStringWithoutKeyID(t *testing.T) {
 
 	token1 := testNewTokenString(t, keySets.privateKeySet)
 
-	pubKey, err := keyHandler.getKey(context.Background(), "")
+	parsedHeaders1, err := getHeadersFromTokenString(token1)
+	require.NoError(t, err)
+
+	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(parsedHeaders1)
+	require.NoError(t, err)
+
+	pubKey, err := keyHandler.getKey(context.Background(), "", tokenAlgorithm)
 	require.NoError(t, err)
 
 	alg, err := getSignatureAlgorithm(pubKey.KeyType(), pubKey.Algorithm(), jwa.ES384)
@@ -1011,6 +1043,43 @@ func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
 	require.NoError(tb, err)
 
 	return key, pubKey
+}
+
+func testDuplicateKey(tb testing.TB) (jwk.Key, jwk.Key, jwk.Key) {
+	tb.Helper()
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	require.NoError(tb, err)
+
+	key, err := jwk.New(rsaKey)
+	require.NoError(tb, err)
+
+	thumbprint, err := key.Thumbprint(crypto.SHA256)
+	require.NoError(tb, err)
+
+	keyID := fmt.Sprintf("%x", thumbprint)
+	err = key.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	pubKey256, err := jwk.New(rsaKey.PublicKey)
+	require.NoError(tb, err)
+
+	err = pubKey256.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	err = pubKey256.Set(jwk.AlgorithmKey, jwa.RS256)
+	require.NoError(tb, err)
+
+	pubKey512, err := jwk.New(rsaKey.PublicKey)
+	require.NoError(tb, err)
+
+	err = pubKey512.Set(jwk.KeyIDKey, keyID)
+	require.NoError(tb, err)
+
+	err = pubKey512.Set(jwk.AlgorithmKey, jwa.RS512)
+	require.NoError(tb, err)
+
+	return key, pubKey256, pubKey512
 }
 
 func testNewTokenString(t *testing.T, privKeySet jwk.Set) string {
