@@ -3,13 +3,13 @@ package oidc
 import (
 	"context"
 	"encoding/json"
-	"github.com/lestrrat-go/jwx/jwa"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/go-oidc-middleware/optest"
