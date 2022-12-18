@@ -83,8 +83,8 @@ github.com/valyala/fasthttp v1.42.0/go.mod h1:f6VbjjoI3z1NDOZOv17o6RvtRSWxC77seB
 github.com/valyala/tcplisten v1.0.0 h1:rBHj/Xf+E1tRGZyWIWwJDiRY0zc1Js+CV5DqwacVSA8=
 github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7FwZEA7Ioqkc=
 github.com/xenitab/dispans v0.0.10 h1:S+gSUM14rDJWK7MYNrjb8JbjeQPip6mlNJyLX+g7Agc=
-github.com/xenitab/go-oidc-middleware v0.0.37 h1:cmcFBPRBm63JLe67Xfen3Mi5rGkHyxJGGJqbIRbJNts=
-github.com/xenitab/go-oidc-middleware v0.0.37/go.mod h1:ir5fF6tpCQSHauFEfLaHbmND9pHEEaXHQqpjiOK+PY0=
+github.com/xenitab/go-oidc-middleware v0.0.38 h1:cYCUyEaTcJm0bGukmp5VvrtVDGzZ3NMJqApLKFznVH4=
+github.com/xenitab/go-oidc-middleware v0.0.38/go.mod h1:ir5fF6tpCQSHauFEfLaHbmND9pHEEaXHQqpjiOK+PY0=
 go.uber.org/atomic v1.7.0 h1:ADUqmZGgLDDfbSL9ZmPxKTybcoEYHgpYfELNoN+7hsw=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/ratelimit v0.2.0 h1:UQE2Bgi7p2B85uP5dC2bbRtig0C+OeNRnNEafLjsLPA=
