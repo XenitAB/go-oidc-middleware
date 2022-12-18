@@ -318,7 +318,8 @@ func TestKeySetWithDuplicateKeyID(t *testing.T) {
 	keyHandler, err := newKeyHandler(http.DefaultClient, testServer.URL, 100*time.Millisecond, 100, false)
 	require.NoError(t, err)
 
-	genKey, _ := keySets.publicKeySet.Get(0)
+	genKey, ok := keySets.publicKeySet.Get(0)
+	require.True(t, ok)
 
 	key256, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS256)
 	require.NoError(t, err)
