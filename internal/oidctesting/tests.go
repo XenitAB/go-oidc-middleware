@@ -371,7 +371,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 		d, e = getInfo()
 
 		require.Equal(t, options.ParseTokenErrorDescription, d)
-		require.EqualError(t, e, "token type \"JWT+AT\" required")
+		require.EqualError(t, e, "unable to parse token signature: invalid compact serialization format: invalid number of segments")
 	})
 }
 
