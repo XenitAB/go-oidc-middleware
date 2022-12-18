@@ -121,7 +121,7 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKey(ctx context.Context) (jwk.Key,
 }
 func (h *keyHandler) getKey(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	if h.disableKeyID {
-		return h.getKeyWithoutKeyID()
+		return h.getKeyWithoutKeyID(tokenAlgorithm)
 	}
 
 	return h.getKeyFromID(ctx, keyID, tokenAlgorithm)
@@ -172,13 +172,23 @@ func findKey(keySet jwk.Set, keyID string, tokenAlgorithm jwa.SignatureAlgorithm
 	return nil, fmt.Errorf("unable to find key %q", keyID)
 }
 
-func (h *keyHandler) getKeyWithoutKeyID() (jwk.Key, error) {
+func (h *keyHandler) getKeyWithoutKeyID(tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	keySet := h.getKeySet()
+	for i := 0; i < keySet.Len(); i++ {
+		key, ok := keySet.Get(i)
+		if !ok {
+			continue
+		}
 
-	key, found := keySet.Get(0)
-	if !found {
-		return nil, fmt.Errorf("no key found")
+		// `alg` is optional on key: https://www.rfc-editor.org/rfc/rfc7517#section-4.4
+		if key.Algorithm() == "" {
+			return key, nil
+		}
+
+		// if `alg` on key is defined, only return it if it matches tokenAlgorithm
+		if key.Algorithm() == tokenAlgorithm.String() {
+			return key, nil
+		}
 	}
-
-	return key, nil
+	return nil, fmt.Errorf("unable to find any matching key")
 }
