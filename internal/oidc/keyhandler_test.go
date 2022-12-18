@@ -321,16 +321,39 @@ func TestKeySetWithDuplicateKeyID(t *testing.T) {
 	genKey, ok := keySets.publicKeySet.Get(0)
 	require.True(t, ok)
 
-	key256, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS256)
-	require.NoError(t, err)
-	require.Equal(t, "RS256", key256.Algorithm())
+	t.Run("with key id RS256", func(t *testing.T) {
+		key, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS256)
+		require.NoError(t, err)
+		require.Equal(t, "RS256", key.Algorithm())
+	})
 
-	key512, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS512)
-	require.NoError(t, err)
-	require.Equal(t, "RS512", key512.Algorithm())
+	t.Run("without key id RS256", func(t *testing.T) {
+		key, err := keyHandler.getKeyWithoutKeyID(jwa.RS256)
+		require.NoError(t, err)
+		require.Equal(t, "RS256", key.Algorithm())
+	})
 
-	_, err = keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS384)
-	require.ErrorContains(t, err, "unable to find key")
+	t.Run("with key id RS512", func(t *testing.T) {
+		key, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS512)
+		require.NoError(t, err)
+		require.Equal(t, "RS512", key.Algorithm())
+	})
+
+	t.Run("without key id RS512", func(t *testing.T) {
+		key, err := keyHandler.getKeyWithoutKeyID(jwa.RS512)
+		require.NoError(t, err)
+		require.Equal(t, "RS512", key.Algorithm())
+	})
+
+	t.Run("error with key id RS384", func(t *testing.T) {
+		_, err := keyHandler.getKeyFromID(ctx, genKey.KeyID(), jwa.RS384)
+		require.ErrorContains(t, err, "unable to find key")
+	})
+
+	t.Run("error without key id RS384", func(t *testing.T) {
+		_, err := keyHandler.getKeyWithoutKeyID(jwa.RS384)
+		require.ErrorContains(t, err, "unable to find any matching key")
+	})
 }
 
 func testNewJwksServer(t *testing.T, keySets *testKeySets) *httptest.Server {
