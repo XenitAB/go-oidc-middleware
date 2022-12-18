@@ -1043,7 +1043,7 @@ func testNewKey(tb testing.TB) (jwk.Key, jwk.Key) {
 func testDuplicateKey(tb testing.TB) (jwk.Key, jwk.Key, jwk.Key) {
 	tb.Helper()
 
-	rsaKey, err := rsa.GenerateKey(rand.Reader, 1024) //nolint:gosec // using 1024bit in the test
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(tb, err)
 
 	key, err := jwk.New(rsaKey)
