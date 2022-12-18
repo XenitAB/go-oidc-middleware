@@ -74,13 +74,11 @@ func TestGetHeadersFromTokenString(t *testing.T) {
 	signedToken3 := string(signedTokenBytes3)
 
 	_, err = getHeadersFromTokenString(signedToken3)
-	require.Error(t, err)
-	require.Equal(t, "more than one signature in token", err.Error())
+	require.ErrorContains(t, err, "more than one signature in token: 2")
 
 	// Test with non-token string
 	_, err = getHeadersFromTokenString("foo")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unable to parse tokenString")
+	require.ErrorContains(t, err, "unable to parse token signature: invalid compact serialization format: invalid number of segments")
 }
 
 func TestGetKeyIDFromTokenString(t *testing.T) {
@@ -126,13 +124,11 @@ func TestGetKeyIDFromTokenString(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = getKeyIDFromTokenHeader(parsedHeaders2)
-	require.Error(t, err)
-	require.Equal(t, "token header does not contain key id (kid)", err.Error())
+	require.ErrorContains(t, err, "token header does not contain key id (kid)")
 
 	// Test with non-token string
 	_, err = getHeadersFromTokenString("foo")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unable to parse tokenString")
+	require.ErrorContains(t, err, "unable to parse token signature: invalid compact serialization format: invalid number of segments")
 }
 
 func TestGetTokenTypeFromTokenString(t *testing.T) {
@@ -180,8 +176,7 @@ func TestGetTokenTypeFromTokenString(t *testing.T) {
 
 	// Test with non-token string
 	_, err = getHeadersFromTokenString("foo")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unable to parse tokenString")
+	require.ErrorContains(t, err, "unable to parse token signature: invalid compact serialization format: invalid number of segments")
 }
 
 func TestIsTokenAudienceValid(t *testing.T) {

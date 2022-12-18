@@ -307,12 +307,12 @@ func getTokenTypeFromTokenHeader(headers jws.Headers) (string, error) {
 func getHeadersFromTokenString(tokenString string) (jws.Headers, error) {
 	msg, err := jws.ParseString(tokenString)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse tokenString: %w", err)
+		return nil, fmt.Errorf("unable to parse token signature: %w", err)
 	}
 
 	signatures := msg.Signatures()
 	if len(signatures) != 1 {
-		return nil, fmt.Errorf("more than one signature in token")
+		return nil, fmt.Errorf("more than one signature in token: %d", len(signatures))
 	}
 
 	headers := signatures[0].ProtectedHeaders()
