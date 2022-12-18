@@ -128,10 +128,10 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		return *new(T), fmt.Errorf("token type %q required", h.requiredTokenType)
 	}
 
-	keyID := ""
+	tokenKeyID := ""
 	if !h.disableKeyID {
 		var err error
-		keyID, err = getKeyIDFromTokenHeader(tokenHeaders)
+		tokenKeyID, err = getKeyIDFromTokenHeader(tokenHeaders)
 		if err != nil {
 			return *new(T), err
 		}
@@ -139,10 +139,10 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 
 	tokenAlgorithm, err := getTokenAlgorithmFromTokenHeader(tokenHeaders)
 	if err != nil {
-		return *new(T), fmt.Errorf("tokenAlgorithm required: %w", err)
+		return *new(T), fmt.Errorf("token algorithm required: %w", err)
 	}
 
-	key, err := h.keyHandler.getKey(ctx, keyID, tokenAlgorithm)
+	key, err := h.keyHandler.getKey(ctx, tokenKeyID, tokenAlgorithm)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to get public key: %w", err)
 	}
@@ -276,27 +276,27 @@ func getJwksUriFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fe
 	return discoveryData.JwksUri, nil
 }
 
-func getKeyIDFromTokenHeader(headers jws.Headers) (string, error) {
-	keyID := headers.KeyID()
-	if keyID == "" {
+func getKeyIDFromTokenHeader(tokenHeaders jws.Headers) (string, error) {
+	tokenKeyID := tokenHeaders.KeyID()
+	if tokenKeyID == "" {
 		return "", fmt.Errorf("token header does not contain key id (kid)")
 	}
 
-	return keyID, nil
+	return tokenKeyID, nil
 }
 
-func getTokenAlgorithmFromTokenHeader(headers jws.Headers) (jwa.SignatureAlgorithm, error) {
+func getTokenAlgorithmFromTokenHeader(tokenHeaders jws.Headers) (jwa.SignatureAlgorithm, error) {
 	// algorithm is a required field for a jwt see: https://www.rfc-editor.org/rfc/rfc7515#section-4.1.1
-	algorithm := headers.Algorithm()
-	if algorithm == "" {
+	tokenAlgorithm := tokenHeaders.Algorithm()
+	if tokenAlgorithm == "" {
 		return "", fmt.Errorf("token header does not contain algorithm (alg)")
 	}
 
-	return algorithm, nil
+	return tokenAlgorithm, nil
 }
 
-func getTokenTypeFromTokenHeader(headers jws.Headers) (string, error) {
-	tokenType := headers.Type()
+func getTokenTypeFromTokenHeader(tokenHeaders jws.Headers) (string, error) {
+	tokenType := tokenHeaders.Type()
 	if tokenType == "" {
 		return "", fmt.Errorf("token header does not contain type (typ)")
 	}

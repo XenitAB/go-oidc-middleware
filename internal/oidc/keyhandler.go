@@ -119,12 +119,12 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKey(ctx context.Context) (jwk.Key,
 
 	return key, nil
 }
-func (h *keyHandler) getKey(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
+func (h *keyHandler) getKey(ctx context.Context, tokenKeyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	if h.disableKeyID {
 		return h.getKeyWithoutKeyID(tokenAlgorithm)
 	}
 
-	return h.getKeyFromID(ctx, keyID, tokenAlgorithm)
+	return h.getKeyFromID(ctx, tokenKeyID, tokenAlgorithm)
 }
 
 func (h *keyHandler) getKeySet() jwk.Set {
@@ -133,29 +133,29 @@ func (h *keyHandler) getKeySet() jwk.Set {
 	return h.keySet
 }
 
-func (h *keyHandler) getKeyFromID(ctx context.Context, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
+func (h *keyHandler) getKeyFromID(ctx context.Context, tokenKeyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	keySet := h.getKeySet()
 
-	key, err := findKey(keySet, keyID, tokenAlgorithm)
+	key, err := findKey(keySet, tokenKeyID, tokenAlgorithm)
 	if err == nil {
 		return key, nil
 	}
 
 	updatedKeySet, err := h.waitForUpdateKeySetAndGetKeySet(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to update key set for key %q: %w", keyID, err)
+		return nil, fmt.Errorf("unable to update key set for key %q: %w", tokenKeyID, err)
 	}
-	return findKey(updatedKeySet, keyID, tokenAlgorithm)
+	return findKey(updatedKeySet, tokenKeyID, tokenAlgorithm)
 }
 
-func findKey(keySet jwk.Set, keyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
+func findKey(keySet jwk.Set, tokenKeyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	for i := 0; i < keySet.Len(); i++ {
 		key, ok := keySet.Get(i)
 		if !ok {
 			continue
 		}
 
-		if key.KeyID() != keyID {
+		if key.KeyID() != tokenKeyID {
 			continue
 		}
 
@@ -169,7 +169,7 @@ func findKey(keySet jwk.Set, keyID string, tokenAlgorithm jwa.SignatureAlgorithm
 			return key, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to find key %q", keyID)
+	return nil, fmt.Errorf("unable to find key %q", tokenKeyID)
 }
 
 func (h *keyHandler) getKeyWithoutKeyID(tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
