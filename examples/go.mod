@@ -12,7 +12,7 @@ require (
 
 require (
 	github.com/cristalhq/aconfig v0.18.3
-	github.com/gin-gonic/gin v1.8.1
+	github.com/gin-gonic/gin v1.8.2
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
@@ -58,9 +58,9 @@ require (
 	github.com/zclconf/go-cty v1.12.1 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
-	golang.org/x/net v0.2.0 // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.2.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
