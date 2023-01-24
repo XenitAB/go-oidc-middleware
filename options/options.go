@@ -47,6 +47,7 @@ type Options struct {
 	RequiredTokenType          string
 	RequiredAudience           string
 	DisableKeyID               bool
+	DisableIssuerValidation    bool
 	HttpClient                 *http.Client
 	TokenString                [][]TokenStringOption
 	ClaimsContextKeyName       ClaimsContextKeyName
@@ -250,5 +251,14 @@ func WithClaimsContextKeyName(opt string) Option {
 func WithErrorHandler(opt ErrorHandler) Option {
 	return func(opts *Options) {
 		opts.ErrorHandler = opt
+	}
+}
+
+// WithDisableIssuerValidation will disable the Issuer validation.
+// Use with care, make sure to do some kind of validation inside of the ClaimsValidationFn.
+// Default to false
+func WithDisableIssuerValidation() Option {
+	return func(opts *Options) {
+		opts.DisableIssuerValidation = true
 	}
 }
