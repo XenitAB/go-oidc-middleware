@@ -333,10 +333,11 @@ func TestTokenExpirationValid(t *testing.T) {
 
 func TestIsTokenIssuerValid(t *testing.T) {
 	cases := []struct {
-		testDescription string
-		requiredIssuer  string
-		tokenIssuer     string
-		expectedResult  bool
+		testDescription         string
+		disableIssuerValidation bool
+		requiredIssuer          string
+		tokenIssuer             string
+		expectedResult          bool
 	}{
 		{
 			testDescription: "both requiredIssuer and tokenIssuer are the same",
@@ -349,6 +350,13 @@ func TestIsTokenIssuerValid(t *testing.T) {
 			requiredIssuer:  "foo",
 			tokenIssuer:     "bar",
 			expectedResult:  false,
+		},
+		{
+			testDescription:         "requiredIssuer and tokenIssuer are not the same",
+			disableIssuerValidation: true,
+			requiredIssuer:          "foo",
+			tokenIssuer:             "bar",
+			expectedResult:          true,
 		},
 		{
 			testDescription: "both requiredIssuer and tokenIssuer are empty",
@@ -372,7 +380,7 @@ func TestIsTokenIssuerValid(t *testing.T) {
 
 	for i, c := range cases {
 		t.Logf("Test iteration %d: %s", i, c.testDescription)
-		result := isTokenIssuerValid(c.requiredIssuer, c.tokenIssuer)
+		result := isTokenIssuerValid(c.disableIssuerValidation, c.requiredIssuer, c.tokenIssuer)
 		require.Equal(t, c.expectedResult, result)
 	}
 }
@@ -622,6 +630,19 @@ func TestParseToken(t *testing.T) {
 			expectedErrorContains: "required issuer \"http://foo.bar\" was not found",
 		},
 		{
+			testDescription: "wrong issuer, with disable issuer validation",
+			options: []options.Option{
+				options.WithIssuer("http://foo.bar"),
+				options.WithDiscoveryUri("http://foo.bar"),
+				options.WithJwksUri(testServer.URL),
+				options.WithDisableKeyID(false),
+				options.WithDisableIssuerValidation(),
+			},
+			numKeys:               1,
+			customIssuer:          "http://wrong.issuer",
+			expectedErrorContains: "",
+		},
+		{
 			testDescription: "wrong issuer, without keyID",
 			options: []options.Option{
 				options.WithIssuer("http://foo.bar"),
@@ -700,7 +721,7 @@ func TestParseToken(t *testing.T) {
 		if c.expectedErrorContains == "" {
 			require.NoError(t, err)
 		} else {
-			require.Contains(t, err.Error(), c.expectedErrorContains)
+			require.ErrorContains(t, err, c.expectedErrorContains)
 		}
 	}
 }

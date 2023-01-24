@@ -34,6 +34,7 @@ type handler[T any] struct {
 	requiredAudience           string
 	requiredTokenType          string
 	disableKeyID               bool
+	disableIssuerValidation    bool
 	httpClient                 *http.Client
 	keyHandler                 *keyHandler
 	claimsValidationFn         options.ClaimsValidationFn[T]
@@ -43,18 +44,19 @@ func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters
 	opts := options.New(setters...)
 
 	h := &handler[T]{
-		issuer:                opts.Issuer,
-		discoveryUri:          opts.DiscoveryUri,
-		discoveryFetchTimeout: opts.DiscoveryFetchTimeout,
-		jwksUri:               opts.JwksUri,
-		jwksFetchTimeout:      opts.JwksFetchTimeout,
-		jwksRateLimit:         opts.JwksRateLimit,
-		allowedTokenDrift:     opts.AllowedTokenDrift,
-		requiredTokenType:     opts.RequiredTokenType,
-		requiredAudience:      opts.RequiredAudience,
-		disableKeyID:          opts.DisableKeyID,
-		httpClient:            opts.HttpClient,
-		claimsValidationFn:    claimsValidationFn,
+		issuer:                  opts.Issuer,
+		discoveryUri:            opts.DiscoveryUri,
+		discoveryFetchTimeout:   opts.DiscoveryFetchTimeout,
+		jwksUri:                 opts.JwksUri,
+		jwksFetchTimeout:        opts.JwksFetchTimeout,
+		jwksRateLimit:           opts.JwksRateLimit,
+		allowedTokenDrift:       opts.AllowedTokenDrift,
+		requiredTokenType:       opts.RequiredTokenType,
+		requiredAudience:        opts.RequiredAudience,
+		disableKeyID:            opts.DisableKeyID,
+		disableIssuerValidation: opts.DisableIssuerValidation,
+		httpClient:              opts.HttpClient,
+		claimsValidationFn:      claimsValidationFn,
 	}
 
 	if h.issuer == "" {
@@ -179,7 +181,7 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 		return *new(T), fmt.Errorf("token has expired: %s", token.Expiration())
 	}
 
-	validIssuer := isTokenIssuerValid(h.issuer, token.Issuer())
+	validIssuer := isTokenIssuerValid(h.disableIssuerValidation, h.issuer, token.Issuer())
 	if !validIssuer {
 		return *new(T), fmt.Errorf("required issuer %q was not found, received: %s", h.issuer, token.Issuer())
 	}
@@ -340,7 +342,11 @@ func isTokenExpirationValid(expiration time.Time, allowedDrift time.Duration) bo
 	return expirationWithAllowedDrift.After(time.Now())
 }
 
-func isTokenIssuerValid(requiredIssuer string, tokenIssuer string) bool {
+func isTokenIssuerValid(disableIssuerValidation bool, requiredIssuer string, tokenIssuer string) bool {
+	if disableIssuerValidation {
+		return true
+	}
+
 	if requiredIssuer == "" {
 		return false
 	}
