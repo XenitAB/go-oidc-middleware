@@ -85,11 +85,14 @@ func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters
 
 func (h *handler[T]) loadJwks() error {
 	if h.jwksUri == "" {
-		jwksUri, err := getJwksUriFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
+		metadata, err := getOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 		if err != nil {
 			return fmt.Errorf("unable to fetch jwksUri from discoveryUri (%s): %w", h.discoveryUri, err)
 		}
-		h.jwksUri = jwksUri
+		if metadata.JwksUri == "" {
+			return fmt.Errorf("JwksUri is empty")
+		}
+		h.jwksUri = metadata.JwksUri
 	}
 
 	keyHandler, err := newKeyHandler(h.httpClient, h.jwksUri, h.jwksFetchTimeout, h.jwksRateLimit, h.disableKeyID)
@@ -236,46 +239,44 @@ func GetDiscoveryUriFromIssuer(issuer string) string {
 	return fmt.Sprintf("%s/.well-known/openid-configuration", strings.TrimSuffix(issuer, "/"))
 }
 
-func getJwksUriFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fetchTimeout time.Duration) (string, error) {
+type oidcMetadata struct {
+	JwksUri          string `json:"jwks_uri"`
+	UserinfoEndpoint string `json:"userinfo_endpoint"`
+}
+
+func getOidcMetadataFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fetchTimeout time.Duration) (oidcMetadata, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryUri, nil)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
 	req.Header.Set("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
 	err = res.Body.Close()
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
-	var discoveryData struct {
-		JwksUri string `json:"jwks_uri"`
-	}
-
-	err = json.Unmarshal(bodyBytes, &discoveryData)
+	metadata := oidcMetadata{}
+	err = json.Unmarshal(bodyBytes, &metadata)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
-	if discoveryData.JwksUri == "" {
-		return "", fmt.Errorf("JwksUri is empty")
-	}
-
-	return discoveryData.JwksUri, nil
+	return metadata, nil
 }
 
 func getKeyIDFromTokenHeader(tokenHeaders jws.Headers) (string, error) {
