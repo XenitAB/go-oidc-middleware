@@ -1,6 +1,6 @@
 module github.com/xenitab/go-oidc-middleware/oidcechojwt
 
-go 1.19
+go 1.20
 
 require github.com/xenitab/go-oidc-middleware v0.0.40
 
