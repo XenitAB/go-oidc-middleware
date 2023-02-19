@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -19,7 +20,6 @@ import (
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/dispans/server"
 )
 
 type testClaims map[string]interface{}
@@ -457,7 +457,7 @@ func TestIsTokenTypeValid(t *testing.T) {
 }
 
 func TestGetAndValidateTokenFromString(t *testing.T) {
-	op := server.NewTesting(t)
+	op := optest.NewTesting(t)
 	defer op.Close(t)
 
 	issuer := op.GetURL(t)
@@ -474,7 +474,7 @@ func TestGetAndValidateTokenFromString(t *testing.T) {
 	validAccessToken := op.GetToken(t).AccessToken
 	require.NotEmpty(t, validAccessToken)
 
-	validIDToken, ok := op.GetToken(t).Extra("id_token").(string)
+	validIDToken := op.GetToken(t).IdToken
 	require.True(t, ok)
 	require.NotEmpty(t, validIDToken)
 
