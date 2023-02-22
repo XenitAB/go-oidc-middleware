@@ -12,6 +12,7 @@ import (
 func main() {
 	op, err := optest.New(
 		optest.WithIssuer("http://localhost:8082"),
+		optest.WithOpaqueAccessTokens(),
 		optest.WithoutAutoStart(),
 		optest.WithDefaultTestUser("test"),
 		optest.WithLoginPrompt(),
@@ -65,6 +66,7 @@ func main() {
 	r.Any("/token", gin.WrapH(opRouter))
 	r.Any("/jwks", gin.WrapH(opRouter))
 	r.Any("/login", gin.WrapH(opRouter))
+	r.Any("/userinfo", gin.WrapH(opRouter))
 
 	r.GET("/get_test_token", func(c *gin.Context) {
 		token, err := op.GetToken()
