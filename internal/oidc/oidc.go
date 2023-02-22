@@ -99,7 +99,7 @@ func newjwtHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], sett
 
 func (h *jwtHandler[T]) loadJwks() error {
 	if h.jwksUri == "" {
-		metadata, err := getOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
+		metadata, err := GetOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 		if err != nil {
 			return fmt.Errorf("unable to fetch jwksUri from discoveryUri (%s): %w", h.discoveryUri, err)
 		}
@@ -258,7 +258,7 @@ type oidcMetadata struct {
 	UserinfoEndpoint string `json:"userinfo_endpoint"`
 }
 
-func getOidcMetadataFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fetchTimeout time.Duration) (oidcMetadata, error) {
+func GetOidcMetadataFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fetchTimeout time.Duration) (oidcMetadata, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 	defer cancel()
 

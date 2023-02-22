@@ -462,7 +462,7 @@ func TestGetAndValidateTokenFromString(t *testing.T) {
 
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
-	metadata, err := getOidcMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	metadata, err := GetOidcMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
 	jwksUri := metadata.JwksUri
 	require.NoError(t, err)
 

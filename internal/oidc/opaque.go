@@ -100,7 +100,7 @@ func (h *opaqueHandler[T]) populateIntrospectionUri() error {
 		h.discoveryUri = GetDiscoveryUriFromIssuer(h.issuerUri)
 	}
 
-	metadata, err := getOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
+	metadata, err := GetOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 	if err != nil {
 		return fmt.Errorf("unable to fetch userinfo_endpoint from discoveryUri (%s): %w", h.discoveryUri, err)
 	}
