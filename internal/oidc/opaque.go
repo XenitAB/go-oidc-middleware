@@ -34,10 +34,10 @@ func (c *opaqueTokenCache[T]) set(key string, value T) {
 
 func (c *opaqueTokenCache[T]) get(key string) (T, bool) {
 	c.mu.Lock()
-	now := time.Now()
-	for k, v := range c.tokens {
-		tokenExpiration := v.created.Add(c.timeToLive)
-		if tokenExpiration.After(now) {
+	for k := range c.tokens {
+		tokenExpiration := c.tokens[k].created.Add(c.timeToLive)
+		isExpired := tokenExpiration.Before(time.Now())
+		if isExpired {
 			delete(c.tokens, k)
 		}
 	}
@@ -68,6 +68,7 @@ func newOpaqueHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], s
 		introspectionFetchTimeout: opaqueOpts.IntrospectionFetchTimeout,
 		tokenCache: &opaqueTokenCache[T]{
 			timeToLive: opaqueOpts.TokenCacheTimeToLive,
+			tokens:     map[string]opaqueToken[T]{},
 		},
 		tokenCacheEnabled:     opaqueOpts.TokenCacheTimeToLive != 0,
 		httpClient:            opts.HttpClient,

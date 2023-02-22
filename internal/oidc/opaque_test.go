@@ -33,3 +33,42 @@ func TestOpaqueHandler(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "test", sub)
 }
+
+func TestOpaqueTokenCache(t *testing.T) {
+	ttl := 50 * time.Millisecond
+	cache := &opaqueTokenCache[string]{
+		timeToLive: ttl,
+		tokens:     map[string]opaqueToken[string]{},
+	}
+
+	cases := []struct {
+		sleep   time.Duration
+		expired bool
+	}{
+		{
+			sleep:   ttl / 5,
+			expired: false,
+		},
+		{
+			sleep:   ttl / 5,
+			expired: false,
+		},
+		{
+			sleep:   ttl,
+			expired: true,
+		},
+	}
+	cache.set("foo", "bar")
+
+	for _, c := range cases {
+		time.Sleep(c.sleep)
+		value, ok := cache.get("foo")
+		if !c.expired {
+			require.True(t, ok)
+			require.Equal(t, "bar", value)
+		} else {
+			require.False(t, ok)
+			require.Empty(t, value)
+		}
+	}
+}
