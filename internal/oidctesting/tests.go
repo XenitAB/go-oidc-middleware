@@ -59,8 +59,10 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_new", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
 		cases := []struct {
 			testDescription string
@@ -70,14 +72,22 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			{
 				testDescription: "valid issuer doesn't panic",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
+				},
+				expectPanic: false,
+			},
+			{
+				testDescription: "opaque - valid issuer doesn't panic",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
 				},
 				expectPanic: false,
 			},
 			{
 				testDescription: "valid issuer, invalid DiscoveryUri panics",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithDiscoveryUri("http://foo.bar/baz"),
 				},
 				expectPanic: true,
@@ -85,7 +95,7 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			{
 				testDescription: "valid issuer, invalid JwksUri panics",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithJwksUri("http://foo.bar/baz"),
 				},
 				expectPanic: true,
@@ -106,14 +116,14 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 				testDescription: "fake issuer with lazy load doesn't panic",
 				config: []options.Option{
 					options.WithIssuer("http://foo.bar/baz"),
-					options.WithLazyLoadJwks(true),
+					options.WithLazyLoadMetadata(true),
 				},
 				expectPanic: false,
 			},
 			{
 				testDescription: "valid signature algorithm doesn't panic",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithFallbackSignatureAlgorithm("RS256"),
 				},
 				expectPanic: false,
@@ -121,7 +131,7 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			{
 				testDescription: "invalid signature algorithm panics",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithFallbackSignatureAlgorithm("foobar"),
 				},
 				expectPanic: true,
@@ -144,36 +154,66 @@ func runTestHandler(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_handler", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
-		handler := tester.NewHandlerFn(
-			nil,
-			options.WithIssuer(op.GetURL(t)),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithTokenString(
-				options.WithTokenStringHeaderName("Authorization"),
-				options.WithTokenStringTokenPrefix("Bearer "),
-			),
-		)
+		cases := []struct {
+			testDescription string
+			op              *optest.OPTesting
+			options         []options.Option
+		}{
+			{
+				testDescription: "jwt token",
+				op:              jwtOp,
+				options: []options.Option{
+					options.WithIssuer(jwtOp.GetURL(t)),
+					options.WithRequiredAudience("test-client"),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithTokenString(
+						options.WithTokenStringHeaderName("Authorization"),
+						options.WithTokenStringTokenPrefix("Bearer "),
+					),
+				},
+			},
+			{
+				testDescription: "opaque token",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
+					options.WithRequiredAudience("test-client"),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithTokenString(
+						options.WithTokenStringHeaderName("Authorization"),
+						options.WithTokenStringTokenPrefix("Bearer "),
+					),
+				},
+			},
+		}
 
-		// Test without authentication
-		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
-		recNoAuth := httptest.NewRecorder()
-		handler.ServeHTTP(recNoAuth, reqNoAuth)
+		for i, c := range cases {
+			t.Logf("Test #%d: %s", i, c.testDescription)
+			handler := tester.NewHandlerFn(nil, c.options...)
 
-		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
+			// Test without authentication
+			reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
+			recNoAuth := httptest.NewRecorder()
+			handler.ServeHTTP(recNoAuth, reqNoAuth)
 
-		// Test with authentication
-		token := op.GetToken(t)
-		testHttpWithAuthentication(t, token, handler)
-		testHttpWithIDTokenFailure(t, token, handler)
+			require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
 
-		// Test with rotated key
-		op.RotateKeys(t)
-		tokenWithRotatedKey := op.GetToken(t)
-		testHttpWithAuthentication(t, tokenWithRotatedKey, handler)
+			// Test with authentication
+			token := c.op.GetToken(t)
+			testHttpWithAuthentication(t, token, handler)
+			testHttpWithIDTokenFailure(t, token, handler)
+
+			// Test with rotated key
+			c.op.RotateKeys(t)
+			tokenWithRotatedKey := c.op.GetToken(t)
+			testHttpWithAuthentication(t, tokenWithRotatedKey, handler)
+		}
 	})
 }
 
@@ -181,35 +221,64 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_lazy_load", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
-		oidcHandler, err := oidc.NewHandler[TestClaims](
-			nil,
-			options.WithIssuer("http://foo.bar/baz"),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithLazyLoadJwks(true),
-		)
-		require.NoError(t, err)
+		cases := []struct {
+			testDescription string
+			op              *optest.OPTesting
+			options         []options.Option
+		}{
+			{
+				testDescription: "jwt token",
+				op:              jwtOp,
+				options: []options.Option{
+					options.WithIssuer("http://foo.bar/baz"),
+					options.WithRequiredAudience("test-client"),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithLazyLoadMetadata(true),
+				},
+			},
+			{
+				testDescription: "opaque token",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer("http://foo.bar/baz"),
+					options.WithLazyLoadMetadata(true),
+				},
+			},
+		}
 
-		handler := tester.ToHandlerFn(oidcHandler.ParseToken)
+		for i, c := range cases {
+			t.Logf("Test #%d: %s", i, c.testDescription)
+			oidcHandler, err := oidc.NewHandler[TestClaims](
+				nil,
+				c.options...,
+			)
+			require.NoError(t, err)
 
-		// Test without authentication
-		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
-		recNoAuth := httptest.NewRecorder()
-		handler.ServeHTTP(recNoAuth, reqNoAuth)
+			handler := tester.ToHandlerFn(oidcHandler.ParseToken)
 
-		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
+			// Test without authentication
+			reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
+			recNoAuth := httptest.NewRecorder()
+			handler.ServeHTTP(recNoAuth, reqNoAuth)
 
-		// Test with authentication
-		token := op.GetToken(t)
-		testHttpWithAuthenticationFailure(t, token, handler)
+			require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
 
-		oidcHandler.SetIssuer(op.GetURL(t))
-		oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(op.GetURL(t)))
+			// Test with authentication
+			token := c.op.GetToken(t)
+			testHttpWithAuthenticationFailure(t, token, handler)
 
-		testHttpWithAuthentication(t, token, handler)
+			oidcHandler.SetIssuer(c.op.GetURL(t))
+			oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(c.op.GetURL(t)))
+
+			testHttpWithAuthentication(t, token, handler)
+
+		}
 	})
 }
 

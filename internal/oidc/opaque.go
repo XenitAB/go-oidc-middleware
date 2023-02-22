@@ -20,7 +20,7 @@ type opaqueToken[T any] struct {
 type opaqueTokenCache[T any] struct {
 	timeToLive time.Duration
 	tokens     map[string]opaqueToken[T]
-	mu         sync.RWMutex
+	mu         sync.Mutex
 }
 
 func (c *opaqueTokenCache[T]) set(key string, value T) {
@@ -33,7 +33,7 @@ func (c *opaqueTokenCache[T]) set(key string, value T) {
 }
 
 func (c *opaqueTokenCache[T]) get(key string) (T, bool) {
-	c.mu.RLock()
+	c.mu.Lock()
 	now := time.Now()
 	for k, v := range c.tokens {
 		tokenExpiration := v.created.Add(c.timeToLive)
@@ -42,7 +42,7 @@ func (c *opaqueTokenCache[T]) get(key string) (T, bool) {
 		}
 	}
 	value, ok := c.tokens[key]
-	c.mu.RUnlock()
+	c.mu.Unlock()
 	return value.claims, ok
 }
 
@@ -53,45 +53,56 @@ type opaqueHandler[T any] struct {
 	tokenCacheEnabled         bool
 	httpClient                *http.Client
 	claimsValidationFn        options.ClaimsValidationFn[T]
+
+	// Only used to populate introspection uri
+	issuerUri             string
+	discoveryUri          string
+	discoveryFetchTimeout time.Duration
 }
 
-func NewOpaqueHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.OpaqueOption) (*opaqueHandler[T], error) {
-	opts := options.NewOpaque(setters...)
+func newOpaqueHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (*opaqueHandler[T], error) {
+	opts := options.New(setters...)
+	opaqueOpts := options.NewOpaque(opts.OpaqueOptions...)
 	h := &opaqueHandler[T]{
-		introspectionUri:          opts.IntrospectionUri,
-		introspectionFetchTimeout: opts.IntrospectionFetchTimeout,
+		introspectionUri:          opaqueOpts.IntrospectionUri,
+		introspectionFetchTimeout: opaqueOpts.IntrospectionFetchTimeout,
 		tokenCache: &opaqueTokenCache[T]{
-			timeToLive: opts.TokenCacheTimeToLive,
+			timeToLive: opaqueOpts.TokenCacheTimeToLive,
 		},
-		tokenCacheEnabled:  opts.TokenCacheTimeToLive != 0,
-		httpClient:         opts.HttpClient,
-		claimsValidationFn: claimsValidationFn,
+		tokenCacheEnabled:     opaqueOpts.TokenCacheTimeToLive != 0,
+		httpClient:            opts.HttpClient,
+		claimsValidationFn:    claimsValidationFn,
+		issuerUri:             opts.Issuer,
+		discoveryUri:          opts.DiscoveryUri,
+		discoveryFetchTimeout: opts.DiscoveryFetchTimeout,
 	}
 
-	err := h.populateIntrospectionUri(opts.Issuer, opts.DiscoveryUri, opts.DiscoveryFetchTimeout)
-	if err != nil {
-		return nil, err
+	if !opts.LazyLoadMetadata {
+		err := h.populateIntrospectionUri()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return h, nil
 }
 
-func (h *opaqueHandler[T]) populateIntrospectionUri(issuerUri string, discoveryUri string, discoveryFetchTimeout time.Duration) error {
+func (h *opaqueHandler[T]) populateIntrospectionUri() error {
 	if h.introspectionUri != "" {
 		return nil
 	}
 
-	if issuerUri == "" && discoveryUri == "" {
+	if h.issuerUri == "" && h.discoveryUri == "" {
 		return fmt.Errorf("issuer and discoveryUri are both empty")
 	}
 
-	if discoveryUri == "" {
-		discoveryUri = GetDiscoveryUriFromIssuer(issuerUri)
+	if h.discoveryUri == "" {
+		h.discoveryUri = GetDiscoveryUriFromIssuer(h.issuerUri)
 	}
 
-	metadata, err := getOidcMetadataFromDiscoveryUri(h.httpClient, discoveryUri, discoveryFetchTimeout)
+	metadata, err := getOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 	if err != nil {
-		return fmt.Errorf("unable to fetch userinfo_endpoint from discoveryUri (%s): %w", discoveryUri, err)
+		return fmt.Errorf("unable to fetch userinfo_endpoint from discoveryUri (%s): %w", h.discoveryUri, err)
 	}
 
 	if metadata.UserinfoEndpoint == "" {
@@ -103,7 +114,22 @@ func (h *opaqueHandler[T]) populateIntrospectionUri(issuerUri string, discoveryU
 	return nil
 }
 
+func (h *opaqueHandler[T]) SetIssuer(issuer string) {
+	h.issuerUri = issuer
+}
+
+func (h *opaqueHandler[T]) SetDiscoveryUri(discoveryUri string) {
+	h.discoveryUri = discoveryUri
+}
+
 func (h *opaqueHandler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
+	if h.introspectionUri == "" {
+		err := h.populateIntrospectionUri()
+		if err != nil {
+			return *new(T), err
+		}
+	}
+
 	if h.tokenCacheEnabled {
 		claims, ok := h.tokenCache.get(tokenString)
 		if ok {

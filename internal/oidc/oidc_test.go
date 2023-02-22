@@ -613,7 +613,7 @@ func TestParseToken(t *testing.T) {
 				options.WithJwksUri(testServer.URL),
 				options.WithDisableKeyID(true),
 				options.WithJwksRateLimit(100),
-				options.WithLazyLoadJwks(true),
+				options.WithLazyLoadMetadata(true),
 			},
 			numKeys:               2,
 			expectedErrorContains: "keyID is disabled, but received a keySet with more than one key",

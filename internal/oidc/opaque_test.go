@@ -17,8 +17,8 @@ func TestOpaqueHandler(t *testing.T) {
 	defer op.Close(t)
 
 	issuer := op.GetURL(t)
-	h, err := NewOpaqueHandler[testClaims](nil,
-		options.WithOpaqueIssuer(issuer),
+	h, err := newOpaqueHandler[testClaims](nil,
+		options.WithIssuer(issuer),
 	)
 
 	require.NoError(t, err)

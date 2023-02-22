@@ -43,7 +43,7 @@ type Options struct {
 	JwksRateLimit              uint
 	FallbackSignatureAlgorithm string
 	AllowedTokenDrift          time.Duration
-	LazyLoadJwks               bool
+	LazyLoadMetadata           bool
 	RequiredTokenType          string
 	RequiredAudience           string
 	DisableKeyID               bool
@@ -52,6 +52,8 @@ type Options struct {
 	TokenString                [][]TokenStringOption
 	ClaimsContextKeyName       ClaimsContextKeyName
 	ErrorHandler               ErrorHandler
+	OpaqueTokensEnabled        bool
+	OpaqueOptions              []OpaqueOption
 }
 
 // New takes Option setters and returns an Options pointer.
@@ -157,15 +159,15 @@ func WithAllowedTokenDrift(opt time.Duration) Option {
 	}
 }
 
-// WithLazyLoadJwks sets the LazyLoadJwks parameter for an Options pointer.
-// LazyLoadJwks makes it possible to use OIDC Discovery without being
-// able to load the keys at startup.
+// WithLazyLoadMetadata sets the LazyLoadMetadata parameter for an Options pointer.
+// LazyLoadMetadata makes it possible to use OIDC Discovery without being
+// able to load the metadata at startup.
 // Default setting is disabled.
 // Please observe: If enabled, it will always load even though settings
 // may be wrong / not working.
-func WithLazyLoadJwks(opt bool) Option {
+func WithLazyLoadMetadata(opt bool) Option {
 	return func(opts *Options) {
-		opts.LazyLoadJwks = opt
+		opts.LazyLoadMetadata = opt
 	}
 }
 
@@ -260,5 +262,14 @@ func WithErrorHandler(opt ErrorHandler) Option {
 func WithDisableIssuerValidation() Option {
 	return func(opts *Options) {
 		opts.DisableIssuerValidation = true
+	}
+}
+
+// WithOpaqueToken enable the middleware to use opaque tokens instead of JWTs.
+// Defaults to false
+func WithOpaqueTokensEnabled(opt ...OpaqueOption) Option {
+	return func(opts *Options) {
+		opts.OpaqueOptions = opt
+		opts.OpaqueTokensEnabled = true
 	}
 }
