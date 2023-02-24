@@ -214,3 +214,8 @@ issues:
       text: "hugeParam: user is heavy"
       linters:
         - gocritic
+    - path: internal/oidctesting/
+      linters:
+        - funlen
+        - gocritic
+        - unparam

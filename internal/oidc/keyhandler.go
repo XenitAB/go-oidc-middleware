@@ -106,6 +106,7 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKeySet(ctx context.Context) (jwk.S
 	return result.keySet, result.err
 }
 
+//nolint:unparam // for some reason golangci-lint has started complaining about the jwk.Key with it being unused, which it is
 func (h *keyHandler) waitForUpdateKeySetAndGetKey(ctx context.Context) (jwk.Key, error) {
 	keySet, err := h.waitForUpdateKeySetAndGetKeySet(ctx)
 	if err != nil {
@@ -119,6 +120,7 @@ func (h *keyHandler) waitForUpdateKeySetAndGetKey(ctx context.Context) (jwk.Key,
 
 	return key, nil
 }
+
 func (h *keyHandler) getKey(ctx context.Context, tokenKeyID string, tokenAlgorithm jwa.SignatureAlgorithm) (jwk.Key, error) {
 	if h.disableKeyID {
 		return h.getKeyWithoutKeyID(tokenAlgorithm)

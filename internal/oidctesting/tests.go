@@ -325,7 +325,6 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 			oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(c.op.GetURL(t)))
 
 			testHttpWithAuthentication(t, token, handler)
-
 		}
 	})
 }
