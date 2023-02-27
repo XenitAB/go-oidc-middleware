@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/lestrrat-go/jwx v1.2.25
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/xenitab/dispans v0.0.10
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/sync v0.1.0
