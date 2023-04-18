@@ -20,13 +20,16 @@ func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...opt
 	return toGinHandler(oidcHandler.ParseToken, setters...)
 }
 
-func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
-	if errorHandler != nil {
-		errorHandler(description, err)
+func onError(c *gin.Context, o *options.Options, statusCode int, description options.ErrorDescription, err error) {
+	if o.ErrorHandler != nil {
+		o.ErrorHandler(description, err)
 	}
 
-	//nolint:errcheck // false positive
-	c.AbortWithError(statusCode, err)
+	if o.AbortHandler != nil {
+		o.AbortHandler(c, statusCode, description, err)
+	} else {
+		c.AbortWithError(statusCode, err)
+	}
 }
 
 func toGinHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) gin.HandlerFunc {
@@ -37,13 +40,13 @@ func toGinHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.O
 
 		tokenString, err := oidc.GetTokenString(c.Request.Header.Get, opts.TokenString)
 		if err != nil {
-			onError(c, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
+			onError(c, opts, http.StatusBadRequest, options.GetTokenErrorDescription, err)
 			return
 		}
 
 		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
-			onError(c, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
+			onError(c, opts, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 

@@ -20,12 +20,16 @@ func New[T any](h http.Handler, claimsValidationFn options.ClaimsValidationFn[T]
 	return toHttpHandler(h, oidcHandler.ParseToken, setters...)
 }
 
-func onError(w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
-	if errorHandler != nil {
-		errorHandler(description, err)
+func onError(w http.ResponseWriter, o *options.Options, statusCode int, description options.ErrorDescription, err error) {
+	if o.ErrorHandler != nil {
+		o.ErrorHandler(description, err)
 	}
 
-	w.WriteHeader(statusCode)
+	if o.AbortHandler != nil {
+		o.AbortHandler(w, statusCode, description, err)
+	} else {
+		w.WriteHeader(statusCode)
+	}
 }
 
 func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
@@ -36,13 +40,13 @@ func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], set
 
 		tokenString, err := oidc.GetTokenString(r.Header.Get, opts.TokenString)
 		if err != nil {
-			onError(w, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
+			onError(w, opts, http.StatusBadRequest, options.GetTokenErrorDescription, err)
 			return
 		}
 
 		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
-			onError(w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
+			onError(w, opts, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 

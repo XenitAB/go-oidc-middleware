@@ -334,6 +334,42 @@ oidcHandler := oidcgin.New(
 )
 ```
 
+### Custom abort handler
+It is possible to add a custom abort handler. You will then be responsible for aborting the middleware processing and return a result. Below is an example of a `gin` abort handler.
+
+```go
+func AbortHandler(c interface{}, statusCode int, description options.ErrorDescription, err error) {
+	// Convert interface into gin context
+	ctx := c.(*gin.Context)
+    // Create a JSON response
+	problem := NewProblemDetails(err, statusCode, ctx.Request.URL.Path)
+    // Set Content-Type header for response
+	ctx.Header("Content-Type", "application/json+problem")
+	ctx.JSON(statusCode, problem)
+	// Abort middleware processing
+	ctx.Abort()
+}
+
+oidcHandler := oidcgin.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
+	options.WithIssuer(cfg.Issuer),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+	options.WithAbortHandler(AbortHandler),
+)
+```
+
+As shown in the example above, you are responsible for converting the interface passed to the abort handler into the appropriate type.
+
+`fiber`:
+```go
+ctx := c.(*fiber.Ctx)
+```
+
+`http`:
+```go
+ctx := c.(http.ResponseWriter)
+```
+
 ### Testing with the middleware enabled
 
 There's a small package that simulates an OpenID Provider that can be used with tests.

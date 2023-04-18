@@ -21,7 +21,10 @@ const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
 // ErrorHandler is called by the middleware if not nil
 type ErrorHandler func(description ErrorDescription, err error)
 
-// ErrorDescription is used to pass the description of the error to ErrorHandler
+// AbortHandler is called by the middleware if not nil
+type AbortHandler func(c interface{}, statusCode int, description ErrorDescription, err error)
+
+// ErrorDescription is used to pass the description of the error to ErrorHandler and AbortHandler
 type ErrorDescription string
 
 const (
@@ -52,6 +55,7 @@ type Options struct {
 	TokenString                [][]TokenStringOption
 	ClaimsContextKeyName       ClaimsContextKeyName
 	ErrorHandler               ErrorHandler
+	AbortHandler               AbortHandler
 }
 
 // New takes Option setters and returns an Options pointer.
@@ -251,6 +255,16 @@ func WithClaimsContextKeyName(opt string) Option {
 func WithErrorHandler(opt ErrorHandler) Option {
 	return func(opts *Options) {
 		opts.ErrorHandler = opt
+	}
+}
+
+// WithAbortHandler sets the AbortHandler parameter for an Options pointer.
+// You can pass a function to control how the middleware should abort
+// handling in case of errors.
+// Defaults to nil
+func WithAbortHandler(opt AbortHandler) Option {
+	return func(opts *Options) {
+		opts.AbortHandler = opt
 	}
 }
 
