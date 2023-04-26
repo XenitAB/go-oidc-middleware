@@ -5,6 +5,23 @@ import (
 	"time"
 )
 
+type Response struct {
+	StatusCode int
+	Headers    map[string]string
+	Body       []byte
+}
+
+// Return the content-type header from this response, or "applicatin/octet-stream"
+// as per HTTP standard.
+func (r *Response) ContentType() string {
+	for k, v := range r.Headers {
+		if http.CanonicalHeaderKey(k) == "Content-Type" {
+			return v
+		}
+	}
+	return "application/octet-stream"
+}
+
 // ClaimsValidationFn is a generic function to validate calims.
 // If an error is returned, the claims failed the validation.
 // If `nil` is provided instead of a function when configuration the handler,
@@ -19,7 +36,7 @@ type ClaimsContextKeyName string
 const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
 
 // ErrorHandler is called by the middleware if not nil
-type ErrorHandler func(description ErrorDescription, err error)
+type ErrorHandler func(description ErrorDescription, err error) *Response
 
 // ErrorDescription is used to pass the description of the error to ErrorHandler
 type ErrorDescription string

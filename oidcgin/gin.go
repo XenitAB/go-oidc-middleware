@@ -20,13 +20,19 @@ func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...opt
 	return toGinHandler(oidcHandler.ParseToken, setters...)
 }
 
-func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
-	if errorHandler != nil {
-		errorHandler(description, err)
+func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) error {
+	if errorHandler == nil {
+		return c.AbortWithError(statusCode, err)
 	}
-
-	//nolint:errcheck // false positive
-	c.AbortWithError(statusCode, err)
+	response := errorHandler(description, err)
+	if response == nil {
+		return c.AbortWithError(statusCode, err)
+	}
+	for k, v := range response.Headers {
+		c.Header(k, v)
+	}
+	c.Data(response.StatusCode, response.ContentType(), response.Body)
+	return nil
 }
 
 func toGinHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) gin.HandlerFunc {
