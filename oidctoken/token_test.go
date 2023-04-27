@@ -10,8 +10,8 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-type MyToken struct {
-	result bool
+type MyClaims struct {
+	valid bool
 }
 
 func TestTokenSuccessfulValidation(t *testing.T) {
@@ -19,8 +19,8 @@ func TestTokenSuccessfulValidation(t *testing.T) {
 	defer op.Close(t)
 
 	th, err := New(
-		func(token *MyToken) error {
-			token.result = true
+		func(claims *MyClaims) error {
+			claims.valid = true
 			return nil
 		},
 		options.WithIssuer(op.GetURL(t)),
@@ -30,13 +30,13 @@ func TestTokenSuccessfulValidation(t *testing.T) {
 	token := op.GetToken(t).AccessToken
 	claims, err := th.ParseToken(ctx, token)
 	require.NoError(t, err)
-	require.True(t, claims.result)
+	require.True(t, claims.valid)
 }
 
 func TestFailedInstantiation(t *testing.T) {
 	_, err := New(
-		func(token *MyToken) error {
-			token.result = true
+		func(claims *MyClaims) error {
+			claims.valid = true
 			return nil
 		},
 	)
@@ -48,8 +48,8 @@ func TestTokenFailedParse(t *testing.T) {
 	defer op.Close(t)
 
 	th, err := New(
-		func(token *MyToken) error {
-			token.result = true
+		func(claims *MyClaims) error {
+			claims.valid = true
 			return nil
 		},
 		options.WithIssuer(op.GetURL(t)),
@@ -65,7 +65,7 @@ func TestValidationFails(t *testing.T) {
 	defer op.Close(t)
 
 	th, err := New(
-		func(token *MyToken) error {
+		func(claims *MyClaims) error {
 			return errors.New("boom!")
 		},
 		options.WithIssuer(op.GetURL(t)),
