@@ -2,159 +2,77 @@ package oidctoken
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
+	"errors"
 	"testing"
 
-	"github.com/xenitab/go-oidc-middleware/internal/oidc"
-	"github.com/xenitab/go-oidc-middleware/internal/oidctesting"
+	"github.com/stretchr/testify/require"
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 )
 
-const testName = "OidcToken"
-
-func TestSuite(t *testing.T) {
-	oidctesting.RunTests(t, testName, newTestHttpHandler(t))
+type MyClaims struct {
+	valid bool
 }
 
-func BenchmarkSuite(b *testing.B) {
-	oidctesting.RunBenchmarks(b, testName, newTestHttpHandler(b))
+func TestTokenSuccessfulValidation(t *testing.T) {
+	op := optest.NewTesting(t)
+	defer op.Close(t)
+
+	th, err := New(
+		func(claims *MyClaims) error {
+			claims.valid = true
+			return nil
+		},
+		options.WithIssuer(op.GetURL(t)),
+	)
+	require.NoError(t, err)
+	ctx := context.Background()
+	token := op.GetToken(t).AccessToken
+	claims, err := th.ParseToken(ctx, token)
+	require.NoError(t, err)
+	require.True(t, claims.valid)
 }
 
-func testGetHttpHandler(tb testing.TB) http.Handler {
-	tb.Helper()
-
-	return http.HandlerFunc(testNewClaimsHandler(tb))
+func TestFailedInstantiation(t *testing.T) {
+	_, err := New(
+		func(claims *MyClaims) error {
+			claims.valid = true
+			return nil
+		},
+	)
+	require.ErrorContains(t, err, "issuer is empty")
 }
 
-func testNewClaimsHandler(tb testing.TB) func(w http.ResponseWriter, r *http.Request) {
-	tb.Helper()
+func TestTokenFailedParse(t *testing.T) {
+	op := optest.NewTesting(t)
+	defer op.Close(t)
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(options.DefaultClaimsContextKeyName).(oidctesting.TestClaims)
-		if !ok {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(claims)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	th, err := New(
+		func(claims *MyClaims) error {
+			claims.valid = true
+			return nil
+		},
+		options.WithIssuer(op.GetURL(t)),
+	)
+	require.NoError(t, err)
+	ctx := context.Background()
+	_, err = th.ParseToken(ctx, "bork!")
+	require.ErrorContains(t, err, "invalid")
 }
 
-type testServer struct {
-	tb     testing.TB
-	server *httptest.Server
-}
+func TestValidationFails(t *testing.T) {
+	op := optest.NewTesting(t)
+	defer op.Close(t)
 
-func newTestServer(tb testing.TB, handler http.Handler) *testServer {
-	tb.Helper()
-
-	server := httptest.NewServer(handler)
-
-	return &testServer{
-		tb:     tb,
-		server: server,
-	}
-}
-
-func (srv *testServer) Close() {
-	srv.tb.Helper()
-
-	srv.server.Close()
-}
-
-func (srv *testServer) URL() string {
-	srv.tb.Helper()
-
-	return srv.server.URL
-}
-
-type testHttpHandler struct {
-	tb testing.TB
-}
-
-func newTestHttpHandler(tb testing.TB) *testHttpHandler {
-	tb.Helper()
-
-	return &testHttpHandler{
-		tb: tb,
-	}
-}
-
-func (h *testHttpHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], opts ...options.Option) http.Handler {
-	h.tb.Helper()
-
-	handler := testGetHttpHandler(h.tb)
-	return testNew(h.tb, handler, claimsValidationFn, opts...)
-}
-
-func (h *testHttpHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
-	h.tb.Helper()
-
-	handler := testGetHttpHandler(h.tb)
-	return testToHttpHandler(h.tb, handler, parseToken, opts...)
-}
-
-func (h *testHttpHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
-	h.tb.Helper()
-
-	handler := testGetHttpHandler(h.tb)
-	return newTestServer(h.tb, testNew(h.tb, handler, nil, opts...))
-}
-
-func testOnError(tb testing.TB, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
-	tb.Helper()
-
-	if errorHandler != nil {
-		errorHandler(description, err)
-	}
-
-	w.WriteHeader(statusCode)
-}
-
-func testNew(tb testing.TB, h http.Handler, claimsValidationFn options.ClaimsValidationFn[oidctesting.TestClaims], setters ...options.Option) http.Handler {
-	tb.Helper()
-
-	tokenHandler, err := New(claimsValidationFn, setters...)
-	if err != nil {
-		panic(fmt.Sprintf("oidc discovery: %v", err))
-	}
-
-	return testToHttpHandler(tb, h, tokenHandler.ParseToken, setters...)
-}
-
-func testToHttpHandler[T any](tb testing.TB, h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
-	tb.Helper()
-
-	opts := options.New(setters...)
-
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		tokenString, err := GetTokenString(r.Header.Get, opts.TokenString)
-		if err != nil {
-			testOnError(tb, w, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
-			return
-		}
-
-		claims, err := parseToken(ctx, tokenString)
-		if err != nil {
-			testOnError(tb, w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
-			return
-		}
-
-		ctxWithClaims := context.WithValue(ctx, opts.ClaimsContextKeyName, claims)
-		reqWithClaims := r.WithContext(ctxWithClaims)
-
-		h.ServeHTTP(w, reqWithClaims)
-	}
-
-	return http.HandlerFunc(fn)
+	th, err := New(
+		func(claims *MyClaims) error {
+			return errors.New("boom!")
+		},
+		options.WithIssuer(op.GetURL(t)),
+	)
+	require.NoError(t, err)
+	ctx := context.Background()
+	token := op.GetToken(t).AccessToken
+	_, err = th.ParseToken(ctx, token)
+	require.ErrorContains(t, err, "boom!")
 }
