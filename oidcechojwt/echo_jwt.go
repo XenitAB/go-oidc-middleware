@@ -10,16 +10,14 @@ import (
 
 // New returns an OpenID Connect (OIDC) discovery `ParseTokenFunc`
 // to be used with the the echo `JWT` middleware.
-func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) func(auth string, c echo.Context) (interface{}, error) {
+func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) echo.MiddlewareFunc {
 	h, err := oidc.NewHandler(claimsValidationFn, setters...)
 	if err != nil {
 		panic(fmt.Sprintf("oidc discovery: %v", err))
 	}
 
-	return toEchoJWTParseTokenFunc(h.ParseToken, setters...)
+	return toEchoHandler(h.ParseToken, setters...)
 }
-
-type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
 
 func onError(errorHandler options.ErrorHandler, description options.ErrorDescription, err error) {
 	if errorHandler != nil {
@@ -27,20 +25,26 @@ func onError(errorHandler options.ErrorHandler, description options.ErrorDescrip
 	}
 }
 
-func toEchoJWTParseTokenFunc[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) echoJWTParseTokenFunc {
+func toEchoHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) echo.MiddlewareFunc {
 	opts := options.New(setters...)
 
-	echoJWTParseTokenFunc := func(auth string, c echo.Context) (interface{}, error) {
-		ctx := c.Request().Context()
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx := c.Request().Context()
 
-		claims, err := parseToken(ctx, auth)
-		if err != nil {
-			onError(opts.ErrorHandler, options.ParseTokenErrorDescription, err)
-			return nil, err
+			tokenString, err := oidc.GetTokenString(c.Request().Header.Get, opts.TokenString)
+			if err != nil {
+				onError(opts.ErrorHandler, options.GetTokenErrorDescription, err)
+				return echo.ErrBadRequest
+			}
+
+			claims, err := parseToken(ctx, tokenString)
+			if err != nil {
+				onError(opts.ErrorHandler, options.ParseTokenErrorDescription, err)
+				return echo.ErrUnauthorized
+			}
+			c.Set(string(opts.ClaimsContextKeyName), claims)
+			return next(c)
 		}
-
-		return claims, nil
 	}
-
-	return echoJWTParseTokenFunc
 }

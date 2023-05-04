@@ -13,7 +13,6 @@ import (
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/phayes/freeport"
 	"github.com/stretchr/testify/require"
 )
@@ -28,19 +27,17 @@ func BenchmarkSuite(b *testing.B) {
 	oidctesting.RunBenchmarks(b, testName, newTestHandler(b))
 }
 
-func testGetEchoRouter(tb testing.TB, parseToken echoJWTParseTokenFunc) *echo.Echo {
+func testGetEchoRouter(tb testing.TB, echoMiddleware echo.MiddlewareFunc) *echo.Echo {
 	tb.Helper()
 
 	e := echo.New()
 	e.HidePort = true
 	e.HideBanner = true
 
-	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: parseToken,
-	}))
+	e.Use(echoMiddleware)
 
 	e.GET("/", func(c echo.Context) error {
-		claims, ok := c.Get("user").(oidctesting.TestClaims)
+		claims, ok := c.Get("claims").(oidctesting.TestClaims)
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 		}
@@ -115,13 +112,13 @@ func (h *testHandler) NewHandlerFn(claimsValidationFn options.ClaimsValidationFn
 func (h *testHandler) ToHandlerFn(parseToken oidc.ParseTokenFunc[oidctesting.TestClaims], opts ...options.Option) http.Handler {
 	h.tb.Helper()
 
-	echoParseToken := toEchoJWTParseTokenFunc(parseToken, opts...)
-	return testGetEchoRouter(h.tb, echoParseToken)
+	echoMiddleware := toEchoHandler(parseToken, opts...)
+	return testGetEchoRouter(h.tb, echoMiddleware)
 }
 
 func (h *testHandler) NewTestServer(opts ...options.Option) oidctesting.ServerTester {
 	h.tb.Helper()
 
-	echoParseToken := New[oidctesting.TestClaims](nil, opts...)
-	return newTestServer(h.tb, testGetEchoRouter(h.tb, echoParseToken))
+	echoMiddleware := New[oidctesting.TestClaims](nil, opts...)
+	return newTestServer(h.tb, testGetEchoRouter(h.tb, echoMiddleware))
 }

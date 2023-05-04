@@ -143,9 +143,9 @@ func getHandler[T any](cfg shared.RuntimeConfig, claimsValidationFn options.Clai
 
 		return shared.RunGin[T](oidcHandler, cfg.Address, cfg.Port)
 	case shared.EchoJwtServer:
-		parseToken := oidcechojwt.New(claimsValidationFn, opts...)
+		oidcMiddleware := oidcechojwt.New(claimsValidationFn, opts...)
 
-		return shared.RunEchoJWT[T](parseToken, cfg.Address, cfg.Port)
+		return shared.RunEcho[T](oidcMiddleware, cfg.Address, cfg.Port)
 	case shared.FiberServer:
 		oidcHandler := oidcfiber.New(claimsValidationFn, opts...)
 
