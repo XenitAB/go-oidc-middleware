@@ -206,13 +206,13 @@ func newClaimsHandler() fiber.Handler {
 
 **Import**
 
-`"github.com/xenitab/go-oidc-middleware/oidcechojwt"`
+`"github.com/xenitab/go-oidc-middleware/oidcecho"`
 
 **Middleware**
 
 ```go
 e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-    ParseTokenFunc: oidcechojwt.New(
+    ParseTokenFunc: oidcecho.New(
 		GetAzureADClaimsValidationFn(cfg.TenantID),
 		options.WithIssuer(cfg.Issuer),
 		options.WithRequiredTokenType("JWT"),
