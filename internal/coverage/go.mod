@@ -3,11 +3,11 @@ module coverage
 go 1.20
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.40
-	github.com/xenitab/go-oidc-middleware/oidcechojwt v0.0.40
-	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.40
-	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.40
-	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.40
+	github.com/xenitab/go-oidc-middleware v0.0.41
+	github.com/xenitab/go-oidc-middleware/oidcecho v0.0.41
+	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.41
+	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.41
+	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.41
 )
 
 require (

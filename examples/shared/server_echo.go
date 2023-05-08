@@ -9,9 +9,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type echoJWTParseTokenFunc func(auth string, c echo.Context) (interface{}, error)
-
-func newEchoJWTClaimsHandler[T any](c echo.Context) error {
+func newEchoClaimsHandler[T any](c echo.Context) error {
 	claims, ok := c.Get("user").(T)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
@@ -20,19 +18,16 @@ func newEchoJWTClaimsHandler[T any](c echo.Context) error {
 	return c.JSON(http.StatusOK, claims)
 }
 
-func RunEchoJWT[T any](parseToken echoJWTParseTokenFunc, address string, port int) error {
+func RunEcho[T any](oidcMiddleware echo.MiddlewareFunc, address string, port int) error {
 	e := echo.New()
 	e.HideBanner = true
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
+	e.Use(oidcMiddleware)
 
-	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		ParseTokenFunc: parseToken,
-	}))
-
-	handler := newEchoJWTClaimsHandler[T]
+	handler := newEchoClaimsHandler[T]
 
 	e.GET("/", handler)
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xenitab/go-oidc-middleware/oidcechojwt"
+	"github.com/xenitab/go-oidc-middleware/oidcecho"
 	"github.com/xenitab/go-oidc-middleware/oidcfiber"
 	"github.com/xenitab/go-oidc-middleware/oidcgin"
 	"github.com/xenitab/go-oidc-middleware/oidchttp"
@@ -142,10 +142,10 @@ func getHandler[T any](cfg shared.RuntimeConfig, claimsValidationFn options.Clai
 		oidcHandler := oidcgin.New(claimsValidationFn, opts...)
 
 		return shared.RunGin[T](oidcHandler, cfg.Address, cfg.Port)
-	case shared.EchoJwtServer:
-		parseToken := oidcechojwt.New(claimsValidationFn, opts...)
+	case shared.EchoServer:
+		oidcMiddleware := oidcecho.New(claimsValidationFn, opts...)
 
-		return shared.RunEchoJWT[T](parseToken, cfg.Address, cfg.Port)
+		return shared.RunEcho[T](oidcMiddleware, cfg.Address, cfg.Port)
 	case shared.FiberServer:
 		oidcHandler := oidcfiber.New(claimsValidationFn, opts...)
 

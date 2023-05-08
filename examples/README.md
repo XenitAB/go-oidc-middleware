@@ -14,7 +14,7 @@ There's a CLI utility that makes it easy to use the different OpenID Providers (
 
 ## Providers
 
-When starting the api for one of the providers, change `[server]` to one of: `http`, `echojwt`, `gin` or `fiber`
+When starting the api for one of the providers, change `[server]` to one of: `http`, `echo`, `gin` or `fiber`
 
 ### Azure AD
 
