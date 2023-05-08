@@ -4,6 +4,7 @@ use (
 	.
 	./examples
 	./internal/coverage
+	./oidcecho
 	./oidcechojwt
 	./oidcfiber
 	./oidcgin
