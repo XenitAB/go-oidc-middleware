@@ -1,10 +1,22 @@
 package options
 
 import (
+	"context"
 	"net/http"
+	"net/url"
 	"time"
 )
 
+// Context information for the error handler.
+type OidcError struct {
+	Url     *url.URL
+	Headers http.Header
+	Error   error
+	Status  ErrorDescription
+}
+
+// Error handlers are expected to produce an abstract HTTP response that
+// the framework adapter will render.
 type Response struct {
 	StatusCode int
 	Headers    map[string]string
@@ -36,7 +48,7 @@ type ClaimsContextKeyName string
 const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
 
 // ErrorHandler is called by the middleware if not nil
-type ErrorHandler func(description ErrorDescription, err error) *Response
+type ErrorHandler func(ctx context.Context, request *OidcError) *Response
 
 // ErrorDescription is used to pass the description of the error to ErrorHandler
 type ErrorDescription string

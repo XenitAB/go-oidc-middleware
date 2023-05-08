@@ -2,6 +2,7 @@ package oidcfiber
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
@@ -23,7 +24,18 @@ func onError(c *fiber.Ctx, errorHandler options.ErrorHandler, statusCode int, de
 	if errorHandler == nil {
 		return c.SendStatus(statusCode)
 	}
-	response := errorHandler(description, err)
+	url, _ := url.Parse(c.OriginalURL())
+	headers := make(map[string][]string, 1)
+	for k, v := range c.GetReqHeaders() {
+		headers[k] = []string{v}
+	}
+	error := options.OidcError{
+		Url:     url,
+		Headers: headers,
+		Status:  description,
+		Error:   err,
+	}
+	response := errorHandler(c.Context(), &error)
 	if response == nil {
 		return c.SendStatus(statusCode)
 	}
