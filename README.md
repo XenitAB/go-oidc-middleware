@@ -319,11 +319,24 @@ oidcHandler := oidcgin.New(
 
 ### Custom error handler
 
-It is possible to add a custom function to handle errors. It will not be possible to change anything using it, but you will be able to add logic for logging as an example.
+It is possible to add a custom function to handle errors. The error handler can return an `options.Response` which will be rendered by the middleware. Returning `nil` will result in a default 400/401 error.
 
 ```go
-errorHandler := func(description options.ErrorDescription, err error) {
-	fmt.Printf("Description: %s\tError: %v\n", description, err)
+type Message struct {
+  Message string `json:"message"`
+	Url string `json:"url"`
+}
+
+errorHandler := func(ctx context.Context, request *OidcError) *Response {
+	message := Message {
+		Message: request.status,
+		Url: request.Url,
+	}
+	json, _ := json.Marshal(message)
+	return &options.Response {
+		Status: 418,
+		Body: json,
+	}
 }
 
 oidcHandler := oidcgin.New(
