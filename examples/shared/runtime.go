@@ -11,18 +11,18 @@ import (
 type Server string
 
 const (
-	HttpServer    Server = "http"
-	GinServer     Server = "gin"
-	EchoJwtServer Server = "echojwt"
-	FiberServer   Server = "fiber"
+	HttpServer  Server = "http"
+	GinServer   Server = "gin"
+	EchoServer  Server = "echo"
+	FiberServer Server = "fiber"
 )
 
 func (s Server) Validate() error {
 	switch s {
-	case HttpServer, GinServer, EchoJwtServer, FiberServer:
+	case HttpServer, GinServer, EchoServer, FiberServer:
 		return nil
 	default:
-		return fmt.Errorf("not a supported server (%s), use one of: http, gin, echojwt, fiber", s)
+		return fmt.Errorf("not a supported server (%s), use one of: http, gin, echo, fiber", s)
 	}
 }
 

@@ -3,7 +3,7 @@ package coverage
 import (
 	"net/http"
 
-	"github.com/xenitab/go-oidc-middleware/oidcechojwt"
+	"github.com/xenitab/go-oidc-middleware/oidcecho"
 	"github.com/xenitab/go-oidc-middleware/oidcfiber"
 	"github.com/xenitab/go-oidc-middleware/oidcgin"
 	"github.com/xenitab/go-oidc-middleware/oidchttp"
@@ -14,7 +14,7 @@ type testClaims map[string]interface{}
 
 func main() {
 	f := &foo{}
-	_ = oidcechojwt.New[testClaims](nil)
+	_ = oidcecho.New[testClaims](nil)
 	_ = oidcfiber.New[testClaims](nil)
 	_ = oidcgin.New[testClaims](nil)
 	_ = oidchttp.New[testClaims](f, nil)

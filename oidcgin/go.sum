@@ -90,8 +90,8 @@ github.com/tidwall/tinyqueue v0.1.1 h1:SpNEvEggbpyN5DIReaJ2/1ndroY8iyEGxPYxoSaym
 github.com/ugorji/go/codec v1.2.9 h1:rmenucSohSTiyL09Y+l2OCk+FrMxGMzho2+tjr5ticU=
 github.com/ugorji/go/codec v1.2.9/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 github.com/xenitab/dispans v0.0.10 h1:S+gSUM14rDJWK7MYNrjb8JbjeQPip6mlNJyLX+g7Agc=
-github.com/xenitab/go-oidc-middleware v0.0.40 h1:9VvTv5Gxqlhl3Ltkr5tNEm64rQzZ2qgS/Qsty9BQRos=
-github.com/xenitab/go-oidc-middleware v0.0.40/go.mod h1:ir5fF6tpCQSHauFEfLaHbmND9pHEEaXHQqpjiOK+PY0=
+github.com/xenitab/go-oidc-middleware v0.0.41 h1:k37zfu3fyRKlrD+B+abcgbIUOU2cSjPE7xaFpgA8TJM=
+github.com/xenitab/go-oidc-middleware v0.0.41/go.mod h1:+menF2rCe5yqS4jpVEtR0JgQS3dPZHuwty+4PQ4BbrE=
 go.uber.org/atomic v1.7.0 h1:ADUqmZGgLDDfbSL9ZmPxKTybcoEYHgpYfELNoN+7hsw=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/ratelimit v0.2.0 h1:UQE2Bgi7p2B85uP5dC2bbRtig0C+OeNRnNEafLjsLPA=
