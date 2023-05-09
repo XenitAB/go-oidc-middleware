@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Context information for the error handler.
+// OidcError contains context information for the error handler.
 type OidcError struct {
 	Url     *url.URL
 	Headers http.Header
@@ -15,15 +15,14 @@ type OidcError struct {
 	Status  ErrorDescription
 }
 
-// Error handlers are expected to produce an abstract HTTP response that
-// the framework adapter will render.
+// Response holds an abstract HTTP response that the framework adapter will render.
 type Response struct {
 	StatusCode int
 	Headers    map[string]string
 	Body       []byte
 }
 
-// Return the content-type header from this response, or "applicatin/octet-stream"
+// ContentType returns the content-type header from this response, or "applicatin/octet-stream"
 // as per HTTP standard.
 func (r *Response) ContentType() string {
 	for k, v := range r.Headers {
@@ -48,7 +47,7 @@ type ClaimsContextKeyName string
 const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
 
 // ErrorHandler is called by the middleware if not nil
-type ErrorHandler func(ctx context.Context, request *OidcError) *Response
+type ErrorHandler func(ctx context.Context, oidcErr *OidcError) *Response
 
 // ErrorDescription is used to pass the description of the error to ErrorHandler
 type ErrorDescription string

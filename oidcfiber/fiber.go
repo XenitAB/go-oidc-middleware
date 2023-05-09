@@ -29,13 +29,13 @@ func onError(c *fiber.Ctx, errorHandler options.ErrorHandler, statusCode int, de
 	for k, v := range c.GetReqHeaders() {
 		headers[k] = []string{v}
 	}
-	error := options.OidcError{
+	oidcErr := options.OidcError{
 		Url:     url,
 		Headers: headers,
 		Status:  description,
 		Error:   err,
 	}
-	response := errorHandler(c.Context(), &error)
+	response := errorHandler(c.Context(), &oidcErr)
 	if response == nil {
 		return c.SendStatus(statusCode)
 	}

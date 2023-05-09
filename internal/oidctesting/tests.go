@@ -321,14 +321,14 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 		}{
 			{
 				testDescription:    "no output",
-				errorHandler:       func(ctx context.Context, request *options.OidcError) *options.Response { return nil },
+				errorHandler:       func(ctx context.Context, oidcErr *options.OidcError) *options.Response { return nil },
 				expectStatusCode:   http.StatusBadRequest,
 				expectHeaders:      map[string]string{},
 				expectBodyContains: []byte{},
 			},
 			{
 				testDescription: "basic propagation",
-				errorHandler: func(ctx context.Context, request *options.OidcError) *options.Response {
+				errorHandler: func(ctx context.Context, oidcErr *options.OidcError) *options.Response {
 					return &options.Response{
 						StatusCode: 418,
 						Headers:    map[string]string{},
@@ -343,7 +343,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			},
 			{
 				testDescription: "additional header",
-				errorHandler: func(ctx context.Context, request *options.OidcError) *options.Response {
+				errorHandler: func(ctx context.Context, oidcErr *options.OidcError) *options.Response {
 					return &options.Response{
 						StatusCode: 418,
 						Headers:    map[string]string{"some": "header"},
@@ -359,7 +359,7 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			},
 			{
 				testDescription: "content type",
-				errorHandler: func(ctx context.Context, request *options.OidcError) *options.Response {
+				errorHandler: func(ctx context.Context, oidcErr *options.OidcError) *options.Response {
 					return &options.Response{
 						StatusCode: 418,
 						Headers:    map[string]string{"content-type": "application/json"},

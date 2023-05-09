@@ -323,19 +323,30 @@ It is possible to add a custom function to handle errors. The error handler can 
 
 ```go
 type Message struct {
-  Message string `json:"message"`
-	Url string `json:"url"`
+	Message string `json:"message"`
+	Url     string `json:"url"`
 }
 
-errorHandler := func(ctx context.Context, request *OidcError) *Response {
-	message := Message {
-		Message: request.status,
-		Url: request.Url,
+func errorHandler(ctx context.Context, oidcErr *options.OidcError) *options.Response {
+	message := Message{
+		Message: string(oidcErr.Status),
+		Url:     oidcErr.Url.String(),
 	}
-	json, _ := json.Marshal(message)
-	return &options.Response {
-		Status: 418,
-		Body: json,
+	var headers map[string]string
+	json, err := json.Marshal(message)
+	if err != nil {
+		headers["Content-Type"] = "text/plain"
+		return &options.Response{
+			StatusCode: 500,
+			Headers:    headers,
+			Body:       []byte("Internal encoding failure\r\n"),
+		}
+	}
+	headers["Content-Type"] = "text/plain"
+	return &options.Response{
+		StatusCode: 418,
+		Headers:    headers,
+		Body:       json,
 	}
 }
 
@@ -346,6 +357,8 @@ oidcHandler := oidcgin.New(
 	options.WithErrorHandler(errorHandler),
 )
 ```
+
+This error handling interface was changed in v0.0.42. The previous interface was `func(description ErrorDescription, err error)`. In order to retain the same behavior, you need to update your error handler to read `desctiption` and `err` from `oidcErr` and return `nil`.
 
 ### Testing with the middleware enabled
 

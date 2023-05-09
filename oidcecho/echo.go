@@ -24,13 +24,13 @@ func onError(c echo.Context, errorHandler options.ErrorHandler, statusCode int, 
 		c.Logger().Error(err)
 		return c.NoContent(statusCode)
 	}
-	error := options.OidcError{
+	oidcErr := options.OidcError{
 		Url:     c.Request().URL,
 		Headers: c.Request().Header,
 		Status:  description,
 		Error:   err,
 	}
-	response := errorHandler(c.Request().Context(), &error)
+	response := errorHandler(c.Request().Context(), &oidcErr)
 	if response == nil {
 		c.Logger().Error(err)
 		return c.NoContent(statusCode)

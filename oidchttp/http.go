@@ -25,13 +25,13 @@ func onError(r *http.Request, w http.ResponseWriter, errorHandler options.ErrorH
 		w.WriteHeader(statusCode)
 		return
 	}
-	error := options.OidcError{
+	oidcErr := options.OidcError{
 		Url:     r.URL,
 		Headers: r.Header,
 		Status:  description,
 		Error:   err,
 	}
-	response := errorHandler(r.Context(), &error)
+	response := errorHandler(r.Context(), &oidcErr)
 	if response == nil {
 		w.WriteHeader(statusCode)
 		return

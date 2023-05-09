@@ -25,13 +25,13 @@ func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, 
 		return c.AbortWithError(statusCode, err)
 	}
 
-	error := options.OidcError{
+	oidcErr := options.OidcError{
 		Url:     c.Request.URL,
 		Headers: c.Request.Header,
 		Status:  description,
 		Error:   err,
 	}
-	response := errorHandler(c.Request.Context(), &error)
+	response := errorHandler(c.Request.Context(), &oidcErr)
 	if response == nil {
 		return c.AbortWithError(statusCode, err)
 	}
