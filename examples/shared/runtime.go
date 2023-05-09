@@ -193,14 +193,11 @@ func GetOktaClaimsValidationFn(requiredClientId string) options.ClaimsValidation
 }
 
 type OPTestClaims struct {
-	Audience  []string  `json:"aud"`
-	ExpiresAt time.Time `json:"exp"`
-	IssuedAt  time.Time `json:"iat"`
-	Id        string    `json:"id"`
-	Issuer    string    `json:"iss"`
-	NotBefore time.Time `json:"nbf"`
-	Subject   string    `json:"sub"`
-	ClientId  string    `json:"client_id"`
+	Audience string `json:"aud"`
+	Id       string `json:"id"`
+	Issuer   string `json:"iss"`
+	Subject  string `json:"sub"`
+	ClientId string `json:"client_id"`
 }
 
 func GetOPTestClaimsValidationFn(requiredClientId string) options.ClaimsValidationFn[OPTestClaims] {

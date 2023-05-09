@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/xenitab/go-oidc-middleware/optest"
 	"github.com/xenitab/go-oidc-middleware/options"
 
 	"github.com/lestrrat-go/jwx/jwa"
@@ -19,7 +20,6 @@ import (
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/require"
-	"github.com/xenitab/dispans/server"
 )
 
 type testClaims map[string]interface{}
@@ -457,12 +457,13 @@ func TestIsTokenTypeValid(t *testing.T) {
 }
 
 func TestGetAndValidateTokenFromString(t *testing.T) {
-	op := server.NewTesting(t)
+	op := optest.NewTesting(t)
 	defer op.Close(t)
 
 	issuer := op.GetURL(t)
 	discoveryUri := GetDiscoveryUriFromIssuer(issuer)
-	jwksUri, err := getJwksUriFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	metadata, err := GetOidcMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	jwksUri := metadata.JwksUri
 	require.NoError(t, err)
 
 	keyHandler, err := newKeyHandler(http.DefaultClient, jwksUri, 50*time.Millisecond, 100, false)
@@ -474,7 +475,7 @@ func TestGetAndValidateTokenFromString(t *testing.T) {
 	validAccessToken := op.GetToken(t).AccessToken
 	require.NotEmpty(t, validAccessToken)
 
-	validIDToken, ok := op.GetToken(t).Extra("id_token").(string)
+	validIDToken := op.GetToken(t).IdToken
 	require.True(t, ok)
 	require.NotEmpty(t, validIDToken)
 
@@ -612,7 +613,7 @@ func TestParseToken(t *testing.T) {
 				options.WithJwksUri(testServer.URL),
 				options.WithDisableKeyID(true),
 				options.WithJwksRateLimit(100),
-				options.WithLazyLoadJwks(true),
+				options.WithLazyLoadMetadata(true),
 			},
 			numKeys:               2,
 			expectedErrorContains: "keyID is disabled, but received a keySet with more than one key",

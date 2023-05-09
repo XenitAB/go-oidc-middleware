@@ -123,6 +123,7 @@ func run(cfg shared.RuntimeConfig) error {
 		opts = []options.Option{
 			options.WithIssuer(cfg.Issuer),
 			options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+			options.WithOpaqueTokensEnabled(),
 		}
 		claimsValidationFn := shared.GetOPTestClaimsValidationFn(cfg.RequiredOPTestClientId)
 		return getHandler(cfg, claimsValidationFn, opts...)

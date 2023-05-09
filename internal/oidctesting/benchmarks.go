@@ -24,19 +24,48 @@ func runBenchmarkHandler(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_handler", testName), func(b *testing.B) {
-		op := optest.NewTesting(b)
-		defer op.Close(b)
+		jwtOp := optest.NewTesting(b)
+		defer jwtOp.Close(b)
+		opaqueOp := optest.NewTesting(b, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(b)
 
-		handler := tester.NewHandlerFn(
-			nil,
-			options.WithIssuer(op.GetURL(b)),
-		)
-
-		fn := func(token *optest.TokenResponse) {
-			testHttpWithAuthentication(b, token, handler)
+		cases := []struct {
+			benchDescription string
+			op               *optest.OPTesting
+			opts             []options.Option
+		}{
+			{
+				benchDescription: "jwt",
+				op:               jwtOp,
+				opts: []options.Option{
+					options.WithIssuer(jwtOp.GetURL(b)),
+				},
+			},
+			{
+				benchDescription: "opaque",
+				op:               opaqueOp,
+				opts: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(b)),
+				},
+			},
 		}
 
-		runBenchmarkConcurrent(b, op.GetToken, fn)
+		for i, c := range cases {
+			b.Run(c.benchDescription, func(b *testing.B) {
+				b.Logf("Bench #%d: %s", i, c.benchDescription)
+				handler := tester.NewHandlerFn(
+					nil,
+					c.opts...,
+				)
+
+				fn := func(token *optest.TokenResponse) {
+					testHttpWithAuthentication(b, token, handler)
+				}
+
+				runBenchmarkConcurrent(b, c.op.GetToken, fn)
+			})
+		}
 	})
 }
 
@@ -44,23 +73,52 @@ func runBenchmarkRequirements(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_requirements", testName), func(b *testing.B) {
-		op := optest.NewTesting(b)
-		defer op.Close(b)
+		jwtOp := optest.NewTesting(b)
+		defer jwtOp.Close(b)
+		opaqueOp := optest.NewTesting(b, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(b)
 
-		handler := tester.NewHandlerFn(
-			func(claims *TestClaims) error {
-				return testClaimsValueEq(claims, "sub", "test")
+		cases := []struct {
+			benchDescription string
+			op               *optest.OPTesting
+			opts             []options.Option
+		}{
+			{
+				benchDescription: "jwt",
+				op:               jwtOp,
+				opts: []options.Option{
+					options.WithIssuer(jwtOp.GetURL(b)),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithRequiredAudience("test-client"),
+				},
 			},
-			options.WithIssuer(op.GetURL(b)),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithRequiredAudience("test-client"),
-		)
-
-		fn := func(token *optest.TokenResponse) {
-			testHttpWithAuthentication(b, token, handler)
+			{
+				benchDescription: "opaque",
+				op:               opaqueOp,
+				opts: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(b)),
+				},
+			},
 		}
 
-		runBenchmarkConcurrent(b, op.GetToken, fn)
+		for i, c := range cases {
+			b.Run(c.benchDescription, func(b *testing.B) {
+				b.Logf("Bench #%d: %s", i, c.benchDescription)
+				handler := tester.NewHandlerFn(
+					func(claims *TestClaims) error {
+						return testClaimsValueEq(claims, "sub", "test")
+					},
+					c.opts...,
+				)
+
+				fn := func(token *optest.TokenResponse) {
+					testHttpWithAuthentication(b, token, handler)
+				}
+
+				runBenchmarkConcurrent(b, c.op.GetToken, fn)
+			})
+		}
 	})
 }
 
@@ -68,20 +126,49 @@ func runBenchmarkHttp(b *testing.B, testName string, tester tester) {
 	b.Helper()
 
 	b.Run(fmt.Sprintf("%s_http", testName), func(b *testing.B) {
-		op := optest.NewTesting(b)
-		defer op.Close(b)
+		jwtOp := optest.NewTesting(b)
+		defer jwtOp.Close(b)
+		opaqueOp := optest.NewTesting(b, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(b)
 
-		testServer := tester.NewTestServer(
-			options.WithIssuer(op.GetURL(b)),
-		)
-
-		defer testServer.Close()
-
-		fn := func(token *optest.TokenResponse) {
-			benchmarkHttpRequest(b, testServer.URL(), token)
+		cases := []struct {
+			benchDescription string
+			op               *optest.OPTesting
+			opts             []options.Option
+		}{
+			{
+				benchDescription: "jwt",
+				op:               jwtOp,
+				opts: []options.Option{
+					options.WithIssuer(jwtOp.GetURL(b)),
+				},
+			},
+			{
+				benchDescription: "opaque",
+				op:               opaqueOp,
+				opts: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(b)),
+				},
+			},
 		}
 
-		runBenchmarkConcurrent(b, op.GetToken, fn)
+		for i, c := range cases {
+			b.Run(c.benchDescription, func(b *testing.B) {
+				b.Logf("Bench #%d: %s", i, c.benchDescription)
+				testServer := tester.NewTestServer(
+					c.opts...,
+				)
+
+				defer testServer.Close()
+
+				fn := func(token *optest.TokenResponse) {
+					benchmarkHttpRequest(b, testServer.URL(), token)
+				}
+
+				runBenchmarkConcurrent(b, c.op.GetToken, fn)
+			})
+		}
 	})
 }
 

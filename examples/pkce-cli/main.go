@@ -78,6 +78,7 @@ func run(cfg config) error {
 	})
 
 	g.Go(func() error {
+		fmt.Println(startUrl)
 		return openUrlWithBrowser(startUrl)
 	})
 

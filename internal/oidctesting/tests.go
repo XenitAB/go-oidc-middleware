@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/xenitab/go-oidc-middleware/internal/oidc"
@@ -59,8 +60,10 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_new", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
 		cases := []struct {
 			testDescription string
@@ -70,14 +73,62 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			{
 				testDescription: "valid issuer doesn't panic",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
+				},
+				expectPanic: false,
+			},
+			{
+				testDescription: "opaque - valid issuer doesn't panic",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
+				},
+				expectPanic: false,
+			},
+			{
+				testDescription: "opaque - invalid issuer panic",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer("http://foo.bar/baz"),
+				},
+				expectPanic: true,
+			},
+			{
+				testDescription: "opaque - invalid issuer with lazy load doesn't panic",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer("http://foo.bar/baz"),
+					options.WithLazyLoadMetadata(true),
+				},
+				expectPanic: false,
+			},
+			{
+				testDescription: "opaque - valid issuer, invalid DiscoveryUri panics",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
+					options.WithDiscoveryUri("http://foo.bar/baz"),
+				},
+				expectPanic: true,
+			},
+			{
+				testDescription: "opaque - valid introspection uri, no panic",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(options.WithOpaqueIntrospectionUri(testGetIntrospectionUriFromIssuer(t, opaqueOp.GetURL(t)))),
+				},
+				expectPanic: false,
+			},
+			{
+				testDescription: "opaque - invalid introspection uri, no panic",
+				config: []options.Option{
+					options.WithOpaqueTokensEnabled(options.WithOpaqueIntrospectionUri("http://foo.bar/baz")),
 				},
 				expectPanic: false,
 			},
 			{
 				testDescription: "valid issuer, invalid DiscoveryUri panics",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithDiscoveryUri("http://foo.bar/baz"),
 				},
 				expectPanic: true,
@@ -85,7 +136,7 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			{
 				testDescription: "valid issuer, invalid JwksUri panics",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithJwksUri("http://foo.bar/baz"),
 				},
 				expectPanic: true,
@@ -106,14 +157,14 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 				testDescription: "fake issuer with lazy load doesn't panic",
 				config: []options.Option{
 					options.WithIssuer("http://foo.bar/baz"),
-					options.WithLazyLoadJwks(true),
+					options.WithLazyLoadMetadata(true),
 				},
 				expectPanic: false,
 			},
 			{
 				testDescription: "valid signature algorithm doesn't panic",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithFallbackSignatureAlgorithm("RS256"),
 				},
 				expectPanic: false,
@@ -121,7 +172,7 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 			{
 				testDescription: "invalid signature algorithm panics",
 				config: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithFallbackSignatureAlgorithm("foobar"),
 				},
 				expectPanic: true,
@@ -140,40 +191,77 @@ func runTestNew(t *testing.T, testName string, tester tester) {
 	})
 }
 
+func testGetIntrospectionUriFromIssuer(t *testing.T, issuer string) string {
+	t.Helper()
+
+	discoveryUri := oidc.GetDiscoveryUriFromIssuer(issuer)
+	metadata, err := oidc.GetOidcMetadataFromDiscoveryUri(http.DefaultClient, discoveryUri, 10*time.Millisecond)
+	require.NoError(t, err)
+	return metadata.UserinfoEndpoint
+}
+
 func runTestHandler(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_handler", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
-		handler := tester.NewHandlerFn(
-			nil,
-			options.WithIssuer(op.GetURL(t)),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithTokenString(
-				options.WithTokenStringHeaderName("Authorization"),
-				options.WithTokenStringTokenPrefix("Bearer "),
-			),
-		)
+		cases := []struct {
+			testDescription string
+			op              *optest.OPTesting
+			options         []options.Option
+		}{
+			{
+				testDescription: "jwt token",
+				op:              jwtOp,
+				options: []options.Option{
+					options.WithIssuer(jwtOp.GetURL(t)),
+					options.WithRequiredAudience("test-client"),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithTokenString(
+						options.WithTokenStringHeaderName("Authorization"),
+						options.WithTokenStringTokenPrefix("Bearer "),
+					),
+				},
+			},
+			{
+				testDescription: "opaque token",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
+					options.WithTokenString(
+						options.WithTokenStringHeaderName("Authorization"),
+						options.WithTokenStringTokenPrefix("Bearer "),
+					),
+				},
+			},
+		}
 
-		// Test without authentication
-		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
-		recNoAuth := httptest.NewRecorder()
-		handler.ServeHTTP(recNoAuth, reqNoAuth)
+		for i, c := range cases {
+			t.Logf("Test #%d: %s", i, c.testDescription)
+			handler := tester.NewHandlerFn(nil, c.options...)
 
-		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
+			// Test without authentication
+			reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
+			recNoAuth := httptest.NewRecorder()
+			handler.ServeHTTP(recNoAuth, reqNoAuth)
 
-		// Test with authentication
-		token := op.GetToken(t)
-		testHttpWithAuthentication(t, token, handler)
-		testHttpWithIDTokenFailure(t, token, handler)
+			require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
 
-		// Test with rotated key
-		op.RotateKeys(t)
-		tokenWithRotatedKey := op.GetToken(t)
-		testHttpWithAuthentication(t, tokenWithRotatedKey, handler)
+			// Test with authentication
+			token := c.op.GetToken(t)
+			testHttpWithAuthentication(t, token, handler)
+			testHttpWithIDTokenFailure(t, token, handler)
+
+			// Test with rotated key
+			c.op.RotateKeys(t)
+			tokenWithRotatedKey := c.op.GetToken(t)
+			testHttpWithAuthentication(t, tokenWithRotatedKey, handler)
+		}
 	})
 }
 
@@ -181,35 +269,63 @@ func runTestLazyLoad(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_lazy_load", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
-		oidcHandler, err := oidc.NewHandler[TestClaims](
-			nil,
-			options.WithIssuer("http://foo.bar/baz"),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithLazyLoadJwks(true),
-		)
-		require.NoError(t, err)
+		cases := []struct {
+			testDescription string
+			op              *optest.OPTesting
+			options         []options.Option
+		}{
+			{
+				testDescription: "jwt token",
+				op:              jwtOp,
+				options: []options.Option{
+					options.WithIssuer("http://foo.bar/baz"),
+					options.WithRequiredAudience("test-client"),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithLazyLoadMetadata(true),
+				},
+			},
+			{
+				testDescription: "opaque token",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer("http://foo.bar/baz"),
+					options.WithLazyLoadMetadata(true),
+				},
+			},
+		}
 
-		handler := tester.ToHandlerFn(oidcHandler.ParseToken)
+		for i, c := range cases {
+			t.Logf("Test #%d: %s", i, c.testDescription)
+			oidcHandler, err := oidc.NewHandler[TestClaims](
+				nil,
+				c.options...,
+			)
+			require.NoError(t, err)
 
-		// Test without authentication
-		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
-		recNoAuth := httptest.NewRecorder()
-		handler.ServeHTTP(recNoAuth, reqNoAuth)
+			handler := tester.ToHandlerFn(oidcHandler.ParseToken)
 
-		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
+			// Test without authentication
+			reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
+			recNoAuth := httptest.NewRecorder()
+			handler.ServeHTTP(recNoAuth, reqNoAuth)
 
-		// Test with authentication
-		token := op.GetToken(t)
-		testHttpWithAuthenticationFailure(t, token, handler)
+			require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
 
-		oidcHandler.SetIssuer(op.GetURL(t))
-		oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(op.GetURL(t)))
+			// Test with authentication
+			token := c.op.GetToken(t)
+			testHttpWithAuthenticationFailure(t, token, handler)
 
-		testHttpWithAuthentication(t, token, handler)
+			oidcHandler.SetIssuer(c.op.GetURL(t))
+			oidcHandler.SetDiscoveryUri(oidc.GetDiscoveryUriFromIssuer(c.op.GetURL(t)))
+
+			testHttpWithAuthentication(t, token, handler)
+		}
 	})
 }
 
@@ -217,61 +333,88 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_requirements", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
 		cases := []struct {
 			testDescription    string
+			op                 *optest.OPTesting
 			options            []options.Option
 			claimsValidationFn options.ClaimsValidationFn[TestClaims]
 			succeeds           bool
 		}{
 			{
 				testDescription: "no requirements",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
+				},
+				succeeds: true,
+			},
+			{
+				testDescription: "opaque - no requirements",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
 				},
 				succeeds: true,
 			},
 			{
 				testDescription: "required token type matches",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithRequiredTokenType("JWT+AT"),
 				},
 				succeeds: true,
 			},
 			{
 				testDescription: "required token type doesn't match",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithRequiredTokenType("FOO"),
 				},
 				succeeds: false,
 			},
 			{
 				testDescription: "required audience matches",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithRequiredAudience("test-client"),
 				},
 				succeeds: true,
 			},
 			{
 				testDescription: "required audience doesn't match",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
 					options.WithRequiredAudience("foo"),
 				},
 				succeeds: false,
 			},
 			{
 				testDescription: "required sub matches",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
-					// options.WithRequiredClaims(map[string]interface{}{
-					// 	"sub": "test",
-					// }),
+					options.WithIssuer(jwtOp.GetURL(t)),
+				},
+				claimsValidationFn: func(claims *TestClaims) error {
+					return testClaimsValueEq(claims, "sub", "test")
+				},
+				succeeds: true,
+			},
+			{
+				testDescription: "opaque - required sub matches",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
 				},
 				claimsValidationFn: func(claims *TestClaims) error {
 					return testClaimsValueEq(claims, "sub", "test")
@@ -280,8 +423,21 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 			},
 			{
 				testDescription: "required sub doesn't match",
+				op:              jwtOp,
 				options: []options.Option{
-					options.WithIssuer(op.GetURL(t)),
+					options.WithIssuer(jwtOp.GetURL(t)),
+				},
+				claimsValidationFn: func(claims *TestClaims) error {
+					return testClaimsValueEq(claims, "sub", "foo")
+				},
+				succeeds: false,
+			},
+			{
+				testDescription: "opaque - required sub doesn't match",
+				op:              opaqueOp,
+				options: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
 				},
 				claimsValidationFn: func(claims *TestClaims) error {
 					return testClaimsValueEq(claims, "sub", "foo")
@@ -295,7 +451,7 @@ func runTestRequirements(t *testing.T, testName string, tester tester) {
 			t.Logf("Test iteration %d: %s", i, c.testDescription)
 
 			handler := tester.NewHandlerFn(c.claimsValidationFn, c.options...)
-			token := op.GetToken(t)
+			token := c.op.GetToken(t)
 
 			if c.succeeds {
 				testHttpWithAuthentication(t, token, handler)
@@ -310,8 +466,10 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 	t.Helper()
 
 	t.Run(fmt.Sprintf("%s_error_handler", testName), func(t *testing.T) {
-		op := optest.NewTesting(t)
-		defer op.Close(t)
+		jwtOp := optest.NewTesting(t)
+		defer jwtOp.Close(t)
+		opaqueOp := optest.NewTesting(t, optest.WithOpaqueAccessTokens())
+		defer opaqueOp.Close(t)
 
 		var info struct {
 			sync.RWMutex
@@ -337,41 +495,67 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 			setInfo(description, err)
 		}
 
-		opts := []options.Option{
-			options.WithIssuer(op.GetURL(t)),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithErrorHandler(errorHandler),
+		cases := []struct {
+			testDescription string
+			op              *optest.OPTesting
+			opts            []options.Option
+			expectedError   string
+		}{
+			{
+				testDescription: "jwt",
+				op:              jwtOp,
+				opts: []options.Option{
+					options.WithIssuer(jwtOp.GetURL(t)),
+					options.WithRequiredAudience("test-client"),
+					options.WithRequiredTokenType("JWT+AT"),
+					options.WithErrorHandler(errorHandler),
+				},
+				expectedError: "unable to parse token signature: invalid compact serialization format: invalid number of segments",
+			},
+			{
+				testDescription: "opaque",
+				op:              opaqueOp,
+				opts: []options.Option{
+					options.WithOpaqueTokensEnabled(),
+					options.WithIssuer(opaqueOp.GetURL(t)),
+					options.WithErrorHandler(errorHandler),
+				},
+				expectedError: "unable to introspect the token: unexpected end of JSON input",
+			},
 		}
 
-		oidcHandler, err := oidc.NewHandler[TestClaims](nil, opts...)
-		require.NoError(t, err)
+		for i, c := range cases {
+			t.Logf("Test #%d: %s", i, c.testDescription)
 
-		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)
+			oidcHandler, err := oidc.NewHandler[TestClaims](nil, c.opts...)
+			require.NoError(t, err)
 
-		// Test without token
-		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
-		recNoAuth := httptest.NewRecorder()
-		handler.ServeHTTP(recNoAuth, reqNoAuth)
+			handler := tester.ToHandlerFn(oidcHandler.ParseToken, c.opts...)
 
-		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
+			// Test without token
+			reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
+			recNoAuth := httptest.NewRecorder()
+			handler.ServeHTTP(recNoAuth, reqNoAuth)
 
-		d, e := getInfo()
+			require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
 
-		if !strings.Contains(t.Name(), "OidcEchoJwt") {
-			require.Equal(t, options.GetTokenErrorDescription, d)
-			require.EqualError(t, e, "unable to extract token: Authorization header empty")
+			d, e := getInfo()
+
+			if !strings.Contains(t.Name(), "OidcEchoJwt") {
+				require.Equal(t, options.GetTokenErrorDescription, d)
+				require.EqualError(t, e, "unable to extract token: Authorization header empty")
+			}
+
+			// Test with fake token
+			token := c.op.GetToken(t)
+			token.AccessToken = "foobar"
+			testHttpWithAuthenticationFailure(t, token, handler)
+
+			d, e = getInfo()
+
+			require.Equal(t, options.ParseTokenErrorDescription, d)
+			require.EqualError(t, e, c.expectedError)
 		}
-
-		// Test with fake token
-		token := op.GetToken(t)
-		token.AccessToken = "foobar"
-		testHttpWithAuthenticationFailure(t, token, handler)
-
-		d, e = getInfo()
-
-		require.Equal(t, options.ParseTokenErrorDescription, d)
-		require.EqualError(t, e, "unable to parse token signature: invalid compact serialization format: invalid number of segments")
 	})
 }
 

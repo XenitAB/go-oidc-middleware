@@ -22,7 +22,7 @@ var (
 	errSignatureVerification = fmt.Errorf("failed to verify signature")
 )
 
-type handler[T any] struct {
+type jwtHandler[T any] struct {
 	issuer                     string
 	discoveryUri               string
 	discoveryFetchTimeout      time.Duration
@@ -40,10 +40,24 @@ type handler[T any] struct {
 	claimsValidationFn         options.ClaimsValidationFn[T]
 }
 
-func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (*handler[T], error) {
-	opts := options.New(setters...)
+type Handler[T any] interface {
+	ParseToken(ctx context.Context, tokenString string) (T, error)
+	SetIssuer(issuer string)
+	SetDiscoveryUri(discoveryUri string)
+}
 
-	h := &handler[T]{
+func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (Handler[T], error) {
+	opts := options.New(setters...)
+	if opts.OpaqueTokensEnabled {
+		return newOpaqueHandler(claimsValidationFn, setters...)
+	}
+
+	return newjwtHandler(claimsValidationFn, setters...)
+}
+
+func newjwtHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...options.Option) (*jwtHandler[T], error) {
+	opts := options.New(setters...)
+	h := &jwtHandler[T]{
 		issuer:                  opts.Issuer,
 		discoveryUri:            opts.DiscoveryUri,
 		discoveryFetchTimeout:   opts.DiscoveryFetchTimeout,
@@ -73,7 +87,7 @@ func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters
 
 		h.fallbackSignatureAlgorithm = alg
 	}
-	if !opts.LazyLoadJwks {
+	if !opts.LazyLoadMetadata {
 		err := h.loadJwks()
 		if err != nil {
 			return nil, fmt.Errorf("unable to load jwks: %w", err)
@@ -83,13 +97,16 @@ func NewHandler[T any](claimsValidationFn options.ClaimsValidationFn[T], setters
 	return h, nil
 }
 
-func (h *handler[T]) loadJwks() error {
+func (h *jwtHandler[T]) loadJwks() error {
 	if h.jwksUri == "" {
-		jwksUri, err := getJwksUriFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
+		metadata, err := GetOidcMetadataFromDiscoveryUri(h.httpClient, h.discoveryUri, h.discoveryFetchTimeout)
 		if err != nil {
 			return fmt.Errorf("unable to fetch jwksUri from discoveryUri (%s): %w", h.discoveryUri, err)
 		}
-		h.jwksUri = jwksUri
+		if metadata.JwksUri == "" {
+			return fmt.Errorf("JwksUri is empty")
+		}
+		h.jwksUri = metadata.JwksUri
 	}
 
 	keyHandler, err := newKeyHandler(h.httpClient, h.jwksUri, h.jwksFetchTimeout, h.jwksRateLimit, h.disableKeyID)
@@ -102,17 +119,17 @@ func (h *handler[T]) loadJwks() error {
 	return nil
 }
 
-func (h *handler[T]) SetIssuer(issuer string) {
+func (h *jwtHandler[T]) SetIssuer(issuer string) {
 	h.issuer = issuer
 }
 
-func (h *handler[T]) SetDiscoveryUri(discoveryUri string) {
+func (h *jwtHandler[T]) SetDiscoveryUri(discoveryUri string) {
 	h.discoveryUri = discoveryUri
 }
 
 type ParseTokenFunc[T any] func(ctx context.Context, tokenString string) (T, error)
 
-func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
+func (h *jwtHandler[T]) ParseToken(ctx context.Context, tokenString string) (T, error) {
 	if h.keyHandler == nil {
 		err := h.loadJwks()
 		if err != nil {
@@ -204,7 +221,7 @@ func (h *handler[T]) ParseToken(ctx context.Context, tokenString string) (T, err
 	return claims, nil
 }
 
-func (h *handler[T]) validateClaims(claims *T) error {
+func (h *jwtHandler[T]) validateClaims(claims *T) error {
 	if h.claimsValidationFn == nil {
 		return nil
 	}
@@ -212,7 +229,7 @@ func (h *handler[T]) validateClaims(claims *T) error {
 	return h.claimsValidationFn(claims)
 }
 
-func (h *handler[T]) jwtTokenToClaims(ctx context.Context, token jwt.Token) (T, error) {
+func (h *jwtHandler[T]) jwtTokenToClaims(ctx context.Context, token jwt.Token) (T, error) {
 	rawClaims, err := token.AsMap(ctx)
 	if err != nil {
 		return *new(T), fmt.Errorf("unable to convert token to claims: %w", err)
@@ -236,46 +253,44 @@ func GetDiscoveryUriFromIssuer(issuer string) string {
 	return fmt.Sprintf("%s/.well-known/openid-configuration", strings.TrimSuffix(issuer, "/"))
 }
 
-func getJwksUriFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fetchTimeout time.Duration) (string, error) {
+type oidcMetadata struct {
+	JwksUri          string `json:"jwks_uri"`
+	UserinfoEndpoint string `json:"userinfo_endpoint"`
+}
+
+func GetOidcMetadataFromDiscoveryUri(httpClient *http.Client, discoveryUri string, fetchTimeout time.Duration) (oidcMetadata, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryUri, nil)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
 	req.Header.Set("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
 	err = res.Body.Close()
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
-	var discoveryData struct {
-		JwksUri string `json:"jwks_uri"`
-	}
-
-	err = json.Unmarshal(bodyBytes, &discoveryData)
+	metadata := oidcMetadata{}
+	err = json.Unmarshal(bodyBytes, &metadata)
 	if err != nil {
-		return "", err
+		return oidcMetadata{}, err
 	}
 
-	if discoveryData.JwksUri == "" {
-		return "", fmt.Errorf("JwksUri is empty")
-	}
-
-	return discoveryData.JwksUri, nil
+	return metadata, nil
 }
 
 func getKeyIDFromTokenHeader(tokenHeaders jws.Headers) (string, error) {
