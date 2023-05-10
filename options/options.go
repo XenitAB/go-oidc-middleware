@@ -1,9 +1,37 @@
 package options
 
 import (
+	"context"
 	"net/http"
+	"net/url"
 	"time"
 )
+
+// OidcError contains context information for the error handler.
+type OidcError struct {
+	Url     *url.URL
+	Headers http.Header
+	Error   error
+	Status  ErrorDescription
+}
+
+// Response holds an abstract HTTP response that the framework adapter will render.
+type Response struct {
+	StatusCode int
+	Headers    map[string]string
+	Body       []byte
+}
+
+// ContentType returns the content-type header from this response, or "applicatin/octet-stream"
+// as per HTTP standard.
+func (r *Response) ContentType() string {
+	for k, v := range r.Headers {
+		if http.CanonicalHeaderKey(k) == "Content-Type" {
+			return v
+		}
+	}
+	return "application/octet-stream"
+}
 
 // ClaimsValidationFn is a generic function to validate calims.
 // If an error is returned, the claims failed the validation.
@@ -19,7 +47,7 @@ type ClaimsContextKeyName string
 const DefaultClaimsContextKeyName ClaimsContextKeyName = "claims"
 
 // ErrorHandler is called by the middleware if not nil
-type ErrorHandler func(description ErrorDescription, err error)
+type ErrorHandler func(ctx context.Context, oidcErr *OidcError) *Response
 
 // ErrorDescription is used to pass the description of the error to ErrorHandler
 type ErrorDescription string

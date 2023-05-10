@@ -1,11 +1,10 @@
 package oidctesting
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -313,65 +312,91 @@ func runTestErrorHandler(t *testing.T, testName string, tester tester) {
 		op := optest.NewTesting(t)
 		defer op.Close(t)
 
-		var info struct {
-			sync.RWMutex
-			description options.ErrorDescription
-			err         error
+		cases := []struct {
+			testDescription    string
+			errorHandler       options.ErrorHandler
+			expectStatusCode   int
+			expectHeaders      map[string]string
+			expectBodyContains []byte
+		}{
+			{
+				testDescription:    "no output",
+				errorHandler:       func(ctx context.Context, oidcErr *options.OidcError) *options.Response { return nil },
+				expectStatusCode:   http.StatusBadRequest,
+				expectHeaders:      map[string]string{},
+				expectBodyContains: []byte{},
+			},
+			{
+				testDescription: "basic propagation",
+				errorHandler: func(ctx context.Context, oidcErr *options.OidcError) *options.Response {
+					return &options.Response{
+						StatusCode: 418,
+						Headers:    map[string]string{},
+						Body:       []byte("badness"),
+					}
+				},
+				expectStatusCode: http.StatusTeapot,
+				expectHeaders: map[string]string{
+					"Content-Type": "application/octet-stream",
+				},
+				expectBodyContains: []byte("bad"),
+			},
+			{
+				testDescription: "additional header",
+				errorHandler: func(ctx context.Context, oidcErr *options.OidcError) *options.Response {
+					return &options.Response{
+						StatusCode: 418,
+						Headers:    map[string]string{"some": "header"},
+						Body:       []byte("badness"),
+					}
+				},
+				expectStatusCode: http.StatusTeapot,
+				expectHeaders: map[string]string{
+					"Some":         "header",
+					"Content-Type": "application/octet-stream",
+				},
+				expectBodyContains: []byte{},
+			},
+			{
+				testDescription: "content type",
+				errorHandler: func(ctx context.Context, oidcErr *options.OidcError) *options.Response {
+					return &options.Response{
+						StatusCode: 418,
+						Headers:    map[string]string{"content-type": "application/json"},
+						Body:       []byte("{}"),
+					}
+				},
+				expectStatusCode: http.StatusTeapot,
+				expectHeaders: map[string]string{
+					"Content-Type": "application/json",
+				},
+				expectBodyContains: []byte("{}"),
+			},
 		}
+		for i := range cases {
+			c := cases[i]
+			t.Logf("Test iteration %d: %s", i, c.testDescription)
+			opts := []options.Option{
+				options.WithIssuer(op.GetURL(t)),
+				options.WithRequiredAudience("test-client"),
+				options.WithRequiredTokenType("JWT+AT"),
+				options.WithErrorHandler(c.errorHandler),
+			}
 
-		setInfo := func(description options.ErrorDescription, err error) {
-			info.Lock()
-			info.description = description
-			info.err = err
-			info.Unlock()
+			oidcHandler, err := oidc.NewHandler[TestClaims](nil, opts...)
+			require.NoError(t, err)
+
+			handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)
+
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, req)
+			require.Equal(t, c.expectStatusCode, res.Result().StatusCode)
+			for k, v := range c.expectHeaders {
+				require.Equal(t, []string{v}, res.Result().Header[k])
+			}
+			require.Subset(t, res.Body.Bytes(), c.expectBodyContains)
 		}
-
-		getInfo := func() (description options.ErrorDescription, err error) {
-			info.RLock()
-			defer info.RUnlock()
-			return info.description, info.err
-		}
-
-		errorHandler := func(description options.ErrorDescription, err error) {
-			t.Logf("Description: %s\tError: %v", description, err)
-			setInfo(description, err)
-		}
-
-		opts := []options.Option{
-			options.WithIssuer(op.GetURL(t)),
-			options.WithRequiredAudience("test-client"),
-			options.WithRequiredTokenType("JWT+AT"),
-			options.WithErrorHandler(errorHandler),
-		}
-
-		oidcHandler, err := oidc.NewHandler[TestClaims](nil, opts...)
-		require.NoError(t, err)
-
-		handler := tester.ToHandlerFn(oidcHandler.ParseToken, opts...)
-
-		// Test without token
-		reqNoAuth := httptest.NewRequest(http.MethodGet, "/", nil)
-		recNoAuth := httptest.NewRecorder()
-		handler.ServeHTTP(recNoAuth, reqNoAuth)
-
-		require.Equal(t, http.StatusBadRequest, recNoAuth.Result().StatusCode)
-
-		d, e := getInfo()
-
-		if !strings.Contains(t.Name(), "OidcEchoJwt") {
-			require.Equal(t, options.GetTokenErrorDescription, d)
-			require.EqualError(t, e, "unable to extract token: Authorization header empty")
-		}
-
-		// Test with fake token
-		token := op.GetToken(t)
-		token.AccessToken = "foobar"
-		testHttpWithAuthenticationFailure(t, token, handler)
-
-		d, e = getInfo()
-
-		require.Equal(t, options.ParseTokenErrorDescription, d)
-		require.EqualError(t, e, "unable to parse token signature: invalid compact serialization format: invalid number of segments")
 	})
 }
 

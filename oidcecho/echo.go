@@ -19,10 +19,29 @@ func New[T any](claimsValidationFn options.ClaimsValidationFn[T], setters ...opt
 	return toEchoMiddleware(h.ParseToken, setters...)
 }
 
-func onError(errorHandler options.ErrorHandler, description options.ErrorDescription, err error) {
-	if errorHandler != nil {
-		errorHandler(description, err)
+func onError(c echo.Context, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) error {
+	if errorHandler == nil {
+		c.Logger().Error(err)
+		return c.NoContent(statusCode)
 	}
+	oidcErr := options.OidcError{
+		Url:     c.Request().URL,
+		Headers: c.Request().Header,
+		Status:  description,
+		Error:   err,
+	}
+	response := errorHandler(c.Request().Context(), &oidcErr)
+	if response == nil {
+		c.Logger().Error(err)
+		return c.NoContent(statusCode)
+	}
+	for k, v := range response.Headers {
+		c.Response().Header().Set(k, v)
+	}
+	c.Response().Header().Set(echo.HeaderContentType, response.ContentType())
+	c.Response().WriteHeader(response.StatusCode)
+	_, err = c.Response().Write(response.Body)
+	return err
 }
 
 func toEchoMiddleware[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.Option) echo.MiddlewareFunc {
@@ -34,14 +53,12 @@ func toEchoMiddleware[T any](parseToken oidc.ParseTokenFunc[T], setters ...optio
 
 			tokenString, err := oidc.GetTokenString(c.Request().Header.Get, opts.TokenString)
 			if err != nil {
-				onError(opts.ErrorHandler, options.GetTokenErrorDescription, err)
-				return echo.ErrBadRequest
+				return onError(c, opts.ErrorHandler, echo.ErrBadRequest.Code, options.GetTokenErrorDescription, err)
 			}
 
 			claims, err := parseToken(ctx, tokenString)
 			if err != nil {
-				onError(opts.ErrorHandler, options.ParseTokenErrorDescription, err)
-				return echo.ErrUnauthorized
+				return onError(c, opts.ErrorHandler, echo.ErrUnauthorized.Code, options.ParseTokenErrorDescription, err)
 			}
 			c.Set(string(opts.ClaimsContextKeyName), claims)
 			return next(c)

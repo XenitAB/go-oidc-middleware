@@ -20,12 +20,28 @@ func New[T any](h http.Handler, claimsValidationFn options.ClaimsValidationFn[T]
 	return toHttpHandler(h, oidcHandler.ParseToken, setters...)
 }
 
-func onError(w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
-	if errorHandler != nil {
-		errorHandler(description, err)
+func onError(r *http.Request, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
+	if errorHandler == nil {
+		w.WriteHeader(statusCode)
+		return
 	}
-
-	w.WriteHeader(statusCode)
+	oidcErr := options.OidcError{
+		Url:     r.URL,
+		Headers: r.Header,
+		Status:  description,
+		Error:   err,
+	}
+	response := errorHandler(r.Context(), &oidcErr)
+	if response == nil {
+		w.WriteHeader(statusCode)
+		return
+	}
+	for k, v := range response.Headers {
+		w.Header().Add(k, v)
+	}
+	w.Header().Set("Content-Type", response.ContentType())
+	w.WriteHeader(response.StatusCode)
+	w.Write(response.Body)
 }
 
 func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
@@ -36,13 +52,13 @@ func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], set
 
 		tokenString, err := oidc.GetTokenString(r.Header.Get, opts.TokenString)
 		if err != nil {
-			onError(w, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
+			onError(r, w, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
 			return
 		}
 
 		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
-			onError(w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
+			onError(r, w, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
 
