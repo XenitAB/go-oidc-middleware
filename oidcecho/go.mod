@@ -2,7 +2,7 @@ module github.com/xenitab/go-oidc-middleware/oidcecho
 
 go 1.20
 
-require github.com/xenitab/go-oidc-middleware v0.0.41
+require github.com/xenitab/go-oidc-middleware v0.0.42
 
 require (
 	github.com/labstack/echo/v4 v4.10.0
