@@ -39,6 +39,8 @@ func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, 
 		c.Header(k, v)
 	}
 	c.Data(response.StatusCode, response.ContentType(), response.Body)
+	c.Error(err)
+	c.Abort()
 	return nil
 }
 
@@ -61,7 +63,5 @@ func toGinHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.O
 		}
 
 		c.Set(string(opts.ClaimsContextKeyName), claims)
-
-		c.Next()
 	}
 }
