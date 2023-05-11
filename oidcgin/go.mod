@@ -4,7 +4,10 @@ go 1.20
 
 require github.com/xenitab/go-oidc-middleware v0.0.42
 
-require github.com/gin-gonic/gin v1.8.2
+require (
+	github.com/gin-gonic/gin v1.8.2
+	github.com/stretchr/testify v1.8.1
+)
 
 require (
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
@@ -30,7 +33,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
 	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
