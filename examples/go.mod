@@ -16,7 +16,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.42.0
 	github.com/labstack/echo/v4 v4.10.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
-	golang.org/x/sync v0.1.0
+	golang.org/x/sync v0.3.0
 )
 
 require (
