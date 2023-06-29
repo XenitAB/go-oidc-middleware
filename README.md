@@ -10,6 +10,14 @@ This is a middleware for http to make it easy to use OpenID Connect.
 
 Below, large (breaking) changes will be documented:
 
+### v0.0.42
+
+Error handlers now have access to the request and have full control over the HTTP response sent to the client. Among other things, this can be used to return structured error responses a la [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807). However, this comes with a breaking interface change: error handler contract changes from `type ErrorHandler func(description ErrorDescription, err error)` to `errorHandler(ctx context.Context, oidcErr *options.OidcError) *options.Response`. To retain the behavior of your error handler, update your error handler signature accordingly, change `description` to `oidcErr.Status`, `err` to `oidcErr.Error` and add an explicit `return nil`.
+
+### v0.0.41
+
+The `oidcechojwt` adapter is replaced by `oidcecho` which brings in line with the other adapters in that it operates as a ordinary middleware. This makes all adapters full HTTP middlewares. That makes it easier to add new features, such as the the upcoming error handling changes. The new adapter provides identical features.
+
 ### v0.0.37
 
 From `v0.0.37` and forward, the `options.WithRequiredClaims()` has been deprecated and generics are used to provide the claims type. A new validation function can be provided instead of `options.WithRequiredClaims()`. If you don't need claims validation, you can pass `nil` instead of a `ClaimsValidationFn`.
@@ -30,7 +38,7 @@ This library is under active development and the api will have breaking changes 
 - [net/http](https://pkg.go.dev/net/http), [mux](https://github.com/gorilla/mux) & [chi](https://github.com/go-chi/chi)
 - [gin](https://github.com/gin-gonic/gin)
 - [fiber](https://github.com/gofiber/fiber)
-- [Echo (JWT ParseTokenFunc)](https://echo.labstack.com/middleware/jwt/#custom-configuration)
+- [Echo](https://echo.labstack.com/)
 - Build your own middleware
 
 ### Using options
@@ -202,7 +210,7 @@ func newClaimsHandler() fiber.Handler {
 }
 ```
 
-### Echo (JWT ParseTokenFunc)
+### Echo
 
 **Import**
 
@@ -211,15 +219,13 @@ func newClaimsHandler() fiber.Handler {
 **Middleware**
 
 ```go
-e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-    ParseTokenFunc: oidcecho.New(
-		GetAzureADClaimsValidationFn(cfg.TenantID),
-		options.WithIssuer(cfg.Issuer),
-		options.WithRequiredTokenType("JWT"),
-		options.WithRequiredAudience(cfg.Audience),
-		options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
-	),
-}))
+oidcHandler := oidcecho.New(
+	GetAzureADClaimsValidationFn(cfg.TenantID),
+	options.WithIssuer(cfg.Issuer),
+	options.WithRequiredTokenType("JWT"),
+	options.WithRequiredAudience(cfg.Audience),
+	options.WithFallbackSignatureAlgorithm(cfg.FallbackSignatureAlgorithm),
+)
 ```
 
 **Handler**
