@@ -21,7 +21,7 @@ jobs:
         run: |
           make cover
       - name: Send coverage to coverall
-        uses: shogo82148/actions-goveralls@v1.6.0
+        uses: shogo82148/actions-goveralls@v1.8.0
         with:
           path-to-profile: coverage_merged.out
           ignore: internal/oidctesting
