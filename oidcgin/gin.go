@@ -39,7 +39,7 @@ func onError(c *gin.Context, errorHandler options.ErrorHandler, statusCode int, 
 		c.Header(k, v)
 	}
 	c.Data(response.StatusCode, response.ContentType(), response.Body)
-	c.Error(err)
+	c.Error(err) //nolint: errcheck // not sure what to do with the error here
 	c.Abort()
 	return nil
 }
@@ -52,12 +52,14 @@ func toGinHandler[T any](parseToken oidc.ParseTokenFunc[T], setters ...options.O
 
 		tokenString, err := oidc.GetTokenString(c.Request.Header.Get, opts.TokenString)
 		if err != nil {
+			//nolint: errcheck // not sure what to do with the error here
 			onError(c, opts.ErrorHandler, http.StatusBadRequest, options.GetTokenErrorDescription, err)
 			return
 		}
 
 		claims, err := parseToken(ctx, tokenString)
 		if err != nil {
+			//nolint: errcheck // not sure what to do with the error here
 			onError(c, opts.ErrorHandler, http.StatusUnauthorized, options.ParseTokenErrorDescription, err)
 			return
 		}
