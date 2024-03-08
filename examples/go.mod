@@ -1,6 +1,6 @@
 module examples
 
-go 1.20
+go 1.22
 
 require (
 	github.com/xenitab/go-oidc-middleware v0.0.43
