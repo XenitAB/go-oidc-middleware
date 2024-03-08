@@ -109,6 +109,7 @@ bench:
 .SILENT: cover
 cover:
 	set -e
+	export GOEXPERIMENT=nocoverageredesign # https://github.com/golang/go/issues/65570
 	ROOT_DIR=$(PWD)
 	mkdir -p $${ROOT_DIR}/tmp/
 	for pkg in $(PKGS_CLEAN); do

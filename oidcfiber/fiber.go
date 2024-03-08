@@ -24,14 +24,10 @@ func onError(c *fiber.Ctx, errorHandler options.ErrorHandler, statusCode int, de
 	if errorHandler == nil {
 		return c.SendStatus(statusCode)
 	}
-	url, _ := url.Parse(c.OriginalURL())
-	headers := make(map[string][]string, 1)
-	for k, v := range c.GetReqHeaders() {
-		headers[k] = []string{v}
-	}
+	parsedUrl, _ := url.Parse(c.OriginalURL()) //nolint: errcheck // not sure what to do with the error here
 	oidcErr := options.OidcError{
-		Url:     url,
-		Headers: headers,
+		Url:     parsedUrl,
+		Headers: c.GetReqHeaders(),
 		Status:  description,
 		Error:   err,
 	}

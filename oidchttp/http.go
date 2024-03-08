@@ -20,7 +20,7 @@ func New[T any](h http.Handler, claimsValidationFn options.ClaimsValidationFn[T]
 	return toHttpHandler(h, oidcHandler.ParseToken, setters...)
 }
 
-func onError(r *http.Request, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) {
+func onError(r *http.Request, w http.ResponseWriter, errorHandler options.ErrorHandler, statusCode int, description options.ErrorDescription, err error) { //nolint: lll // nothing to do about the length
 	if errorHandler == nil {
 		w.WriteHeader(statusCode)
 		return
@@ -41,7 +41,7 @@ func onError(r *http.Request, w http.ResponseWriter, errorHandler options.ErrorH
 	}
 	w.Header().Set("Content-Type", response.ContentType())
 	w.WriteHeader(response.StatusCode)
-	w.Write(response.Body)
+	w.Write(response.Body) //nolint: errcheck // not sure what to do with the error here
 }
 
 func toHttpHandler[T any](h http.Handler, parseToken oidc.ParseTokenFunc[T], setters ...options.Option) http.Handler {
