@@ -2,7 +2,7 @@ module github.com/xenitab/go-oidc-middleware/oidchttp
 
 go 1.22
 
-require github.com/xenitab/go-oidc-middleware v0.0.43
+require github.com/xenitab/go-oidc-middleware v0.0.44
 
 require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
