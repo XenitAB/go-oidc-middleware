@@ -11,7 +11,7 @@ jobs:
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Setup go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: golangci-lint
@@ -25,7 +25,7 @@ jobs:
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Setup go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Run fmt
@@ -45,7 +45,7 @@ jobs:
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Setup go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Run build-examples
@@ -58,7 +58,7 @@ jobs:
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Setup go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Run test
@@ -71,7 +71,7 @@ jobs:
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Setup go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: coverage
