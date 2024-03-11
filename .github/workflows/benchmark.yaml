@@ -12,13 +12,13 @@ jobs:
           go-version: "^1.22"
 
       - name: Checkout Code (Previous)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
           path: previous
 
       - name: Checkout Code (New)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: new
 
