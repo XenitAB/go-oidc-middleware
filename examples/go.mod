@@ -3,8 +3,8 @@ module examples
 go 1.22
 
 require (
-	github.com/xenitab/go-oidc-middleware v0.0.43
-	github.com/xenitab/go-oidc-middleware/oidcecho v0.0.43
+	github.com/xenitab/go-oidc-middleware v0.0.44
+	github.com/xenitab/go-oidc-middleware/oidcecho v0.0.44
 	github.com/xenitab/go-oidc-middleware/oidcfiber v0.0.43
 	github.com/xenitab/go-oidc-middleware/oidcgin v0.0.43
 	github.com/xenitab/go-oidc-middleware/oidchttp v0.0.43
