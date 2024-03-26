@@ -13,7 +13,7 @@ require (
 require (
 	github.com/cristalhq/aconfig v0.18.5
 	github.com/gin-gonic/gin v1.9.1
-	github.com/gofiber/fiber/v2 v2.52.2
+	github.com/gofiber/fiber/v2 v2.52.3
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	golang.org/x/sync v0.6.0
